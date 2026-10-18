@@ -1,25 +1,25 @@
-# 딸깍 키보드
+# Clack Keyboard
 
-마우스를 키보드 위로 스치기만 해도 딸깍딸깍 소리가 나는, 스트레스 풀기용 키보드 놀이터입니다.
+A stress-relief keyboard toy. Glide your mouse across a giant keyboard and every key you pass clicks.
 
-## 할 수 있는 것
+## Features
 
-- **스치기 / 누르기 모드**: 커서만 움직여도 소리가 나거나, 클릭·터치할 때만 소리가 나요. 터치는 손가락으로 쓸어도 연주돼요.
-- **소리 10가지**: 청축, 갈축, 도각도각(윤활 리니어), 타자기(엔터에 띵), 뽁뽁이, 목탁(공덕 카운터), 마림바(어떻게 쳐도 화음), 8비트, 목소리(A, B, C / 기역, 니은 읽기), 키마다 랜덤.
-- **키캡 컬러 7가지**: 자동(기기 라이트/다크), 구름, 미드나잇, 민트초코, 레트로, 벚꽃, 블랙아웃.
-- **커서 꾸미기**: 모양 9가지, 색, 크기, 반짝이 꼬리.
-- 실제 키보드로 타이핑해도 소리가 나요. 설정과 누적 횟수는 브라우저에 저장돼요.
+- **Glide or Tap**: keys play as your cursor passes over them, or only when you click or tap. On touch screens, swipe a finger across the keys.
+- **10 sounds**: Clicky (blue switches), Tactile (browns), Thock (lubed linears), Typewriter (with a bell on Enter), Bubble Wrap, Wood Block (+1 zen counter), Marimba (every key is in tune), 8-Bit, Voice (reads each key out loud: A, B, C), and Shuffle (a different sound per key).
+- **7 keycap colorways**: Auto (follows light/dark mode), Cloud, Midnight, Mint Chip, Retro, Cherry Blossom, Blackout.
+- **Custom cursor**: 9 shapes, any color, adjustable size, sparkle trail.
+- Your real keyboard plays too. Settings and your clack count are saved in the browser.
 
-모든 소리는 Web Audio API로 실시간 합성해서 오디오 파일이 없습니다. 목소리 모드는 브라우저의 음성 합성(speechSynthesis)을 씁니다.
+All sounds are synthesized live with the Web Audio API, so there are no audio files. Voice mode uses the browser's speech synthesis.
 
-## 실행
+## Run locally
 
-빌드가 필요 없는 정적 페이지입니다. `index.html`을 브라우저로 열면 바로 됩니다.
+It's a static page with no build step. Open `index.html`, or serve the folder:
 
 ```sh
 python3 -m http.server 8000   # http://localhost:8000
 ```
 
-## 배포 (GitHub Pages)
+## Deploy to GitHub Pages
 
-저장소 Settings → Pages → Source를 "Deploy from a branch"로 두고, 브랜치와 `/ (root)` 폴더를 고르면 됩니다.
+In the repo, go to Settings → Pages, choose "Deploy from a branch", and pick this branch with the `/ (root)` folder.

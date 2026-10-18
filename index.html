@@ -1,30 +1,29 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!--artifact:start-->
-<title>딸깍 키보드</title>
+<title>Clack Keyboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="마우스를 스치기만 해도 딸깍딸깍. 스트레스 풀리는 키보드 놀이터.">
+<meta name="description" content="Glide your mouse across a giant keyboard and hear every key click. A stress-relief keyboard toy.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Rubik:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;500;600&family=Rubik:wght@400;500;600&display=swap">
 <style>
 /* Layout: one screen. A keyboard case fills the viewport between a slim header and a floating dock;
-   a giant echo of the last key glows behind it. Colors come from keycap palettes (tokens below). */
+   a giant echo of the last key flashes over it. Colors come from keycap palettes (tokens below). */
 :root {
   --bg: #e3e7ee; --bg-2: #cdd4e0;
   --ink: #1f2633; --ink-soft: #5d6778; --line: rgba(31,38,51,.12); --panel: rgba(255,255,255,.76);
   --case: #eef1f6; --case-hi: #ffffff; --case-lo: #b9c2d1;
   --cap: #fbfcfe; --cap-hi: #ffffff; --cap-side: #c8cfdc; --legend: #2b3342;
   --mod: #dde3ec; --mod-hi: #e9eef5; --mod-side: #b3bccb; --mod-legend: #4a5466;
-  --acc: #5b6cff; --acc-hi: #7886ff; --acc-side: #3743b8; --acc-legend: #ffffff;
-  --ko: #8a93a5; --glow: #5b6cff; --cursor: #5b6cff; --echo: rgba(91,108,255,.16);
+  --acc: #5b6cff; --acc-hi: #7886ff; --acc-side: #3743b8; --acc-legend: #ffffff; --glow: #5b6cff; --cursor: #5b6cff; --echo: rgba(91,108,255,.16);
 
-  --font-display: "Black Han Sans", "IBM Plex Sans KR", system-ui, sans-serif;
-  --font-ui: "IBM Plex Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  --font-cap: "Rubik", "IBM Plex Sans KR", system-ui, sans-serif;
+  --font-display: "Bagel Fat One", "Rubik", system-ui, sans-serif;
+  --font-ui: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-cap: "Rubik", system-ui, sans-serif;
   --u: 60px;
 }
 @media (prefers-color-scheme: dark) {
@@ -34,8 +33,7 @@
     --case: #161d33; --case-hi: #222b48; --case-lo: #05070f;
     --cap: #262f4d; --cap-hi: #313b5e; --cap-side: #121829; --legend: #dfe5ff;
     --mod: #1d2540; --mod-hi: #262f4f; --mod-side: #0c1120; --mod-legend: #9aa4c8;
-    --acc: #3fd8e8; --acc-hi: #73e7f3; --acc-side: #168391; --acc-legend: #062026;
-    --ko: #6f7aa3; --glow: #5fe3f0; --cursor: #5fe3f0; --echo: rgba(95,227,240,.14); --echo-blend: screen;
+    --acc: #3fd8e8; --acc-hi: #73e7f3; --acc-side: #168391; --acc-legend: #062026; --glow: #5fe3f0; --cursor: #5fe3f0; --echo: rgba(95,227,240,.14); --echo-blend: screen;
     color-scheme: dark;
   }
 }
@@ -45,46 +43,39 @@
   --case: #161d33; --case-hi: #222b48; --case-lo: #05070f;
   --cap: #262f4d; --cap-hi: #313b5e; --cap-side: #121829; --legend: #dfe5ff;
   --mod: #1d2540; --mod-hi: #262f4f; --mod-side: #0c1120; --mod-legend: #9aa4c8;
-  --acc: #3fd8e8; --acc-hi: #73e7f3; --acc-side: #168391; --acc-legend: #062026;
-  --ko: #6f7aa3; --glow: #5fe3f0; --cursor: #5fe3f0; --echo: rgba(95,227,240,.14); --echo-blend: screen;
+  --acc: #3fd8e8; --acc-hi: #73e7f3; --acc-side: #168391; --acc-legend: #062026; --glow: #5fe3f0; --cursor: #5fe3f0; --echo: rgba(95,227,240,.14); --echo-blend: screen;
   color-scheme: dark;
 }
-/* Keycap palettes picked in the 키보드 panel. */
+/* Keycap palettes picked in the Keyboard panel. */
 body[data-kb="cloud"] {
   --bg: #e3e7ee; --bg-2: #cdd4e0; --ink: #1f2633; --ink-soft: #5d6778; --line: rgba(31,38,51,.12); --panel: rgba(255,255,255,.76);
   --case: #eef1f6; --case-hi: #ffffff; --case-lo: #b9c2d1; --cap: #fbfcfe; --cap-hi: #ffffff; --cap-side: #c8cfdc; --legend: #2b3342;
-  --mod: #dde3ec; --mod-hi: #e9eef5; --mod-side: #b3bccb; --mod-legend: #4a5466; --acc: #5b6cff; --acc-hi: #7886ff; --acc-side: #3743b8; --acc-legend: #ffffff;
-  --ko: #8a93a5; --glow: #5b6cff; --cursor: #5b6cff; --echo: rgba(91,108,255,.16); --echo-blend: multiply; color-scheme: light;
+  --mod: #dde3ec; --mod-hi: #e9eef5; --mod-side: #b3bccb; --mod-legend: #4a5466; --acc: #5b6cff; --acc-hi: #7886ff; --acc-side: #3743b8; --acc-legend: #ffffff; --glow: #5b6cff; --cursor: #5b6cff; --echo: rgba(91,108,255,.16); --echo-blend: multiply; color-scheme: light;
 }
 body[data-kb="midnight"] {
   --bg: #0b1020; --bg-2: #18203a; --ink: #e6e9f5; --ink-soft: #9099b8; --line: rgba(230,233,245,.12); --panel: rgba(22,28,50,.8);
   --case: #161d33; --case-hi: #222b48; --case-lo: #05070f; --cap: #262f4d; --cap-hi: #313b5e; --cap-side: #121829; --legend: #dfe5ff;
-  --mod: #1d2540; --mod-hi: #262f4f; --mod-side: #0c1120; --mod-legend: #9aa4c8; --acc: #3fd8e8; --acc-hi: #73e7f3; --acc-side: #168391; --acc-legend: #062026;
-  --ko: #6f7aa3; --glow: #5fe3f0; --cursor: #5fe3f0; --echo: rgba(95,227,240,.14); --echo-blend: screen; color-scheme: dark;
+  --mod: #1d2540; --mod-hi: #262f4f; --mod-side: #0c1120; --mod-legend: #9aa4c8; --acc: #3fd8e8; --acc-hi: #73e7f3; --acc-side: #168391; --acc-legend: #062026; --glow: #5fe3f0; --cursor: #5fe3f0; --echo: rgba(95,227,240,.14); --echo-blend: screen; color-scheme: dark;
 }
 body[data-kb="mint"] {
   --bg: #c4e6da; --bg-2: #9fcfbf; --ink: #2c1f1b; --ink-soft: #5b4a43; --line: rgba(44,31,27,.14); --panel: rgba(242,251,247,.8);
   --case: #4a3129; --case-hi: #5e4036; --case-lo: #22140f; --cap: #e3f6ef; --cap-hi: #f4fcf8; --cap-side: #a2cfbf; --legend: #3b2a24;
-  --mod: #7a5547; --mod-hi: #8b6455; --mod-side: #452c23; --mod-legend: #f1e4dc; --acc: #5fcfae; --acc-hi: #82dcc1; --acc-side: #2b8c72; --acc-legend: #173229;
-  --ko: #7aa898; --glow: #38c497; --cursor: #4a3129; --echo: rgba(56,196,151,.2); --echo-blend: multiply; color-scheme: light;
+  --mod: #7a5547; --mod-hi: #8b6455; --mod-side: #452c23; --mod-legend: #f1e4dc; --acc: #5fcfae; --acc-hi: #82dcc1; --acc-side: #2b8c72; --acc-legend: #173229; --glow: #38c497; --cursor: #4a3129; --echo: rgba(56,196,151,.2); --echo-blend: multiply; color-scheme: light;
 }
 body[data-kb="retro"] {
   --bg: #b7beb4; --bg-2: #9aa398; --ink: #23251f; --ink-soft: #50554a; --line: rgba(35,37,31,.15); --panel: rgba(236,232,220,.84);
   --case: #d5cebb; --case-hi: #e6e0d0; --case-lo: #8f8774; --cap: #ebe5d6; --cap-hi: #f6f2e8; --cap-side: #b5ab94; --legend: #3a3a33;
-  --mod: #9b978b; --mod-hi: #aba79b; --mod-side: #6a665b; --mod-legend: #f3efe4; --acc: #e0612f; --acc-hi: #ec7d50; --acc-side: #9f3e19; --acc-legend: #fff4ea;
-  --ko: #8e8775; --glow: #e8692f; --cursor: #c4501f; --echo: rgba(224,97,47,.18); --echo-blend: multiply; color-scheme: light;
+  --mod: #9b978b; --mod-hi: #aba79b; --mod-side: #6a665b; --mod-legend: #f3efe4; --acc: #e0612f; --acc-hi: #ec7d50; --acc-side: #9f3e19; --acc-legend: #fff4ea; --glow: #e8692f; --cursor: #c4501f; --echo: rgba(224,97,47,.18); --echo-blend: multiply; color-scheme: light;
 }
 body[data-kb="sakura"] {
   --bg: #f6dfe6; --bg-2: #eec3d1; --ink: #3a2330; --ink-soft: #7a5868; --line: rgba(58,35,48,.12); --panel: rgba(255,247,250,.82);
   --case: #fff7fa; --case-hi: #ffffff; --case-lo: #dcaabc; --cap: #fff5f8; --cap-hi: #ffffff; --cap-side: #ebc4d1; --legend: #5a3446;
-  --mod: #f6cad8; --mod-hi: #fad8e3; --mod-side: #d79db2; --mod-legend: #6e3a52; --acc: #e5588a; --acc-hi: #ef78a2; --acc-side: #ad3462; --acc-legend: #ffffff;
-  --ko: #c48aa0; --glow: #e5588a; --cursor: #d4467a; --echo: rgba(229,88,138,.18); --echo-blend: multiply; color-scheme: light;
+  --mod: #f6cad8; --mod-hi: #fad8e3; --mod-side: #d79db2; --mod-legend: #6e3a52; --acc: #e5588a; --acc-hi: #ef78a2; --acc-side: #ad3462; --acc-legend: #ffffff; --glow: #e5588a; --cursor: #d4467a; --echo: rgba(229,88,138,.18); --echo-blend: multiply; color-scheme: light;
 }
 body[data-kb="blackout"] {
   --bg: #d8d8d4; --bg-2: #bcbcb7; --ink: #151515; --ink-soft: #55554f; --line: rgba(21,21,21,.14); --panel: rgba(246,246,243,.84);
   --case: #141414; --case-hi: #222222; --case-lo: #000000; --cap: #1e1e1e; --cap-hi: #2a2a2a; --cap-side: #060606; --legend: #ededed;
-  --mod: #2b2b2b; --mod-hi: #353535; --mod-side: #0b0b0b; --mod-legend: #b8b8b8; --acc: #f1f1ec; --acc-hi: #ffffff; --acc-side: #a3a39d; --acc-legend: #111111;
-  --ko: #7a7a76; --glow: #ffffff; --cursor: #111111; --echo: rgba(255,255,255,.12); --echo-blend: screen; color-scheme: light;
+  --mod: #2b2b2b; --mod-hi: #353535; --mod-side: #0b0b0b; --mod-legend: #b8b8b8; --acc: #f1f1ec; --acc-hi: #ffffff; --acc-side: #a3a39d; --acc-legend: #111111; --glow: #ffffff; --cursor: #111111; --echo: rgba(255,255,255,.12); --echo-blend: screen; color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -140,7 +131,7 @@ body[data-kb="blackout"] .brand h1 i { color: var(--ink); }
   transition: background .4s, box-shadow .4s;
 }
 .case::after { /* brand plate */
-  content: "DDALKKAK · 60%"; position: absolute; right: calc(var(--u) * .5); top: calc(var(--u) * .09);
+  content: "CLACK · 60%"; position: absolute; right: calc(var(--u) * .5); top: calc(var(--u) * .09);
   font: 500 calc(var(--u) * .12)/1 var(--font-cap); letter-spacing: .3em; color: var(--mod-legend); opacity: .45;
 }
 .row { display: flex; }
@@ -179,18 +170,15 @@ body[data-kb="blackout"] .brand h1 i { color: var(--ink); }
   transition-duration: 25ms;
 }
 .key.down .cap::after { opacity: 1; transition-duration: 0s; }
-.lg, .ko, .tp {
+.lg, .tp {
   position: absolute; z-index: 1; pointer-events: none; color: var(--c-leg);
   font-family: var(--font-cap); line-height: 1;
 }
 .lg { left: calc(var(--u) * .2); top: calc(var(--u) * .16); font-size: calc(var(--u) * .28); font-weight: 500; }
-.ko { right: calc(var(--u) * .2); bottom: calc(var(--u) * .22); font-size: calc(var(--u) * .2); color: var(--ko); font-family: var(--font-ui); }
-.key.acc .ko, .key.mod .ko { color: var(--c-leg); opacity: .7; }
 .tp { left: calc(var(--u) * .2); top: calc(var(--u) * .15); font-size: calc(var(--u) * .18); opacity: .6; }
 .key.num .lg { top: auto; bottom: calc(var(--u) * .24); }
 .key.small .lg { top: auto; bottom: calc(var(--u) * .23); font-size: calc(var(--u) * .16); font-weight: 400; letter-spacing: .04em; }
 .key.fk .lg { font-size: calc(var(--u) * .17); font-weight: 400; top: calc(var(--u) * .17); }
-body.no-ko .ko { display: none; }
 
 /* FX canvas + custom cursor */
 #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
@@ -335,83 +323,78 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
-      <h1>딸<i>깍</i></h1>
-      <p id="hint">키보드 위로 커서를 스쳐 보세요</p>
+      <h1>cl<i>ack</i></h1>
+      <p id="hint">Glide your cursor across the keys</p>
     </div>
     <div class="tally" aria-live="off">
       <b id="count">0</b>
-      <span id="countLbl">누적 딸깍</span>
+      <span id="countLbl">clacks</span>
     </div>
   </header>
 
   <main class="stage" id="stage">
     <div class="echo" id="echo" aria-hidden="true"></div>
-    <div class="case" id="board" role="application" aria-label="키보드"></div>
-    <p class="rotate-hint">휴대폰을 가로로 돌리면 키보드가 더 커져요</p>
+    <div class="case" id="board" role="application" aria-label="Keyboard"></div>
+    <p class="rotate-hint">Turn your phone sideways for a bigger keyboard</p>
   </main>
 
   <div class="dock-wrap" id="dockWrap">
-    <nav class="dock" id="dock" aria-label="설정">
-      <div class="seg" role="group" aria-label="소리 나는 방식">
-        <button id="modeHover" type="button" title="커서만 움직여도 소리가 나요">
+    <nav class="dock" id="dock" aria-label="Settings">
+      <div class="seg" role="group" aria-label="How keys play">
+        <button id="modeHover" type="button" title="Keys play as your cursor passes over them">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12c3-5 5 5 8 0s5 5 8 0"/></svg>
-          <span class="lbl">스치기</span>
+          <span class="lbl">Glide</span>
         </button>
-        <button id="modeClick" type="button" title="클릭하거나 터치할 때만 소리가 나요">
+        <button id="modeClick" type="button" title="Keys play only when you click or tap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a5.5 5.5 0 0 1-5.5 5.5h-.8a5 5 0 0 1-4-2L5 14.5a1.5 1.5 0 0 1 2.3-1.9L9 14"/></svg>
-          <span class="lbl">누르기</span>
+          <span class="lbl">Tap</span>
         </button>
       </div>
       <span class="sep"></span>
       <button class="dbtn" type="button" data-panel="sound" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
-        <span class="lbl">소리</span><small id="soundName"></small>
+        <span class="lbl">Sound</span><small id="soundName"></small>
       </button>
       <button class="dbtn" type="button" data-panel="kb" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M8 14.5h8"/></svg>
-        <span class="lbl">키보드</span>
+        <span class="lbl">Keyboard</span>
       </button>
       <button class="dbtn" type="button" data-panel="cursor" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z"/></svg>
-        <span class="lbl">커서</span>
+        <span class="lbl">Cursor</span>
       </button>
       <span class="sep"></span>
       <div class="vol">
-        <button class="dbtn" id="mute" type="button" aria-label="소리 끄기" style="padding:9px"></button>
-        <input id="volume" type="range" min="0" max="1" step="0.01" aria-label="볼륨">
+        <button class="dbtn" id="mute" type="button" aria-label="Mute" style="padding:9px"></button>
+        <input id="volume" type="range" min="0" max="1" step="0.01" aria-label="Volume">
       </div>
     </nav>
 
-    <section class="panel" id="panel-sound" hidden aria-label="소리 고르기">
-      <h2>소리 고르기</h2>
+    <section class="panel" id="panel-sound" hidden aria-label="Choose a sound">
+      <h2>SOUND</h2>
       <div class="grid" id="soundGrid"></div>
-      <div id="voiceOpts" hidden>
-        <h2>목소리 언어</h2>
-        <div class="chips" id="voiceLang"></div>
-      </div>
     </section>
 
-    <section class="panel" id="panel-kb" hidden aria-label="키보드 꾸미기">
-      <h2>키캡 컬러</h2>
+    <section class="panel" id="panel-kb" hidden aria-label="Style the keyboard">
+      <h2>KEYCAP COLORS</h2>
       <div class="grid" id="palGrid"></div>
-      <h2>표시</h2>
+      <h2>DISPLAY</h2>
       <div class="toggles">
-        <button class="chip" id="tKo" type="button">한글 자판 각인</button>
-        <button class="chip" id="tFx" type="button">반짝이 효과</button>
-        <button class="chip" id="tEcho" type="button">큰 글자 잔상</button>
+        <button class="chip" id="tFx" type="button">Sparkle effects</button>
+        <button class="chip" id="tEcho" type="button">Big letter echo</button>
       </div>
     </section>
 
-    <section class="panel" id="panel-cursor" hidden aria-label="커서 꾸미기">
-      <h2>커서 모양</h2>
+    <section class="panel" id="panel-cursor" hidden aria-label="Style the cursor">
+      <h2>CURSOR SHAPE</h2>
       <div class="grid" id="curGrid" style="grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));"></div>
-      <h2>커서 색</h2>
+      <h2>CURSOR COLOR</h2>
       <div class="swatches" id="curColors"></div>
-      <h2>크기와 꼬리</h2>
+      <h2>SIZE &amp; TRAIL</h2>
       <div class="row-line">
-        <label for="curSize">크기</label>
+        <label for="curSize">Size</label>
         <input id="curSize" type="range" min="16" max="64" step="1">
-        <button class="chip" id="tTrail" type="button">반짝이 꼬리</button>
+        <button class="chip" id="tTrail" type="button">Sparkle trail</button>
       </div>
     </section>
   </div>
@@ -423,9 +406,9 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
 
 <div class="intro" id="intro">
   <div class="intro-card">
-    <h2>딸<i>깍</i></h2>
-    <p>키보드 위로 마우스를 스치기만 해도 딸깍딸깍.<br>소리를 바꾸고, 커서를 꾸미고, 마음껏 두드려 보세요.</p>
-    <button class="go" id="go" type="button">소리 켜고 시작하기</button>
+    <h2>cl<i>ack</i></h2>
+    <p>Glide your mouse over the keys and hear every one click.<br>Swap sounds, style your cursor, and tap the stress away.</p>
+    <button class="go" id="go" type="button">Turn on sound &amp; start</button>
   </div>
 </div>
 
@@ -434,52 +417,47 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
 'use strict';
 
 /* ---------- settings ---------- */
+const SOUND_IDS = ['blue', 'brown', 'thock', 'typewriter', 'bubble', 'woodblock', 'marimba', 'chip', 'voice', 'mix'];
 const DEF = { mode: 'hover', sound: 'blue', pal: 'auto', cur: 'ring', curColor: 'auto', curSize: 30, trail: true,
-  ko: true, fx: true, echo: true, volume: 0.7, muted: false, voiceLang: 'en', count: 0, merit: 0 };
+  fx: true, echo: true, volume: 0.7, muted: false, count: 0, zen: 0 };
 let S = { ...DEF };
-try { Object.assign(S, JSON.parse(localStorage.getItem('ddalkkak') || '{}')); } catch (e) {}
+try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
+if (!SOUND_IDS.includes(S.sound)) S.sound = DEF.sound;
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('ddalkkak', JSON.stringify(S)); } catch (e) {} }, 300); }
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('clack', JSON.stringify(S)); } catch (e) {} }, 300); }
 
 /* ---------- layout ---------- */
-const KO = { KeyQ:'ㅂ',KeyW:'ㅈ',KeyE:'ㄷ',KeyR:'ㄱ',KeyT:'ㅅ',KeyY:'ㅛ',KeyU:'ㅕ',KeyI:'ㅑ',KeyO:'ㅐ',KeyP:'ㅔ',
-  KeyA:'ㅁ',KeyS:'ㄴ',KeyD:'ㅇ',KeyF:'ㄹ',KeyG:'ㅎ',KeyH:'ㅗ',KeyJ:'ㅓ',KeyK:'ㅏ',KeyL:'ㅣ',
-  KeyZ:'ㅋ',KeyX:'ㅌ',KeyC:'ㅊ',KeyV:'ㅍ',KeyB:'ㅠ',KeyN:'ㅜ',KeyM:'ㅡ' };
-const JAMO = { 'ㄱ':'기역','ㄴ':'니은','ㄷ':'디귿','ㄹ':'리을','ㅁ':'미음','ㅂ':'비읍','ㅅ':'시옷','ㅇ':'이응','ㅈ':'지읒','ㅊ':'치읓',
-  'ㅋ':'키읔','ㅌ':'티읕','ㅍ':'피읖','ㅎ':'히읗','ㅏ':'아','ㅐ':'애','ㅑ':'야','ㅓ':'어','ㅔ':'에','ㅕ':'여','ㅗ':'오','ㅛ':'요',
-  'ㅜ':'우','ㅠ':'유','ㅡ':'으','ㅣ':'이' };
-const NUM_KO = ['영','일','이','삼','사','오','육','칠','팔','구'];
 const NUM_EN = ['zero','one','two','three','four','five','six','seven','eight','nine'];
-// [code, label, width, class, shiftLegend, sayEn, sayKo]
-const K = (code, label, w = 1, cls = '', tp = '', en = '', ko = '') => ({ code, label, w, cls, tp, en, ko });
+// [code, label, width, class, shiftLegend, spoken]
+const K = (code, label, w = 1, cls = '', tp = '', en = '') => ({ code, label, w, cls, tp, en });
 const G = w => ({ gap: w });
 const ROWS = [
-  [K('Escape','esc',1,'acc small','', 'escape','이에스씨'), G(1),
-   ...[1,2,3,4].map(n => K('F'+n,'F'+n,1,'mod fk','', 'F '+n, '에프 '+NUM_KO[n])), G(.5),
-   ...[5,6,7,8].map(n => K('F'+n,'F'+n,1,'mod fk','', 'F '+n, '에프 '+NUM_KO[n])), G(.5),
-   ...[9,10,11,12].map(n => K('F'+n,'F'+n,1,'mod fk','', 'F '+n, '에프 '+(n===9?'구':'십'+(n>10?NUM_KO[n-10]:''))))],
-  [K('Backquote','`',1,'num','~','tilde','물결'),
-   ...'1234567890'.split('').map((d,i) => K('Digit'+d, d, 1, 'num', '!@#$%^&*()'[i], NUM_EN[+d], NUM_KO[+d])),
-   K('Minus','-',1,'num','_','minus','빼기'), K('Equal','=',1,'num','+','equals','같다'),
-   K('Backspace','backspace',2,'mod small','','backspace','백스페이스')],
-  [K('Tab','tab',1.5,'mod small','','tab','탭'),
+  [K('Escape','esc',1,'acc small','', 'escape'), G(1),
+   ...[1,2,3,4].map(n => K('F'+n,'F'+n,1,'mod fk','', 'F '+n)), G(.5),
+   ...[5,6,7,8].map(n => K('F'+n,'F'+n,1,'mod fk','', 'F '+n)), G(.5),
+   ...[9,10,11,12].map(n => K('F'+n,'F'+n,1,'mod fk','', 'F '+n))],
+  [K('Backquote','`',1,'num','~','tilde'),
+   ...'1234567890'.split('').map((d,i) => K('Digit'+d, d, 1, 'num', '!@#$%^&*()'[i], NUM_EN[+d])),
+   K('Minus','-',1,'num','_','minus'), K('Equal','=',1,'num','+','equals'),
+   K('Backspace','backspace',2,'mod small','','backspace')],
+  [K('Tab','tab',1.5,'mod small','','tab'),
    ...'QWERTYUIOP'.split('').map(c => K('Key'+c, c)),
-   K('BracketLeft','[',1,'num','{','bracket','대괄호'), K('BracketRight',']',1,'num','}','bracket','대괄호'),
-   K('Backslash','\\',1.5,'num','|','backslash','역슬래시')],
-  [K('CapsLock','caps lock',1.75,'mod small','','caps lock','캡스락'),
+   K('BracketLeft','[',1,'num','{','bracket'), K('BracketRight',']',1,'num','}','bracket'),
+   K('Backslash','\\',1.5,'num','|','backslash')],
+  [K('CapsLock','caps lock',1.75,'mod small','','caps lock'),
    ...'ASDFGHJKL'.split('').map(c => K('Key'+c, c)),
-   K('Semicolon',';',1,'num',':','semicolon','세미콜론'), K('Quote',"'",1,'num','"','quote','따옴표'),
-   K('Enter','enter',2.25,'acc small','','enter','엔터')],
-  [K('ShiftLeft','shift',2.25,'mod small','','shift','시프트'),
+   K('Semicolon',';',1,'num',':','semicolon'), K('Quote',"'",1,'num','"','quote'),
+   K('Enter','enter',2.25,'acc small','','enter')],
+  [K('ShiftLeft','shift',2.25,'mod small','','shift'),
    ...'ZXCVBNM'.split('').map(c => K('Key'+c, c)),
-   K('Comma',',',1,'num','<','comma','쉼표'), K('Period','.',1,'num','>','dot','마침표'), K('Slash','/',1,'num','?','slash','슬래시'),
-   K('ShiftRight','shift',2.75,'mod small','','shift','시프트')],
-  [K('ControlLeft','ctrl',1.25,'mod small','','control','컨트롤'), K('AltLeft','opt',1.25,'mod small','','option','옵션'),
-   K('MetaLeft','cmd',1.25,'mod small','','command','커맨드'), K('Space','',6.25,'','','space','스페이스'),
-   K('Lang1','한/영',1.25,'acc small','','han yeong','한영'), K('MetaRight','cmd',1.25,'mod small','','command','커맨드'),
-   K('Fn','fn',1.25,'mod small','','function','펑션'), K('ControlRight','ctrl',1.25,'mod small','','control','컨트롤')]
+   K('Comma',',',1,'num','<','comma'), K('Period','.',1,'num','>','dot'), K('Slash','/',1,'num','?','slash'),
+   K('ShiftRight','shift',2.75,'mod small','','shift')],
+  [K('ControlLeft','ctrl',1.25,'mod small','','control'), K('AltLeft','opt',1.25,'mod small','','option'),
+   K('MetaLeft','cmd',1.25,'mod small','','command'), K('Space','',6.25,'','','space'),
+   K('MetaRight','cmd',1.25,'mod small','','command'), K('AltRight','opt',1.25,'mod small','','option'),
+   K('Fn','fn',1.25,'mod small','','function'), K('ControlRight','ctrl',1.25,'mod small','','control')]
 ];
-const ALIAS = { AltRight: 'Lang1', HangulMode: 'Lang1', Lang2: 'Lang1', IntlBackslash: 'Backslash', ContextMenu: 'Fn' };
+const ALIAS = { IntlBackslash: 'Backslash', ContextMenu: 'Fn', OSLeft: 'MetaLeft', OSRight: 'MetaRight' };
 
 const board = document.getElementById('board');
 const keyEls = {};
@@ -495,12 +473,10 @@ ROWS.forEach((row, r) => {
     const el = document.createElement('div');
     el.className = 'key ' + k.cls;
     el.style.width = `calc(var(--u) * ${k.w})`;
-    const ko = KO[k.code] || '';
-    el.innerHTML = `<div class="cap">${k.tp ? `<span class="tp">${k.tp}</span>` : ''}<span class="lg">${k.label}</span>${ko ? `<span class="ko">${ko}</span>` : ''}</div>`;
+    el.innerHTML = `<div class="cap">${k.tp ? `<span class="tp">${k.tp}</span>` : ''}<span class="lg">${k.label}</span></div>`;
     rowEl.appendChild(el);
-    const info = { ...k, row: r, x: x + k.w / 2, big: k.w >= 1.75, seed: rnd(), kj: ko, holders: new Set(), downAt: 0, upT: 0, el };
+    const info = { ...k, row: r, x: x + k.w / 2, big: k.w >= 1.75, seed: rnd(), holders: new Set(), downAt: 0, upT: 0, el };
     if (!info.en) info.en = k.label;
-    if (!info.ko) info.ko = ko ? JAMO[ko] : k.label;
     keyInfo.set(el, info);
     keyEls[k.code] = info;
     x += k.w;
@@ -574,7 +550,7 @@ function noteOf(k, base = 48) {
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 
 const SOUNDS = {
-  blue: { name: '청축', desc: '찰칵찰칵 또렷한 클릭', fx: 'spark',
+  blue: { name: 'Clicky', desc: 'Crisp blue-switch click', fx: 'spark',
     down(k, t, j) {
       hiss(t, { f: 4300 * j, q: 1.4, d: 0.012, g: 2.3 });
       tone('square', 2500 * j, t, { d: 0.007, g: 0.07 });
@@ -582,21 +558,21 @@ const SOUNDS = {
       if (k.big) hiss(t + 0.016, { f: 3000, q: 2, d: 0.012, g: 0.5 });
     },
     up(k, t, j) { hiss(t, { f: 3300 * j, q: 1.4, d: 0.01, g: 0.55 }); } },
-  brown: { name: '갈축', desc: '톡톡 부드러운 걸림', fx: 'spark',
+  brown: { name: 'Tactile', desc: 'Soft brown-switch bump', fx: 'spark',
     down(k, t, j) {
       hiss(t, { f: 2100 * j, q: 1, d: 0.018, g: 1.6 });
       hiss(t + 0.002, { f: (k.big ? 450 : 720) * j, q: 1.8, d: 0.05, g: 2 });
       tone('sine', 320 * j, t, { f2: 180, ft: 0.04, d: 0.045, g: 0.4 });
     },
     up(k, t, j) { hiss(t, { f: 1900 * j, q: 1, d: 0.012, g: 0.35 }); } },
-  thock: { name: '도각도각', desc: '윤활한 리니어, 묵직한 톡', fx: 'spark',
+  thock: { name: 'Thock', desc: 'Deep, lubed linear', fx: 'spark',
     down(k, t, j) {
       hiss(t, { type: 'lowpass', f: (k.big ? 420 : 820) * j, q: 0.8, d: k.big ? 0.09 : 0.055, g: 1.4 });
       tone('sine', (k.big ? 120 : 200) * j, t, { f2: (k.big ? 70 : 115) * j, ft: 0.05, d: 0.07, g: 0.6 });
       hiss(t, { f: 2600, q: 1, d: 0.006, g: 0.2 });
     },
     up(k, t, j) { hiss(t, { type: 'lowpass', f: 1500 * j, q: 0.8, d: 0.025, g: 0.35 }); } },
-  typewriter: { name: '타자기', desc: '탁탁, 엔터엔 띵!', fx: 'spark',
+  typewriter: { name: 'Typewriter', desc: 'Clack clack, ding on Enter', fx: 'spark',
     down(k, t, j) {
       if (k.code === 'Space') {
         hiss(t, { type: 'lowpass', f: 900, d: 0.05, g: 1 }); tone('sine', 80, t, { d: 0.08, g: 0.5 }); return;
@@ -612,13 +588,13 @@ const SOUNDS = {
       }
     },
     up(k, t) { hiss(t, { f: 3800, q: 1, d: 0.008, g: 0.25 }); } },
-  bubble: { name: '뽁뽁이', desc: '터지는 에어캡', fx: 'bubble',
+  bubble: { name: 'Bubble Wrap', desc: 'Pop, pop, pop', fx: 'bubble',
     down(k, t, j) {
       const f0 = (k.big ? 150 : 260 + k.seed * 280) * j;
       tone('sine', f0, t, { f2: f0 * 2.7, ft: 0.06, a: 0.003, d: 0.085, g: 0.6, wet: 0.15 });
       hiss(t, { f: 1800, q: 3, d: 0.006, g: 0.4 });
     } },
-  moktak: { name: '목탁', desc: '똑, 공덕이 쌓여요', fx: 'merit',
+  woodblock: { name: 'Wood Block', desc: 'Tok. Every tap earns +1 zen', fx: 'zen',
     down(k, t, j) {
       const f = 560 * (1 + (k.seed - 0.5) * 0.08) * j;
       tone('sine', f, t, { a: 0.001, d: 0.24, g: 0.75, wet: 0.3 });
@@ -626,7 +602,7 @@ const SOUNDS = {
       tone('triangle', f * 1.5, t, { a: 0.001, d: 0.03, g: 0.1 });
       hiss(t, { f: f * 2.2, q: 6, d: 0.02, g: 0.7 });
     } },
-  marimba: { name: '마림바', desc: '어떻게 쳐도 화음이 돼요', fx: 'ring',
+  marimba: { name: 'Marimba', desc: 'Every key is in tune', fx: 'ring',
     down(k, t, j) {
       const f = mtof(noteOf(k)) * (0.997 + j * 0.003);
       tone('sine', f, t, { a: 0.002, d: Math.max(0.25, 0.9 - f / 3500), g: 0.5, wet: 0.3 });
@@ -634,7 +610,7 @@ const SOUNDS = {
       tone('sine', f * 9.9, t, { a: 0.001, d: 0.015, g: 0.04 });
       hiss(t, { f: f * 3, q: 4, d: 0.008, g: 0.12 });
     } },
-  chip: { name: '8비트', desc: '오락실 뿅뿅', fx: 'pixel',
+  chip: { name: '8-Bit', desc: 'Arcade blips', fx: 'pixel',
     down(k, t) {
       if (k.code === 'Space') { tone('triangle', 180, t, { f2: 45, ft: 0.12, d: 0.15, g: 0.7 }); hiss(t, { type: 'highpass', f: 6000, d: 0.03, g: 0.25 }); return; }
       const f = mtof(noteOf(k, 60));
@@ -642,16 +618,16 @@ const SOUNDS = {
       tone('square', f * 1.5, t + 0.035, { d: 0.05, g: 0.2 });
       tone('square', f * 2, t + 0.07, { d: 0.08, g: 0.17 });
     } },
-  voice: { name: '목소리', desc: 'A, B, C 소리 내어 읽기', fx: 'ring',
+  voice: { name: 'Voice', desc: 'Says each key: A, B, C', fx: 'ring',
     down(k, t, j) {
       hiss(t, { type: 'lowpass', f: 900 * j, d: 0.035, g: 0.6 });
       speak(k);
     } },
-  mix: { name: '키마다 랜덤', desc: '키마다 다른 소리', fx: 'mix',
+  mix: { name: 'Shuffle', desc: 'A different sound per key', fx: 'mix',
     down(k, t, j) { SOUNDS[mixOf(k)].down(k, t, j); },
     up(k, t, j) { const s = SOUNDS[mixOf(k)]; if (s.up) s.up(k, t, j); } }
 };
-const MIX = ['blue', 'brown', 'thock', 'typewriter', 'bubble', 'moktak', 'marimba', 'chip'];
+const MIX = ['blue', 'brown', 'thock', 'typewriter', 'bubble', 'woodblock', 'marimba', 'chip'];
 const mixOf = k => MIX[Math.floor(k.seed * 9973) % MIX.length];
 
 function playKey(k, phase) {
@@ -671,16 +647,15 @@ let lastSpeak = 0;
 function speak(k) {
   if (!synth || S.muted) return;
   const now = performance.now();
-  const lang = S.voiceLang;
-  const text = lang === 'ko' ? k.ko : (k.en.length === 1 ? k.en.toUpperCase() : k.en);
+  const text = k.en.length === 1 ? k.en.toUpperCase() : k.en;
   if (!text) return;
   if (now - lastSpeak < 40) return;
   lastSpeak = now;
   try {
     synth.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
-    const v = voices.find(v => v.lang && v.lang.replace('_', '-').toLowerCase().startsWith(lang));
+    u.lang = 'en-US';
+    const v = voices.find(v => v.lang && v.lang.replace('_', '-').toLowerCase() === 'en-us') || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
     if (v) u.voice = v;
     u.rate = 1.3; u.pitch = 1.1; u.volume = Math.min(1, S.volume * 1.2);
     synth.speak(u);
@@ -702,7 +677,7 @@ function press(k, src) {
   k.downAt = performance.now();
   playKey(k, 'down');
   S.count++;
-  if (S.sound === 'moktak' || (S.sound === 'mix' && mixOf(k) === 'moktak')) S.merit++;
+  if (S.sound === 'woodblock' || (S.sound === 'mix' && mixOf(k) === 'woodblock')) S.zen++;
   renderCount();
   save();
   const r = k.el.getBoundingClientRect();
@@ -722,13 +697,13 @@ function releaseAll(prefix) {
   if (!prefix || prefix === 'p') active.clear();
 }
 function renderCount() {
-  const moktak = S.sound === 'moktak';
-  countEl.textContent = (moktak ? S.merit : S.count).toLocaleString('ko-KR');
-  countLbl.textContent = moktak ? '쌓은 공덕' : '누적 딸깍';
+  const zen = S.sound === 'woodblock';
+  countEl.textContent = (zen ? S.zen : S.count).toLocaleString('en-US');
+  countLbl.textContent = zen ? 'zen earned' : 'clacks';
 }
 let echoAnim;
 function showEcho(k) {
-  echo.textContent = k.kj && S.voiceLang === 'ko' && S.sound === 'voice' ? k.kj : (k.code === 'Space' ? '␣' : k.label.length > 3 ? k.label.split(' ')[0] : k.label);
+  echo.textContent = k.code === 'Space' ? '␣' : k.label.length > 3 ? k.label.split(' ')[0] : k.label;
   try {
     if (echoAnim) echoAnim.cancel();
     echoAnim = echo.animate([{ transform: 'scale(.86)', opacity: 1 }, { transform: 'scale(1)', opacity: 1, offset: .3 }, { transform: 'scale(1.05)', opacity: 0 }],
@@ -815,10 +790,10 @@ function readColors() { glowC = cssVar('--glow') || glowC; capC = cssVar('--case
 function burst(x, y, k) {
   const kind = SOUNDS[S.sound].fx === 'mix' ? SOUNDS[mixOf(k)].fx : SOUNDS[S.sound].fx;
   const now = performance.now();
-  if (kind === 'merit') {
-    if (now - lastMerit < 140) return;
-    lastMerit = now;
-    parts.push({ k: 'text', x, y: y - U * 0.3, vx: 0, vy: -0.05, t0: now, life: 900, s: '공덕 +1' });
+  if (kind === 'zen') {
+    if (now - lastZen < 140) return;
+    lastZen = now;
+    parts.push({ k: 'text', x, y: y - U * 0.3, vx: 0, vy: -0.05, t0: now, life: 900, s: '+1 zen' });
   } else if (kind === 'ring') {
     parts.push({ k: 'ring', x, y, t0: now, life: 700, r: U * 0.5 });
   } else if (kind === 'bubble') {
@@ -833,7 +808,7 @@ function burst(x, y, k) {
   if (parts.length > 400) parts.splice(0, parts.length - 400);
   loop();
 }
-let lastFrame = 0, lastMerit = 0;
+let lastFrame = 0, lastZen = 0;
 function frame(now) {
   raf = 0;
   const dt = Math.min(40, now - (lastFrame || now)); lastFrame = now;
@@ -867,7 +842,7 @@ function frame(now) {
       p.x += Math.sin((now - p.t0) / 120) * .3;
       g2.strokeStyle = glowC; g2.lineWidth = 1.5; g2.beginPath(); g2.arc(p.x, p.y, p.r * (1 + age * .6), 0, 7); g2.stroke();
     } else if (p.k === 'text') {
-      g2.font = `600 ${Math.max(12, U * .22)}px "IBM Plex Sans KR", sans-serif`; g2.textAlign = 'center'; g2.lineJoin = 'round';
+      g2.font = `600 ${Math.max(12, U * .22)}px "Figtree", sans-serif`; g2.textAlign = 'center'; g2.lineJoin = 'round';
       g2.globalAlpha = Math.min(1, a * 1.6);
       g2.strokeStyle = capC; g2.lineWidth = 4; g2.strokeText(p.s, p.x, p.y);
       g2.fillStyle = glowC; g2.fillText(p.s, p.x, p.y);
@@ -880,15 +855,15 @@ function loop() { if (!raf) raf = requestAnimationFrame(frame); }
 
 /* ---------- custom cursor ---------- */
 const CURSORS = {
-  system: { name: '기본', svg: '<path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>' },
-  ring:   { name: '링', svg: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>' },
-  dot:    { name: '구슬', svg: '<circle cx="12" cy="12" r="7" fill="currentColor"/><circle cx="9.6" cy="9.4" r="2" fill="#fff" opacity=".55"/>' },
-  arrow:  { name: '화살표', tl: true, svg: '<path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z" fill="currentColor" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>' },
-  star:   { name: '별', svg: '<path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>' },
-  heart:  { name: '하트', svg: '<path d="M12 20.5s-7.8-4.7-7.8-10.3A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.8 2.6c0 5.6-7.8 10.3-7.8 10.3z" fill="currentColor" stroke="#fff" stroke-width="1.2"/>' },
-  paw:    { name: '발바닥', svg: '<g fill="currentColor" stroke="#fff" stroke-width="1"><ellipse cx="12" cy="15.6" rx="5.2" ry="4.4"/><ellipse cx="5.6" cy="10.4" rx="2.1" ry="2.6"/><ellipse cx="9.4" cy="6.4" rx="2.1" ry="2.7"/><ellipse cx="14.6" cy="6.4" rx="2.1" ry="2.7"/><ellipse cx="18.4" cy="10.4" rx="2.1" ry="2.6"/></g>' },
-  sparkle:{ name: '반짝', svg: '<path d="M12 1.5c.8 5.4 3.6 8.5 10.5 10.5-6.9 2-9.7 5.1-10.5 10.5C11.2 17.1 8.4 14 1.5 12 8.4 10 11.2 6.9 12 1.5z" fill="currentColor" stroke="#fff" stroke-width="1"/>' },
-  cross:  { name: '조준', svg: '<g stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/></g><circle cx="12" cy="12" r="1.6" fill="currentColor"/>' }
+  system: { name: 'Default', svg: '<path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>' },
+  ring:   { name: 'Ring', svg: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>' },
+  dot:    { name: 'Marble', svg: '<circle cx="12" cy="12" r="7" fill="currentColor"/><circle cx="9.6" cy="9.4" r="2" fill="#fff" opacity=".55"/>' },
+  arrow:  { name: 'Arrow', tl: true, svg: '<path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z" fill="currentColor" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>' },
+  star:   { name: 'Star', svg: '<path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>' },
+  heart:  { name: 'Heart', svg: '<path d="M12 20.5s-7.8-4.7-7.8-10.3A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.8 2.6c0 5.6-7.8 10.3-7.8 10.3z" fill="currentColor" stroke="#fff" stroke-width="1.2"/>' },
+  paw:    { name: 'Paw', svg: '<g fill="currentColor" stroke="#fff" stroke-width="1"><ellipse cx="12" cy="15.6" rx="5.2" ry="4.4"/><ellipse cx="5.6" cy="10.4" rx="2.1" ry="2.6"/><ellipse cx="9.4" cy="6.4" rx="2.1" ry="2.7"/><ellipse cx="14.6" cy="6.4" rx="2.1" ry="2.7"/><ellipse cx="18.4" cy="10.4" rx="2.1" ry="2.6"/></g>' },
+  sparkle:{ name: 'Sparkle', svg: '<path d="M12 1.5c.8 5.4 3.6 8.5 10.5 10.5-6.9 2-9.7 5.1-10.5 10.5C11.2 17.1 8.4 14 1.5 12 8.4 10 11.2 6.9 12 1.5z" fill="currentColor" stroke="#fff" stroke-width="1"/>' },
+  cross:  { name: 'Crosshair', svg: '<g stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/></g><circle cx="12" cy="12" r="1.6" fill="currentColor"/>' }
 };
 const COLORS = ['auto', '#ff5a5f', '#ff9f1c', '#ffd23f', '#3ccf91', '#3fb6ff', '#7b61ff', '#ff6fb5', '#1c1c1c', '#ffffff'];
 const cursorEl = document.getElementById('cursor');
@@ -916,13 +891,13 @@ function pulseCursor() { cursorEl.classList.add('press'); clearTimeout(pulseT); 
 
 /* ---------- palettes ---------- */
 const PALS = {
-  auto:     { name: '자동', desc: '기기 테마를 따라가요', dots: ['#fbfcfe', '#5b6cff', '#262f4d'] },
-  cloud:    { name: '구름', desc: '하얀 키캡, 페리윙클', dots: ['#fbfcfe', '#dde3ec', '#5b6cff'] },
-  midnight: { name: '미드나잇', desc: '남색에 청록 불빛', dots: ['#262f4d', '#1d2540', '#3fd8e8'] },
-  mint:     { name: '민트초코', desc: '민트 키캡, 초코 하우징', dots: ['#e3f6ef', '#7a5547', '#5fcfae'] },
-  retro:    { name: '레트로', desc: '90년대 베이지 PC', dots: ['#ebe5d6', '#9b978b', '#e0612f'] },
-  sakura:   { name: '벚꽃', desc: '연분홍 봄 키캡', dots: ['#fff5f8', '#f6cad8', '#e5588a'] },
-  blackout: { name: '블랙아웃', desc: '올 블랙, 하얀 포인트', dots: ['#1e1e1e', '#2b2b2b', '#f1f1ec'] }
+  auto:     { name: 'Auto', desc: 'Follows your device', dots: ['#fbfcfe', '#5b6cff', '#262f4d'] },
+  cloud:    { name: 'Cloud', desc: 'White caps, periwinkle', dots: ['#fbfcfe', '#dde3ec', '#5b6cff'] },
+  midnight: { name: 'Midnight', desc: 'Navy with cyan glow', dots: ['#262f4d', '#1d2540', '#3fd8e8'] },
+  mint:     { name: 'Mint Chip', desc: 'Mint caps, cocoa case', dots: ['#e3f6ef', '#7a5547', '#5fcfae'] },
+  retro:    { name: 'Retro', desc: "Beige '90s PC", dots: ['#ebe5d6', '#9b978b', '#e0612f'] },
+  sakura:   { name: 'Cherry Blossom', desc: 'Soft spring pinks', dots: ['#fff5f8', '#f6cad8', '#e5588a'] },
+  blackout: { name: 'Blackout', desc: 'All black, white accents', dots: ['#1e1e1e', '#2b2b2b', '#f1f1ec'] }
 };
 const darkMQ = matchMedia('(prefers-color-scheme: dark)');
 function applyPal() {
@@ -952,20 +927,17 @@ function syncOptions(host, cur) { host.querySelectorAll('[data-id]').forEach(b =
 
 function renderAll() {
   pressedAttr($('modeHover'), S.mode === 'hover'); pressedAttr($('modeClick'), S.mode === 'click');
-  $('hint').textContent = S.mode === 'hover' ? '키보드 위로 커서를 스쳐 보세요' : '키를 클릭하거나 터치해 보세요';
+  $('hint').textContent = S.mode === 'hover' ? 'Glide your cursor across the keys' : 'Click or tap a key to play it';
   $('soundName').textContent = SOUNDS[S.sound].name;
   syncOptions($('soundGrid'), S.sound); syncOptions($('palGrid'), S.pal); syncOptions($('curGrid'), S.cur);
-  $('voiceOpts').hidden = S.sound !== 'voice';
-  $('voiceLang').querySelectorAll('[data-l]').forEach(b => pressedAttr(b, b.dataset.l === S.voiceLang));
-  pressedAttr($('tKo'), S.ko); pressedAttr($('tFx'), S.fx); pressedAttr($('tEcho'), S.echo); pressedAttr($('tTrail'), S.trail);
-  document.body.classList.toggle('no-ko', !S.ko);
+  pressedAttr($('tFx'), S.fx); pressedAttr($('tEcho'), S.echo); pressedAttr($('tTrail'), S.trail);
   $('curColors').querySelectorAll('[data-c]').forEach(b => pressedAttr(b, b.dataset.c === S.curColor));
   const picked = !COLORS.includes(S.curColor);
   pressedAttr($('curPick'), picked);
   $('mute').innerHTML = S.muted ? ICON_OFF : ICON_ON;
-  $('mute').setAttribute('aria-label', S.muted ? '소리 켜기' : '소리 끄기');
+  $('mute').setAttribute('aria-label', S.muted ? 'Unmute' : 'Mute');
   $('volume').value = S.volume;
-  if (!echo.textContent) echo.textContent = S.sound === 'moktak' ? '똑' : 'A';
+  if (!echo.textContent) echo.textContent = 'A';
   renderCount();
 }
 function set(patch) {
@@ -977,31 +949,26 @@ function set(patch) {
   renderAll();
 }
 
-buildOptions($('soundGrid'), SOUNDS, S.sound, id => { set({ sound: id }); if (id === 'voice' && !synth) toast('이 브라우저는 목소리 읽기를 지원하지 않아요'); demo(); },
+buildOptions($('soundGrid'), SOUNDS, S.sound, id => { set({ sound: id }); if (id === 'voice' && !synth) toast("This browser can't read keys out loud"); demo(); },
   (id, s) => `<b>${s.name}</b><span>${s.desc}</span>`);
 buildOptions($('palGrid'), PALS, S.pal, id => set({ pal: id }),
   (id, p) => `<span class="pal"><span class="dots">${p.dots.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span>${p.desc}</span></span>`);
 buildOptions($('curGrid'), CURSORS, S.cur, id => set({ cur: id }),
   (id, c) => `<svg viewBox="0 0 24 24">${c.svg.replace(/stroke="#fff"/g, 'stroke="none"')}</svg><span>${c.name}</span>`);
 $('curGrid').querySelectorAll('.opt').forEach(b => b.classList.add('cur-opt'));
-[['en', '영어 (A, B, C)'], ['ko', '한국어 (기역, 니은)']].forEach(([l, t]) => {
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.l = l; b.textContent = t;
-  b.addEventListener('click', () => set({ voiceLang: l })); $('voiceLang').appendChild(b);
-});
 COLORS.forEach(c => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'sw' + (c === 'auto' ? ' auto' : ''); b.dataset.c = c;
-  b.setAttribute('aria-label', c === 'auto' ? '키보드에 맞춤' : c); b.title = c === 'auto' ? '키보드에 맞춤' : c;
+  b.setAttribute('aria-label', c === 'auto' ? 'Match keyboard' : c); b.title = c === 'auto' ? 'Match keyboard' : c;
   if (c !== 'auto') b.style.background = c;
   b.addEventListener('click', () => set({ curColor: c })); $('curColors').appendChild(b);
 });
-const pick = document.createElement('label'); pick.className = 'sw pick'; pick.id = 'curPick'; pick.title = '직접 고르기';
-pick.innerHTML = '<input id="curPickInput" type="color" aria-label="커서 색 직접 고르기" value="#ff7a59">';
+const pick = document.createElement('label'); pick.className = 'sw pick'; pick.id = 'curPick'; pick.title = 'Pick any color';
+pick.innerHTML = '<input id="curPickInput" type="color" aria-label="Pick any cursor color" value="#ff7a59">';
 pick.querySelector('input').addEventListener('input', e => set({ curColor: e.target.value }));
 $('curColors').appendChild(pick);
 
 $('modeHover').addEventListener('click', () => set({ mode: 'hover' }));
 $('modeClick').addEventListener('click', () => set({ mode: 'click' }));
-$('tKo').addEventListener('click', () => set({ ko: !S.ko }));
 $('tFx').addEventListener('click', () => set({ fx: !S.fx }));
 $('tEcho').addEventListener('click', () => set({ echo: !S.echo }));
 $('tTrail').addEventListener('click', () => set({ trail: !S.trail }));
@@ -1043,7 +1010,7 @@ $('intro').addEventListener('pointerdown', e => { if (e.target.id !== 'go') star
 addEventListener('resize', fit);
 applyPal(); applyCursor(); renderAll(); fit();
 readColors();
-window.__ddalkkak = { S, SOUNDS, keyEls, initAudio, A }; // handy for debugging in the console
+window.__clack = { S, SOUNDS, keyEls, initAudio, A }; // handy for debugging in the console
 })();
 </script>
 <!--artifact:end-->
