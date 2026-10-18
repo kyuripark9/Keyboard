@@ -22,7 +22,7 @@
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   color-scheme: light;
 }
-body[data-scene="pixel"]  { --bg: #f4f5f7; --ink: #1b2a6b; --ink-soft: #5a6890; --line: rgba(27,42,107,.14); --panel: rgba(255,255,255,.84); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="goo"]   { --bg: #ffffff; --ink: #111111; --ink-soft: #5a5a5a; --line: rgba(17,17,17,.14); --panel: rgba(255,255,255,.88); --acc: #111111; --cursor: #111111; color-scheme: light; }
 body[data-scene="dots"]   { --bg: #2c62fb; --ink: #ffffff; --ink-soft: rgba(255,255,255,.78); --line: rgba(255,255,255,.26); --panel: rgba(28,72,214,.8); --acc: #ffffff; --cursor: #ffffff; color-scheme: dark; }
 body[data-scene="wrap"]   { --bg: #e6e6e3; --ink: #1c1c1c; --ink-soft: #616d78; --line: rgba(28,28,28,.14); --panel: rgba(244,244,241,.88); --acc: #2c62fb; --cursor: #1c1c1c; color-scheme: light; }
 body[data-scene="blob"]   { --bg: #f2f3f6; --ink: #1b2a6b; --ink-soft: #5a6890; --line: rgba(27,42,107,.13); --panel: rgba(255,255,255,.82); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
@@ -44,6 +44,10 @@ body {
 }
 body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 #scene { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display: block; }
+/* Wax Ball draws black outlines here; blur + contrast melts every near-touching line into gooey webbing */
+#goo { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display: none; background: #fff; filter: blur(4px) contrast(30); }
+body[data-scene="goo"] #goo { display: block; }
+body[data-scene="goo"] .top { text-shadow: 0 0 3px #fff, 0 0 6px #fff, 0 0 10px #fff; }
 
 .app {
   position: relative; z-index: 1; height: 100%;
@@ -182,6 +186,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 </style>
 </head>
 <body>
+<canvas id="goo" aria-hidden="true"></canvas>
 <canvas id="scene" aria-label="Interactive graphic. Move your cursor to play"></canvas>
 <div class="app" id="app">
   <header class="top">
@@ -340,7 +345,7 @@ const rand = (a, b) => a + Math.random() * (b - a);
 
 /* Each sound: scene = the picture it draws, desc = one line for the picker. */
 const SOUNDS = {
-  wax: { name: 'Wax Ball', desc: 'Crack a pixel shell, find the goo', scene: 'pixel',
+  wax: { name: 'Wax Ball', desc: 'Crack the cells, stretch the goo', scene: 'goo',
     down(k, t, j) {
       hiss(t, { f: 1900 * j, q: 2.5, d: 0.014, g: 1.6 });
       hiss(t, { type: 'highpass', f: 5200, d: 0.006, g: 1.4 });
@@ -461,6 +466,7 @@ const scn = $('scene'), sc = scn.getContext('2d');
 const stage = $('stage');
 let SW = 0, SH = 0, SDPR = 1, scene = null, sceneId = '', CELL = 40, ZT = 0, ZB = 0;
 const deco = document.createElement('canvas'), dc = deco.getContext('2d');
+const gv = $('goo'), gc = gv.getContext('2d');
 const cells = new Map();
 const ALNUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 function cellAt(x, y) {
@@ -626,74 +632,86 @@ function wrapText(ctx, txt, x, y, w, lh) {
 
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
-  /* 01 Wax Ball: a pixel-mosaic ball. Steps crack the shell, pixels drop away, soft goo glows through, then the shell grows back. */
-  pixel: {
+  /* 01 Wax Ball: overlapping cells and shells, outlined in black. Lines that nearly touch melt into goo.
+     A step cracks a big cell into smaller ones or pops a small one, and the cursor drags a ring through the foam. */
+  goo: {
     init() {
-      const c = this.c = Math.max(10, Math.round(Math.min(SW, ZB - ZT) / 34));
-      const n = vnoise(3), cx = SW * .5, cy = (ZT + ZB) / 2, R = Math.min(SW * .42, (ZB - ZT) * .46);
-      this.cells = []; this.bits = []; this.goo = []; this.cracks = []; this.box = null;
-      const SH4 = [C.pale, C.peri, C.mid, C.cobalt];
-      for (let j = 0; j * c < SH; j++) for (let i = 0; i * c < SW; i++) {
-        const x = i * c + c / 2, y = j * c + c / 2, d = Math.hypot((x - cx) / 1.12, y - cy) / R, w = n(i * .16, j * .16);
-        if (d < .78 + w * .3) this.cells.push({ x, y, col: SH4[clamp(Math.floor(n(i * .35 + 9, j * .35) * 3.2 + (1 - d) * 1.6), 0, 3)], alive: true, back: 0, born: 0 });
-      }
-      paper(dc, '#f4f5f7', .05);
-      const B = 'rgba(44,98,251,.7)';
-      guideBox(dc, cx - R * 1.2, cy - R * 1.05, R * 2.4, R * 2.1, B);
-      guideBox(dc, SW * .62, ZT + (ZB - ZT) * .08, SW * .3, (ZB - ZT) * .22, B);
-      guideBox(dc, SW * .05, ZT + (ZB - ZT) * .64, SW * .26, (ZB - ZT) * .26, B);
-      dc.strokeStyle = 'rgba(44,98,251,.45)'; dc.beginPath(); dc.arc(cx, cy, R * 1.02, 0, 7); dc.stroke();
-      dc.beginPath(); dc.moveTo(SW * .62, ZT + (ZB - ZT) * .3); dc.lineTo(cx + R * .3, cy - R * .4); dc.lineTo(SW * .31, ZT + (ZB - ZT) * .64); dc.stroke();
-      dc.fillStyle = C.cobalt; dc.font = mono(11);
-      dc.fillText('People also ask', SW * .06, ZT + (ZB - ZT) * .68);
-      ['Is it okay to just crack it?', 'What is inside a wax ball?', 'How long does the shell take to grow back?'].forEach((t, i) => dc.fillText('— ' + t, SW * .06, ZT + (ZB - ZT) * .68 + 22 + i * 20));
-      dc.fillText('shell: paraffin wax', SW * .63, ZT + (ZB - ZT) * .12); dc.fillText('core: soft putty', SW * .63, ZT + (ZB - ZT) * .12 + 18);
-      const fs = Math.min(SH * .2, SW * .14);
-      blurText(dc, 'CRACK', SW * .02, SH - fs * .05, fs, 'rgba(44,98,251,.38)', 16, fs * .95);
+      const m = this.m = Math.min(SW, ZB - ZT), GD = this.gd = Math.min(1.5, SDPR);
+      gv.width = SW * GD; gv.height = SH * GD;
+      this.sh = []; this.cur = { x: SW / 2, y: (ZT + ZB) / 2, tx: SW / 2, ty: (ZT + ZB) / 2, kick: 0 };
+      for (let i = 0, n = Math.round(30 * SW / m * .62); i < n; i++) this.add('c', rand(-.04, 1.04) * SW, rand(ZT - m * .05, ZB + m * .05), m * (.07 + Math.pow(Math.random(), 1.4) * .22), 0);
+      for (let i = 0; i < 3; i++) this.add('s', rand(.1, .9) * SW, rand(ZT, ZB), m * rand(.09, .14), 0);
+      for (let i = 0; i < 2; i++) this.add('t', rand(.1, .9) * SW, rand(ZT, ZB), m * rand(.1, .15), 0);
+      this.fs = clamp(Math.round(m * .08), 26, 80);
     },
-    hit(x, y, k, now) {
-      const c = this.c, r = c * 1.9;
-      let n = 0;
-      for (const p of this.cells) {
-        if (!p.alive || Math.hypot(p.x - x, p.y - y) > r) continue;
-        p.alive = false; p.back = now + 2600 + Math.random() * 3200; n++;
-        if (this.bits.length < 900) this.bits.push({ x: p.x, y: p.y, vx: (p.x - x) * .004 + (Math.random() - .5) * .12, vy: -Math.random() * .22, col: p.col, rot: 0, vr: (Math.random() - .5) * .02, s: c - 2 });
+    add(t, x, y, r, now) { this.sh.push({ t, x, y, r, rot: Math.random() * 6.283, ox: 0, oy: 0, vx: 0, vy: 0, t0: now, dying: 0 }); },
+    shove(x, y, f) {
+      for (const s2 of this.sh) {
+        const dx = s2.x + s2.ox - x, dy = s2.y + s2.oy - y, d = Math.hypot(dx, dy) || 1, edge = Math.abs(d - s2.r);
+        if (edge > this.m * .14) continue;
+        const w = (1 - edge / (this.m * .14)) * f;
+        s2.vx += dx / d * w; s2.vy += dy / d * w;
       }
-      if (!n) return;
-      this.goo.push({ x, y, r: r * 1.1, t0: now });
-      const lines = [];
-      for (let i = 0, rays = 3 + Math.floor(Math.random() * 3); i < rays; i++) { let a = Math.random() * 7, px = x, py = y; const l = [[px, py]]; for (let s2 = 0; s2 < 4; s2++) { a += (Math.random() - .5) * 1.2; px += Math.cos(a) * c * .9; py += Math.sin(a) * c * .9; l.push([px, py]); } lines.push(l); }
-      this.cracks.push({ lines, t0: now });
-      const b = { x: x - r * 1.3, y: y - r * 1.3, w: r * 2.6, h: r * 2.6 };
-      this.box = this.box ? { x: lerp(this.box.x, b.x, .5), y: lerp(this.box.y, b.y, .5), w: lerp(this.box.w, b.w, .5), h: lerp(this.box.h, b.h, .5), t: now } : { ...b, t: now };
+    },
+    move(x, y, dx, dy) { this.cur.tx = x; this.cur.ty = y; this.shove(x, y, Math.min(1.2, Math.hypot(dx, dy) * .03)); },
+    hit(x, y, k, now) {
+      this.cur.tx = x; this.cur.ty = y; this.cur.kick = now;
+      let best = null;
+      for (const s2 of this.sh) if (!s2.dying && Math.hypot(s2.x + s2.ox - x, s2.y + s2.oy - y) < s2.r * (s2.t === 'c' ? 1 : .8) && (!best || s2.r < best.r)) best = s2;
+      if (best) {
+        best.dying = now;
+        if (best.r > this.m * .09) { // crack into cells that just touch, so the goo forms at their seams
+          const n = 2 + (best.r > this.m * .16 ? 1 : 0) + (Math.random() < .4 ? 1 : 0), a0 = Math.random() * 6.283, cr = best.r * (n === 2 ? .52 : n === 3 ? .47 : .43);
+          for (let i = 0; i < n; i++) {
+            const a = a0 + i / n * 6.283, dd = best.r - cr * 1.02;
+            this.add(Math.random() < .1 ? 's' : 'c', best.x + best.ox + Math.cos(a) * dd, best.y + best.oy + Math.sin(a) * dd, cr * rand(.95, 1.05), now);
+          }
+        }
+      }
+      this.shove(x, y, 2.5);
+      const alive = this.sh.filter(s2 => !s2.dying);
+      if (alive.length < 20) this.add(Math.random() < .2 ? 't' : 'c', rand(0, 1) * SW, rand(ZT, ZB), this.m * rand(.12, .24), now);
+      if (alive.length > 90) alive.sort((p, q) => p.r - q.r)[0].dying = now;
+    },
+    path(g, s2, r) {
+      if (s2.t === 'c') { g.moveTo(r, 0); g.arc(0, 0, r, 0, 6.283); return; }
+      const n = s2.t === 's' ? 4 : 3, pts = [];
+      for (let i = 0; i < n; i++) { const a = s2.rot + i / n * 6.283; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
+      const rr = r * .12, mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], m0 = mid(pts[n - 1], pts[0]);
+      g.moveTo(m0[0], m0[1]);
+      for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n], m1 = mid(p, q); g.arcTo(p[0], p[1], m1[0], m1[1], rr); }
+      g.closePath();
     },
     draw(now, dt) {
-      sc.drawImage(deco, 0, 0, SW, SH);
-      this.goo = this.goo.filter(g => now - g.t0 < 5000);
-      for (const g of this.goo) {
-        const a = 1 - (now - g.t0) / 5000, gr = sc.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r);
-        gr.addColorStop(0, `rgba(44,98,251,${.32 * a})`); gr.addColorStop(1, 'rgba(44,98,251,0)');
-        sc.fillStyle = gr; sc.beginPath(); sc.arc(g.x, g.y, g.r, 0, 7); sc.fill();
+      const g = gc, k = .0022, f = Math.pow(.9, dt / 16);
+      g.setTransform(this.gd, 0, 0, this.gd, 0, 0);
+      g.fillStyle = '#fff'; g.fillRect(0, 0, SW, SH);
+      g.strokeStyle = '#000'; g.lineWidth = 6.5; g.lineJoin = 'round';
+      g.beginPath();
+      this.sh = this.sh.filter(s2 => !s2.dying || now - s2.dying < 240);
+      for (const s2 of this.sh) {
+        s2.vx += -s2.ox * k * dt; s2.vy += -s2.oy * k * dt; s2.vx *= f; s2.vy *= f; s2.ox += s2.vx * dt / 16; s2.oy += s2.vy * dt / 16;
+        let sc2 = 1;
+        if (s2.dying) sc2 = 1 - (now - s2.dying) / 240;
+        else if (s2.t0) { const p = Math.min(1, (now - s2.t0) / 520); sc2 = 1 + 2.2 * Math.pow(p - 1, 3) + 1.2 * Math.pow(p - 1, 2); }
+        if (sc2 <= .02) continue;
+        g.save(); g.translate(s2.x + s2.ox, s2.y + s2.oy); this.path(g, s2, s2.r * sc2); g.restore();
       }
-      const c = this.c;
-      for (const p of this.cells) {
-        if (!p.alive && now > p.back) { p.alive = true; p.born = now; }
-        if (!p.alive) continue;
-        const s2 = (c - 2) * Math.min(1, p.born ? (now - p.born) / 260 : 1);
-        sc.fillStyle = p.col; sc.fillRect(p.x - s2 / 2, p.y - s2 / 2, s2, s2);
-      }
-      sc.strokeStyle = '#173fb8'; sc.lineWidth = 1.2;
-      this.cracks = this.cracks.filter(cr => now - cr.t0 < 700);
-      for (const cr of this.cracks) { sc.globalAlpha = 1 - (now - cr.t0) / 700; for (const l of cr.lines) { sc.beginPath(); l.forEach(([px, py], i) => i ? sc.lineTo(px, py) : sc.moveTo(px, py)); sc.stroke(); } }
-      sc.globalAlpha = 1;
-      for (const b of this.bits) { b.vy += .0012 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.vr * dt; sc.save(); sc.translate(b.x, b.y); sc.rotate(b.rot); sc.fillStyle = b.col; sc.fillRect(-b.s / 2, -b.s / 2, b.s, b.s); sc.restore(); }
-      this.bits = this.bits.filter(b => b.y < SH + 30);
-      if (this.box) {
-        const a = 1 - clamp((now - this.box.t - 900) / 500, 0, 1);
-        if (a <= 0) this.box = null;
-        else { sc.globalAlpha = a; guideBox(sc, this.box.x, this.box.y, this.box.w, this.box.h, C.cobalt); sc.fillStyle = C.cobalt; sc.font = mono(10);
-          sc.fillText(`W ${Math.round(this.box.w)}  H ${Math.round(this.box.h)}`, this.box.x, this.box.y + this.box.h + 16); sc.globalAlpha = 1; }
-      }
+      g.stroke();
+      const c = this.cur; c.x = lerp(c.x, c.tx, .3); c.y = lerp(c.y, c.ty, .3);
+      const bump = Math.max(0, 1 - (now - c.kick) / 260);
+      g.beginPath(); g.arc(c.x, c.y, this.m * (.045 + bump * .02), 0, 6.283); g.stroke();
+      // crisp type on the top canvas, like a gig poster laid over the foam
+      sc.clearRect(0, 0, SW, SH);
+      const fs = this.fs, lh = fs * .95, d = new Date(), pad = (n2) => String(n2).padStart(2, '0');
+      sc.font = `500 ${fs}px "Figtree", sans-serif`; sc.lineJoin = 'round'; sc.lineWidth = fs * .18; sc.strokeStyle = '#fff'; sc.fillStyle = '#111';
+      const block = (lines, x, y, align) => { sc.textAlign = align; lines.forEach((t, i) => { sc.strokeText(t, x, y + i * lh); sc.fillText(t, x, y + i * lh); }); };
+      block(['wax ball'], SW * .03, ZT + fs * .9, 'left');
+      block(['crack the', 'shell'], SW * .97, ZT + fs * 1.6, 'right');
+      block(['goo', '(live)'], SW * .42, (ZT + ZB) / 2 + fs * .6, 'left');
+      block([pad(d.getHours()) + ':', pad(d.getMinutes()), pad(d.getDate()) + '.' + pad(d.getMonth() + 1)], SW * .03, ZB - lh * 2.3, 'left');
+      block(['crunch-', 'y-', 'wax bar'], SW * .78, ZB - lh * 2.3, 'center');
+      sc.textAlign = 'left';
     }
   },
 
@@ -1177,10 +1195,10 @@ function thumb(id) {
   let b = '';
   switch (id) {
     case 'wax': {
-      const cols = [C.pale, C.peri, C.mid, C.cobalt];
-      for (let y = 5; y < 46; y += 4) for (let x = 18; x < 64; x += 4) { const d = Math.hypot((x - 40) / 1.1, y - 25); if (d < 18 + r() * 3 && !(Math.hypot(x - 48, y - 18) < 6)) b += `<rect x="${x}" y="${y}" width="3.4" height="3.4" fill="${cols[Math.min(3, Math.floor(r() * 2 + (1 - d / 20) * 2.4))]}"/>`; }
-      b += `<rect x="13.5" y="3.5" width="53" height="43" fill="none" stroke="${C.cobalt}" stroke-width=".6"/>`;
-      return svg('#f4f5f7', b);
+      b = '<defs><filter id="tgoo" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1"/><feComponentTransfer><feFuncR type="linear" slope="20" intercept="-9.4"/><feFuncG type="linear" slope="20" intercept="-9.4"/><feFuncB type="linear" slope="20" intercept="-9.4"/></feComponentTransfer></filter></defs><g filter="url(#tgoo)"><rect width="80" height="50" fill="#fff"/><g fill="none" stroke="#000" stroke-width="1.6">';
+      [[14, 12, 12], [40, 20, 15], [66, 10, 10], [22, 40, 11], [58, 38, 13], [34, 6, 6], [74, 30, 8]].forEach(([x, y, rr]) => b += `<circle cx="${x}" cy="${y}" r="${rr}"/>`);
+      b += '<rect x="44" y="26" width="12" height="12" rx="1.5" transform="rotate(30 50 32)"/></g></g>';
+      return svg('#fff', b);
     }
     case 'popit':
       for (let y = 7; y < 46; y += 5) for (let x = 20; x < 62; x += 5) { if (Math.hypot(x - 40, y - 26) > 19) continue; b += r() < .55 ? `<circle cx="${x}" cy="${y}" r="2" fill="#fff"/>` : `<circle cx="${x}" cy="${y}" r="1.7" fill="none" stroke="#fff" stroke-width=".7"/>`; }

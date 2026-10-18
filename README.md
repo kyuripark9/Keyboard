@@ -6,7 +6,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 
 | # | Sound | Picture |
 |---|-------|---------|
-| 01 | Wax Ball | A cobalt pixel mosaic that cracks and crumbles, with design-tool bounding boxes |
+| 01 | Wax Ball | Black-and-white cells whose touching lines melt into goo; steps crack big cells into small ones and pop the small ones |
 | 02 | Pop It | A dot-matrix planet whose dots flip between pressed coins and open rings |
 | 03 | Bubble Wrap | A sheet of bubbles that pop flat and slowly refill |
 | 04 | Squishy | Soft blue blobs that squash and slowly rise back |
@@ -21,7 +21,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 - **Custom cursor**: 9 shapes, any color, adjustable size and trail.
 - Your real keyboard plays too (letters, digits, space, enter), and the left and right arrows switch sounds. Settings and your clack count are saved in the browser.
 
-All sounds are synthesized live with the Web Audio API, so there are no audio files. Voice uses the browser's speech synthesis. The palette comes from one moodboard: cobalt, periwinkle, grey and warm paper, and ink.
+All sounds are synthesized live with the Web Audio API, so there are no audio files. Voice uses the browser's speech synthesis. The palette comes from one moodboard: cobalt, periwinkle, grey and warm paper, and ink. Wax Ball is the exception: pure black on white, like a gig poster.
 
 ## Run locally
 
