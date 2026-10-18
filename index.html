@@ -26,7 +26,7 @@ body[data-scene="goo"]   { --bg: #ffffff; --ink: #111111; --ink-soft: #5a5a5a; -
 body[data-scene="spin"]   { --bg: #f1f0ec; --ink: #111111; --ink-soft: #6a6a66; --line: rgba(17,17,17,.13); --panel: rgba(250,250,247,.88); --acc: #111111; --cursor: #111111; color-scheme: light; }
 body[data-scene="wrap"]   { --bg: #e6e6e3; --ink: #1c1c1c; --ink-soft: #616d78; --line: rgba(28,28,28,.14); --panel: rgba(244,244,241,.88); --acc: #2c62fb; --cursor: #1c1c1c; color-scheme: light; }
 body[data-scene="blob"]   { --bg: #f2f3f6; --ink: #1b2a6b; --ink-soft: #5a6890; --line: rgba(27,42,107,.13); --panel: rgba(255,255,255,.82); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
-body[data-scene="foam"]   { --bg: #e6e6e3; --ink: #1c1c1c; --ink-soft: #616d78; --line: rgba(28,28,28,.14); --panel: rgba(244,244,241,.88); --acc: #5c80ea; --cursor: #1c1c1c; color-scheme: light; }
+body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="sand"]   { --bg: #fbfaf7; --ink: #111111; --ink-soft: #6a6a66; --line: rgba(17,17,17,.13); --panel: rgba(255,255,255,.88); --acc: #111111; --cursor: #111111; color-scheme: light; }
 body[data-scene="type"]   { --bg: #f3eee6; --ink: #1c1a17; --ink-soft: #6a6352; --line: rgba(28,26,23,.14); --panel: rgba(248,244,236,.9); --acc: #1c1a17; --cursor: #1c1a17; color-scheme: light; }
 body[data-scene="bars"]   { --bg: #161616; --ink: #f1f1ef; --ink-soft: #9a9fa6; --line: rgba(241,241,239,.16); --panel: rgba(30,30,30,.88); --acc: #becdf9; --cursor: #becdf9; color-scheme: dark; }
@@ -385,7 +385,7 @@ const SOUNDS = {
       tone('sine', 880 * j, t + 0.06, { f2: 1240 * j, ft: 0.08, a: 0.02, d: 0.07, g: 0.035 });
     },
     up(k, t, j) { hiss(t, { type: 'lowpass', f: 1300 * j, f2: 380, ft: 0.35, q: 1.5, a: 0.06, d: 0.34, g: 0.9 }); } },
-  slime: { name: 'Crunchy Slime', desc: 'Foam beads, bars and chunks', scene: 'foam',
+  slime: { name: 'Crunchy Slime', desc: 'Squish and crumple a soft grid', scene: 'cloth',
     // foam beads bursting inside glossy slime: a wet press and a fizz of tiny crackles
     down(k, t, j) {
       hiss(t, { f: 380 * j, f2: 700, ft: 0.1, q: 6, a: 0.025, d: 0.14, g: 1, wet: 0.08 });
@@ -895,47 +895,66 @@ const SCENES = {
     }
   },
 
-  /* 05 Crunchy Slime: rings, blue bead bars and black chunks pile up along the path; hitting a ring again pops it. */
-  foam: {
+  /* 05 Crunchy Slime: a sheet of + stitches that behaves like fabric. Gliding drags the cloth along,
+     each crunch pinches it into a crumple where the stitches shrink and tilt, then it slowly smooths out. */
+  cloth: {
     init() {
-      const s2 = this.s = Math.max(12, Math.round(Math.min(SW, ZB - ZT) / 36));
-      this.items = []; this.pops = [];
-      paper(dc, C.greyPaper, .08);
-      dc.strokeStyle = '#2a2a28'; dc.lineWidth = 1.2;
-      for (let y = ZT + s2 * 4; y < ZB - s2 * 2; y += s2 * 1.6) { dc.beginPath(); dc.arc(SW * .06, y, s2 * .4, 0, 7); dc.stroke(); }
-      dc.fillStyle = '#2a2a28'; dc.font = mono(15, 600);
-      dc.fillText('••••••', SW * .06 - s2, ZT + s2 * .9);
-      dc.fillText('ON|OFF', SW * .06 - s2, ZT + s2 * 2); dc.fillText('<CRUNCH>', SW * .12, ZB - s2 * 3);
-      dc.fillRect(SW * .14, ZB - s2 * 2, 2, s2 * 1.2); dc.fillRect(SW * .14 + 6, ZB - s2 * 2.2, 2, s2 * 1.5); dc.fillRect(SW * .2, ZB - s2 * 1.4, 2, s2);
-      const cx = SW * .68, cy = (ZT + ZB) / 2;
-      for (let i = 0; i < 70; i++) this.add(cx + (Math.random() - .5) * SW * .35, cy + (Math.random() - .5) * (ZB - ZT) * .6, 0);
+      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 24), 18, 34), m = s2 * 1.4;
+      const cols = this.cols = Math.floor((SW - m * 2) / s2) + 1, rows = this.rows = Math.floor((ZB - ZT - m * 1.6) / s2) + 1;
+      const x0 = (SW - (cols - 1) * s2) / 2, y0 = ZT + (ZB - ZT - (rows - 1) * s2) / 2, n = cols * rows;
+      this.hx = new Float32Array(n); this.hy = new Float32Array(n); this.ox = new Float32Array(n); this.oy = new Float32Array(n);
+      this.vx = new Float32Array(n); this.vy = new Float32Array(n); this.ax = new Float32Array(n); this.ay = new Float32Array(n);
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { const q = j * cols + i; this.hx[q] = x0 + i * s2; this.hy[q] = y0 + j * s2; }
+      paper(dc, '#e6e6e6', .05);
+      dc.fillStyle = '#1a1a1a'; dc.font = mono(11);
+      dc.fillText('DRAG TO PULL  ·  CRUNCH TO CRUMPLE', 24, ZB - 12);
     },
-    add(x, y, now) {
-      const s2 = this.s, gx = Math.round(x / s2) * s2, gy = Math.round(y / s2) * s2, r = Math.random();
-      const it = r < .58 ? { t: 'c', r: s2 * .42 } : r < .72 ? { t: 'c', r: s2 * (.7 + Math.random() * .4) } : r < .93 ? { t: 'b' } : { t: 'q', w: s2 * (.9 + Math.random() * .9) };
-      Object.assign(it, { x: gx, y: gy, t0: now });
-      this.items.push(it);
-      if (this.items.length > 1600) this.items.splice(0, this.items.length - 1600);
-    },
-    hit(x, y, k, now) {
-      const s2 = this.s;
-      for (let i = this.items.length - 1; i >= 0; i--) {
-        const it = this.items[i];
-        if (it.t === 'c' && now - it.t0 > 400 && Math.hypot(it.x - x, it.y - y) < it.r) { this.pops.push({ x: it.x, y: it.y, r: it.r, t0: now }); this.items.splice(i, 1); return; }
+    near(x, y, R, fn) {
+      const s2 = this.s, cols = this.cols, rows = this.rows, x0 = this.hx[0], y0 = this.hy[0];
+      const i0 = clamp(Math.floor((x - R - x0) / s2) - 2, 0, cols - 1), i1 = clamp(Math.ceil((x + R - x0) / s2) + 2, 0, cols - 1);
+      const j0 = clamp(Math.floor((y - R - y0) / s2) - 2, 0, rows - 1), j1 = clamp(Math.ceil((y + R - y0) / s2) + 2, 0, rows - 1);
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const q = j * cols + i, dx = this.hx[q] + this.ox[q] - x, dy = this.hy[q] + this.oy[q] - y, d = Math.hypot(dx, dy);
+        if (d < R) fn(q, dx, dy, d, 1 - d / R);
       }
-      for (let i = 0, n = 3 + Math.floor(Math.random() * 4); i < n; i++) this.add(x + (Math.random() - .5) * s2 * 3, y + (Math.random() - .5) * s2 * 3, now);
     },
-    draw(now) {
+    move(x, y, dx, dy) {
+      const sp = Math.hypot(dx, dy); if (!sp) return;
+      const f = Math.min(1, 6 / sp) * .2;
+      this.near(x, y, this.s * 5.5, (q, ex, ey, d, w) => { this.vx[q] += dx * f * w * w; this.vy[q] += dy * f * w * w; });
+    },
+    hit(x, y) {
+      this.near(x, y, this.s * 3.6, (q, ex, ey, d, w) => { const k2 = -(3.5 + Math.random() * 2) * w / (d || 1); this.vx[q] += ex * k2 * .55 + (Math.random() - .5) * w * 2.4; this.vy[q] += ey * k2 * .55 + (Math.random() - .5) * w * 2.4; });
+    },
+    draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const s2 = this.s;
-      for (const it of this.items) {
-        const g = it.t0 ? Math.min(1, (now - it.t0) / 180) : 1, e = g < 1 ? 1 + Math.sin(g * Math.PI) * .25 : 1;
-        if (it.t === 'c') { sc.fillStyle = C.greyPaper; sc.strokeStyle = '#2a2a28'; sc.lineWidth = 1.2; sc.beginPath(); sc.arc(it.x, it.y, it.r * g * e, 0, 7); sc.fill(); sc.stroke(); }
-        else if (it.t === 'b') { sc.fillStyle = C.barBlue; const h = s2 * .95 * g; sc.fillRect(it.x - s2 * .3, it.y - h / 2, s2 * .17, h); sc.fillRect(it.x + s2 * .1, it.y - h / 2, s2 * .17, h); }
-        else { sc.fillStyle = '#2b2b29'; const w = it.w * g; sc.fillRect(it.x - w / 2, it.y - w / 2, w, w); }
+      const cols = this.cols, rows = this.rows, n = cols * rows, s2 = this.s, f = dt / 16, damp = Math.pow(.9, f);
+      const { ox, oy, vx, vy, ax, ay, hx, hy } = this;
+      for (let step = 0; step < 2; step++) {
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+          const q = j * cols + i; let sx = 0, sy = 0, c = 0;
+          if (i > 0) { sx += ox[q - 1]; sy += oy[q - 1]; c++; } if (i < cols - 1) { sx += ox[q + 1]; sy += oy[q + 1]; c++; }
+          if (j > 0) { sx += ox[q - cols]; sy += oy[q - cols]; c++; } if (j < rows - 1) { sx += ox[q + cols]; sy += oy[q + cols]; c++; }
+          ax[q] = -ox[q] * .0014 + (sx / c - ox[q]) * .12; ay[q] = -oy[q] * .0014 + (sy / c - oy[q]) * .12;
+        }
+        for (let q = 0; q < n; q++) { vx[q] = (vx[q] + ax[q] * f / 2) * Math.sqrt(damp); vy[q] = (vy[q] + ay[q] * f / 2) * Math.sqrt(damp); ox[q] += vx[q] * f / 2; oy[q] += vy[q] * f / 2; }
       }
-      this.pops = this.pops.filter(p => now - p.t0 < 350);
-      for (const p of this.pops) { const a = (now - p.t0) / 350; sc.strokeStyle = `rgba(42,42,40,${1 - a})`; sc.setLineDash([2, 3]); sc.beginPath(); sc.arc(p.x, p.y, p.r * (1 + a), 0, 7); sc.stroke(); sc.setLineDash([]); }
+      // each stitch takes the stretch and twist of the cloth around it: squeezed stitches shrink and break up
+      sc.strokeStyle = '#1a1a1a'; sc.lineCap = 'butt';
+      const thick = new Path2D(), thin = new Path2D(), arm = s2 * .23;
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const q = j * cols + i, r = i < cols - 1 ? q + 1 : q - 1, dn = j < rows - 1 ? q + cols : q - cols, sg = i < cols - 1 ? 1 : -1, sd = j < rows - 1 ? 1 : -1;
+        const x = hx[q] + ox[q], y = hy[q] + oy[q];
+        const rx = (hx[r] + ox[r] - x) * sg, ry = (hy[r] + oy[r] - y) * sg, dx2 = (hx[dn] + ox[dn] - x) * sd, dy2 = (hy[dn] + oy[dn] - y) * sd;
+        const lr = Math.hypot(rx, ry) || 1, ld = Math.hypot(dx2, dy2) || 1, sq = Math.min(lr, ld) / s2;
+        const a1 = arm * clamp(lr / s2, .25, 1.25), a2 = arm * clamp(ld / s2, .25, 1.25), ux = rx / lr, uy = ry / lr, wx = dx2 / ld, wy = dy2 / ld;
+        const P = sq < .72 ? thin : thick;
+        if (sq < .55 && (i * 7 + j * 3) % 3 === 0) { P.moveTo(x - wx * a2 * .5, y - wy * a2 * .5); P.lineTo(x + wx * a2 * .5, y + wy * a2 * .5); continue; }
+        P.moveTo(x - ux * a1, y - uy * a1); P.lineTo(x + ux * a1, y + uy * a1);
+        P.moveTo(x - wx * a2, y - wy * a2); P.lineTo(x + wx * a2, y + wy * a2);
+      }
+      sc.lineWidth = Math.max(1.4, s2 * .075); sc.stroke(thick);
+      sc.lineWidth = Math.max(1, s2 * .05); sc.stroke(thin);
     }
   },
 
@@ -1256,9 +1275,11 @@ function thumb(id) {
       [[14, 14, 1], [38, 12, 1], [62, 15, 1], [26, 36, 1], [52, 36, 1.3]].forEach(([x, y, s]) => b += `<ellipse cx="${x}" cy="${y}" rx="${11 * s * (s > 1 ? 1.15 : 1)}" ry="${11 * s / (s > 1 ? 1.25 : 1)}" fill="url(#tg)"/>`);
       return svg('#f2f3f6', b);
     case 'slime':
-      for (let i = 0; i < 16; i++) { const x = 26 + r() * 46, y = 6 + r() * 38, t = r(); b += t < .55 ? `<circle cx="${x}" cy="${y}" r="${2 + r() * 3}" fill="${C.greyPaper}" stroke="${C.ink}" stroke-width=".6"/>` : t < .85 ? `<rect x="${x}" y="${y}" width="1.2" height="5" fill="${C.barBlue}"/><rect x="${x + 2.2}" y="${y}" width="1.2" height="5" fill="${C.barBlue}"/>` : `<rect x="${x}" y="${y}" width="5" height="5" fill="#2b2b29"/>`; }
-      b += `<text x="5" y="10" font-family="IBM Plex Mono, monospace" font-size="5" font-weight="600" fill="${C.ink}">ON|OFF</text>`;
-      return svg(C.greyPaper, b);
+      for (let j = 0; j < 7; j++) for (let i = 0; i < 12; i++) {
+        const x = 8 + i * 6 + (j > 3 ? (j - 3) * (i < 5 ? 1.2 : .2) : 0), y = 6 + j * 6.2 - (i > 4 && i < 9 ? 1.2 : 0), a = j > 3 && i < 5 ? .25 : 0, l = j > 3 && i < 5 ? 1.2 : 1.7;
+        b += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(a * 57).toFixed(0)})"><path d="M${-l} 0H${l}M0 ${-l}V${l}" stroke="#1a1a1a" stroke-width=".6"/></g>`;
+      }
+      return svg('#e6e6e6', b);
     case 'sand':
       b = `<path d="M40 10 Q41 30 40 38" stroke="#141414" stroke-width="1.4" stroke-dasharray=".8 1.2" fill="none"/><path d="M22 46 Q40 30 58 46Z" fill="#141414"/>`;
       'sand'.split('').forEach((c, i) => b += `<text x="${34 + i * 4}" y="${8 + i * 6}" font-family="Figtree, sans-serif" font-size="5" fill="#141414">${c}</text>`);
