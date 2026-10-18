@@ -9,11 +9,13 @@
 <meta name="description" content="Glide your mouse across a giant keyboard and hear every key click. A stress-relief keyboard toy.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;500;600&family=Rubik:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600&family=Bagel+Fat+One&family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Rubik:wght@400;500;600&family=VT323&display=swap">
 <style>
 /* Layout: one screen. A keyboard case fills the viewport between a slim header and a floating dock;
    a giant echo of the last key flashes over it. Colors come from keycap palettes (tokens below). */
 :root {
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --switch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='3' width='34' height='34' rx='3' fill='%23161616'/%3E%3Crect x='7' y='7' width='26' height='26' rx='2' fill='%23222'/%3E%3Ccircle cx='20' cy='20' r='9' fill='%232c2c2c'/%3E%3Cpath d='M18 12h4v6h6v4h-6v6h-4v-6h-6v-4h6z' fill='%23111' stroke='%23444' stroke-width='.6'/%3E%3Ccircle cx='7.5' cy='20' r='1.6' fill='%23333'/%3E%3Ccircle cx='32.5' cy='20' r='1.6' fill='%23333'/%3E%3C/svg%3E");
   --bg: #e3e7ee; --bg-2: #cdd4e0;
   --ink: #1f2633; --ink-soft: #5d6778; --line: rgba(31,38,51,.12); --panel: rgba(255,255,255,.76);
   --case: #eef1f6; --case-hi: #ffffff; --case-lo: #b9c2d1;
@@ -78,6 +80,133 @@ body[data-kb="blackout"] {
   --mod: #2b2b2b; --mod-hi: #353535; --mod-side: #0b0b0b; --mod-legend: #b8b8b8; --acc: #f1f1ec; --acc-hi: #ffffff; --acc-side: #a3a39d; --acc-legend: #111111; --glow: #ffffff; --cursor: #111111; --echo: rgba(255,255,255,.12); --echo-blend: screen; color-scheme: light;
 }
 
+/* ===== Keyboard styles (Keyboard panel → Style). Each redefines the palette tokens, then reshapes caps. ===== */
+body[data-style="retro"] {
+  --bg: #d9d5ca; --bg-2: #bdb8ab; --ink: #1d1c19; --ink-soft: #5c5a52; --line: rgba(29,28,25,.14); --panel: rgba(241,238,230,.86);
+  --case: #d8d2c1; --case-hi: #e7e2d3; --case-lo: #9c9580; --cap: #e4dfcf; --cap-hi: #f1ede2; --cap-side: #b9b29d; --legend: #1d1c19;
+  --mod: #cbc5b3; --mod-hi: #d9d4c4; --mod-side: #a29b86; --mod-legend: #1d1c19; --acc: #2d2d2b; --acc-hi: #3d3d3a; --acc-side: #121211; --acc-legend: #eee8d6;
+  --glow: #c79a3c; --cursor: #1d1c19; --echo: rgba(29,28,25,.1); --echo-blend: multiply; color-scheme: light;
+}
+body[data-style="typewriter"] {
+  --bg: #1d1b18; --bg-2: #0b0a09; --ink: #efe7d6; --ink-soft: #a59c89; --line: rgba(239,231,214,.14); --panel: rgba(30,28,24,.88);
+  --case: #121110; --case-hi: #242220; --case-lo: #000; --cap: #141414; --cap-hi: #3a3a3a; --cap-side: #050505; --legend: #f3ead2;
+  --mod: #141414; --mod-hi: #3a3a3a; --mod-side: #050505; --mod-legend: #f3ead2; --acc: #141414; --acc-hi: #3a3a3a; --acc-side: #050505; --acc-legend: #f3ead2;
+  --glow: #f0d48a; --cursor: #f0d48a; --echo: rgba(240,212,138,.1); --echo-blend: screen; color-scheme: dark;
+}
+body[data-style="thrift"] {
+  --bg: #f0ede6; --bg-2: #dcd7cb; --ink: #22201c; --ink-soft: #66625a; --line: rgba(34,32,28,.13); --panel: rgba(250,248,243,.88);
+  --case: #d8d3c6; --case-hi: #e2ddd1; --case-lo: #b3ad9f; --legend: #22201c;
+  --glow: #b8463a; --cursor: #22201c; --echo: rgba(34,32,28,.08); --echo-blend: multiply; color-scheme: light;
+}
+body[data-style="calc"] {
+  --bg: #cfe2d7; --bg-2: #b2cbbe; --ink: #252826; --ink-soft: #586059; --line: rgba(37,40,38,.13); --panel: rgba(241,247,243,.86);
+  --case: #dcdcd6; --case-hi: #eeeee9; --case-lo: #9d9d96; --cap: #f3f3f0; --cap-hi: #ffffff; --cap-side: #cacac4; --legend: #2b2b2b;
+  --mod: #8d8d88; --mod-hi: #a3a39e; --mod-side: #696965; --mod-legend: #f3f3f0; --acc: #3d70e0; --acc-hi: #5d8cf2; --acc-side: #2347a6; --acc-legend: #ffffff;
+  --glow: #3d70e0; --cursor: #252826; --echo: rgba(61,112,224,.12); --echo-blend: multiply; color-scheme: light;
+}
+body[data-style="retro"] .brand h1 i, body[data-style="thrift"] .brand h1 i { color: var(--ink); }
+body[data-style="typewriter"] .brand h1 i { color: var(--glow); }
+
+/* Retro: beige board on a black plate, homing keys in black, a few clear caps and a couple of bare switches */
+body[data-style="retro"] .case {
+  background: #151514; padding: calc(var(--u) * .1);
+  border: calc(var(--u) * .22) solid var(--case);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6), inset 0 calc(var(--u) * .06) calc(var(--u) * .1) rgba(0,0,0,.7),
+    0 0 0 1px var(--case-lo), 0 calc(var(--u) * .1) 0 var(--case-lo), 0 calc(var(--u) * .3) calc(var(--u) * .7) rgba(30,26,18,.3);
+}
+body[data-style="retro"] .case::after { top: calc(var(--u) * -.17); color: #7c7564; opacity: .9; }
+body[data-style="retro"] .lg { font-weight: 600; }
+body[data-style="retro"] .key.r-ink { --c-face: var(--acc); --c-hi: var(--acc-hi); --c-side: var(--acc-side); --c-leg: var(--acc-legend); }
+body[data-style="retro"] .key.r-clear .cap {
+  background: var(--switch) 50% 58% / 62% no-repeat, linear-gradient(180deg, rgba(255,255,255,.3), rgba(255,255,255,.07));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), inset 0 0 calc(var(--u) * .1) rgba(255,255,255,.35), 0 calc(var(--u) * .08) calc(var(--u) * .1) rgba(0,0,0,.4);
+}
+body[data-style="retro"] .key.r-clear .cap::before {
+  background: linear-gradient(170deg, rgba(255,255,255,.32), rgba(255,255,255,.04) 60%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.45);
+}
+body[data-style="retro"] .key.r-clear .lg, body[data-style="retro"] .key.r-clear .tp { color: #ead9a6; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+body[data-style="retro"] .key.r-bare .cap {
+  background: var(--switch) 50% 50% / calc(var(--u) * .62) no-repeat, #111;
+  box-shadow: inset 0 calc(var(--u) * .04) calc(var(--u) * .08) rgba(0,0,0,.8);
+}
+body[data-style="retro"] .key.r-bare .cap::before, body[data-style="retro"] .key.r-bare .lg, body[data-style="retro"] .key.r-bare .tp { display: none; }
+.dd { display: none; }
+body[data-style="retro"] .dd {
+  display: block; position: absolute; z-index: 1; right: calc(var(--u) * .14); bottom: calc(var(--u) * .2);
+  width: calc(var(--u) * .42); height: calc(var(--u) * .42); color: var(--c-leg); pointer-events: none;
+}
+
+/* Typewriter: round glass-topped keys in chrome rings, on stems */
+body[data-style="typewriter"] .case {
+  background: radial-gradient(120% 120% at 50% 0%, #22201d, #0a0a09 70%);
+  box-shadow: inset 0 0 0 2px #3a3122, inset 0 0 0 4px #0a0a09, inset 0 0 0 5px #6f5d33, 0 calc(var(--u) * .3) calc(var(--u) * .8) rgba(0,0,0,.6);
+}
+body[data-style="typewriter"] .case::after { content: "CLACK  ·  No. 5"; font-family: "Courier Prime", monospace; color: #b99a52; opacity: 1; letter-spacing: .4em; }
+body[data-style="typewriter"] .key { padding: calc(var(--u) * .08); }
+body[data-style="typewriter"] .key::before { /* type-bar stem */
+  content: ""; position: absolute; left: 50%; top: 55%; width: calc(var(--u) * .05); height: 70%; margin-left: calc(var(--u) * -.025);
+  background: linear-gradient(90deg, #1a1a1a, #8d8d8d 45%, #2a2a2a); opacity: .85;
+}
+body[data-style="typewriter"] .row:last-child .key::before, body[data-style="typewriter"] .row.fn .key::before { height: 30%; }
+body[data-style="typewriter"] .cap {
+  border-radius: 999px;
+  border: calc(var(--u) * .06) solid transparent;
+  background:
+    radial-gradient(circle at 38% 28%, #3c3c3c, #0c0c0c 62%) padding-box,
+    conic-gradient(from 210deg, #fdfdfd, #8b8b8b 18%, #f2f2f2 34%, #5c5c5c 52%, #e9e9e9 70%, #7a7a7a 86%, #fdfdfd) border-box;
+  box-shadow: 0 calc(var(--u) * .06) calc(var(--u) * .1) rgba(0,0,0,.7), 0 0 0 1px rgba(0,0,0,.6);
+}
+body[data-style="typewriter"] .cap::before {
+  inset: 8% 18% 52%; border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,0)); box-shadow: none;
+}
+body[data-style="typewriter"] .key.down .cap { transform: translateY(calc(var(--u) * .1)) scale(.96); box-shadow: 0 calc(var(--u) * .02) calc(var(--u) * .04) rgba(0,0,0,.7); }
+body[data-style="typewriter"] .lg, body[data-style="typewriter"] .tp, body[data-style="typewriter"] .key.num .lg, body[data-style="typewriter"] .key.small .lg, body[data-style="typewriter"] .key.fk .lg {
+  left: 0; right: 0; text-align: center; font-family: "Courier Prime", monospace; font-weight: 700; color: var(--c-leg);
+}
+body[data-style="typewriter"] .lg { top: 50%; bottom: auto; transform: translateY(-50%); font-size: calc(var(--u) * .3); text-transform: uppercase; }
+body[data-style="typewriter"] .key.small .lg, body[data-style="typewriter"] .key.fk .lg { font-size: calc(var(--u) * .16); letter-spacing: .08em; }
+body[data-style="typewriter"] .tp { top: 14%; font-size: calc(var(--u) * .16); opacity: .85; }
+body[data-style="typewriter"] .key.num .lg { top: 62%; font-size: calc(var(--u) * .24); }
+
+/* Thrift mix: a jar of mismatched vintage caps, each its own color, font and wear */
+body[data-style="thrift"] .case {
+  background: var(--grain), linear-gradient(180deg, var(--case-hi), var(--case));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), 0 calc(var(--u) * .2) calc(var(--u) * .6) rgba(40,34,20,.18);
+}
+body[data-style="thrift"] .key { --c-face: var(--t-face); --c-hi: var(--t-hi); --c-side: var(--t-side); --c-leg: var(--t-leg); }
+body[data-style="thrift"] .cap { transform: rotate(var(--t-rot)) translate(calc(var(--u) * var(--t-dx)), calc(var(--u) * var(--t-dy))); }
+body[data-style="thrift"] .key.down .cap { transform: rotate(var(--t-rot)) translate(calc(var(--u) * var(--t-dx)), calc(var(--u) * (var(--t-dy) + .055))); }
+body[data-style="thrift"] .cap::before { background: var(--grain), radial-gradient(90% 80% at var(--t-wx) 85%, rgba(140,110,40,var(--t-wear)), transparent 70%), radial-gradient(120% 95% at 50% 12%, var(--c-hi), var(--c-face) 78%); }
+body[data-style="thrift"] .lg, body[data-style="thrift"] .tp { font-family: var(--t-font); font-style: var(--t-style); }
+
+/* Calculator: chunky two-tone keys under a segment LCD */
+.lcd { display: none; }
+body[data-style="calc"] .lcd {
+  display: flex; align-items: stretch; gap: calc(var(--u) * .25); height: calc(var(--u) * 1.15); margin: 0 calc(var(--u) * .04) calc(var(--u) * .28);
+}
+body[data-style="calc"] .case { border-radius: calc(var(--u) * .55); padding: calc(var(--u) * .36); }
+body[data-style="calc"] .case::after { display: none; }
+.lcd-deco { display: flex; align-items: center; gap: calc(var(--u) * .22); flex: none; }
+.knob { width: calc(var(--u) * .8); height: calc(var(--u) * .8); border-radius: 50%; position: relative;
+  background: radial-gradient(circle at 40% 35%, #f4f4f0, #b9b9b3 70%); box-shadow: inset 0 -2px 4px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.25); }
+.knob::after { content: ""; position: absolute; left: 47%; top: 8%; width: 6%; height: 46%; background: #4a4a46; border-radius: 2px; transform: rotate(-35deg); transform-origin: 50% 90%; }
+.rbtn { width: calc(var(--u) * .62); height: calc(var(--u) * .62); border-radius: 50%; display: grid; place-items: center;
+  font: 600 calc(var(--u) * .15)/1 var(--font-ui); letter-spacing: .04em;
+  background: radial-gradient(circle at 40% 35%, #c9c9c4, #8e8e89 75%); color: #f3f3f0; box-shadow: inset 0 -2px 3px rgba(0,0,0,.25), 0 2px 3px rgba(0,0,0,.2); }
+.rbtn.blue { background: radial-gradient(circle at 40% 35%, #6f97f5, #3460d2 75%); }
+.screen { flex: 1; min-width: 0; position: relative; border-radius: calc(var(--u) * .12); overflow: hidden;
+  background: linear-gradient(180deg, #121413, #1e2220); box-shadow: inset 0 0 0 calc(var(--u) * .05) #3a3d3b, inset 0 calc(var(--u) * .08) calc(var(--u) * .14) rgba(0,0,0,.6); }
+.screen small { position: absolute; top: calc(var(--u) * .1); font: 500 calc(var(--u) * .12)/1 var(--font-ui); color: #8f9893; letter-spacing: .08em; }
+.screen small:first-of-type { left: calc(var(--u) * .2); }
+.screen small:last-of-type { right: calc(var(--u) * .2); }
+.seg-txt, .seg-ghost { position: absolute; right: calc(var(--u) * .25); bottom: calc(var(--u) * .02); font: 400 calc(var(--u) * .92)/1 "VT323", monospace; letter-spacing: .06em; white-space: pre; }
+.seg-ghost { color: rgba(220,232,224,.07); }
+.seg-txt { color: #dfe9e2; text-shadow: 0 0 calc(var(--u) * .08) rgba(223,233,226,.35); }
+body[data-style="calc"] .cap { border-radius: calc(var(--u) * .16); }
+body[data-style="calc"] .lg { font-weight: 500; }
+
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
@@ -113,7 +242,7 @@ body[data-kb="blackout"] .brand h1 i { color: var(--ink); }
 .tally span { font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
 
 /* Stage + keyboard */
-.stage { position: relative; display: grid; place-items: center; min-height: 0; min-width: 0; overflow: hidden; }
+.stage { position: relative; display: grid; place-items: center; min-height: 0; min-width: 0; }
 .echo {
   position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 2; opacity: 0;
   font: 400 min(56vh, 42vw)/1 var(--font-display); color: var(--echo); mix-blend-mode: var(--echo-blend, multiply); white-space: nowrap; overflow: hidden;
@@ -145,19 +274,25 @@ body[data-kb="blackout"] .brand h1 i { color: var(--ink); }
 .key.acc { --c-face: var(--acc); --c-hi: var(--acc-hi); --c-side: var(--acc-side); --c-leg: var(--acc-legend); }
 .cap {
   position: relative; height: 100%;
-  border-radius: calc(var(--u) * .15);
-  background: linear-gradient(180deg, var(--c-face), var(--c-side) 115%);
+  border-radius: calc(var(--u) * .12);
+  background:
+    linear-gradient(90deg, rgba(0,0,0,.09), transparent 13%, transparent 87%, rgba(0,0,0,.15)),
+    linear-gradient(180deg, var(--c-face), var(--c-side));
   box-shadow:
-    0 calc(var(--u) * .065) 0 var(--c-side),
-    0 calc(var(--u) * .1) calc(var(--u) * .14) rgba(0,0,0,.22);
+    inset 0 1px 0 rgba(255,255,255,.3),
+    0 calc(var(--u) * .02) 0 rgba(0,0,0,.22),
+    0 calc(var(--u) * .08) calc(var(--u) * .1) rgba(0,0,0,.26);
   transition: transform 70ms cubic-bezier(.3,.7,.4,1.6), box-shadow 70ms;
 }
-.cap::before { /* sculpted top face */
+.cap::before { /* dished top face, PBT grain */
   content: ""; position: absolute;
-  inset: calc(var(--u) * .04) calc(var(--u) * .075) calc(var(--u) * .13);
-  border-radius: calc(var(--u) * .11);
-  background: linear-gradient(165deg, var(--c-hi), var(--c-face) 70%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+  inset: calc(var(--u) * .035) calc(var(--u) * .1) calc(var(--u) * .17);
+  border-radius: calc(var(--u) * .09);
+  background: var(--grain), radial-gradient(120% 95% at 50% 12%, var(--c-hi), var(--c-face) 78%);
+  box-shadow:
+    inset 0 calc(var(--u) * .015) calc(var(--u) * .03) rgba(255,255,255,.3),
+    inset 0 calc(var(--u) * -.025) calc(var(--u) * .05) rgba(0,0,0,.07),
+    0 calc(var(--u) * .012) calc(var(--u) * .02) rgba(0,0,0,.12);
 }
 .cap::after { /* press glow */
   content: ""; position: absolute; inset: 0; border-radius: inherit; opacity: 0;
@@ -166,7 +301,7 @@ body[data-kb="blackout"] .brand h1 i { color: var(--ink); }
 }
 .key.down .cap {
   transform: translateY(calc(var(--u) * .055));
-  box-shadow: 0 calc(var(--u) * .012) 0 var(--c-side), 0 calc(var(--u) * .03) calc(var(--u) * .05) rgba(0,0,0,.2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 calc(var(--u) * .005) 0 rgba(0,0,0,.25), 0 calc(var(--u) * .025) calc(var(--u) * .04) rgba(0,0,0,.24);
   transition-duration: 25ms;
 }
 .key.down .cap::after { opacity: 1; transition-duration: 0s; }
@@ -273,6 +408,10 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 .pal { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 10px; }
 .pal .dots { grid-row: span 2; display: flex; }
 .pal .dots i { width: 18px; height: 18px; border-radius: 50%; margin-right: -6px; box-shadow: 0 0 0 2px var(--panel); }
+.mini { display: flex; gap: 4px; margin-bottom: 4px; }
+.mini i { width: 20px; height: 16px; border-radius: 4px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.12); }
+.mini-typewriter i { width: 16px; border-radius: 50%; box-shadow: 0 0 0 2px #c9c9c9, 0 0 0 3px rgba(0,0,0,.3); margin: 0 2px; }
+#styleGrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 .cur-opt { align-items: center; text-align: center; }
 .cur-opt svg { width: 26px; height: 26px; color: var(--ink); }
 .row-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--ink-soft); }
@@ -346,7 +485,12 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
 
   <main class="stage" id="stage">
     <div class="echo" id="echo" aria-hidden="true"></div>
-    <div class="case" id="board" role="application" aria-label="Keyboard"></div>
+    <div class="case" id="board" role="application" aria-label="Keyboard">
+      <div class="lcd" aria-hidden="true">
+        <div class="lcd-deco"><span class="knob"></span><span class="rbtn">BT</span><span class="rbtn blue">CAL</span></div>
+        <div class="screen"><small>RETRO CLACKED</small><small>INPUT</small><span class="seg-ghost" id="segGhost"></span><span class="seg-txt" id="segTxt"></span></div>
+      </div>
+    </div>
     <p class="rotate-hint">Turn your phone sideways for a bigger keyboard</p>
   </main>
 
@@ -390,8 +534,12 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
     </section>
 
     <section class="panel" id="panel-kb" hidden aria-label="Style the keyboard">
-      <h2>KEYCAP COLORS</h2>
-      <div class="grid" id="palGrid"></div>
+      <h2>STYLE</h2>
+      <div class="grid" id="styleGrid"></div>
+      <div id="cwBox">
+        <h2>COLORWAY</h2>
+        <div class="grid" id="palGrid"></div>
+      </div>
       <h2>DISPLAY</h2>
       <div class="toggles">
         <button class="chip" id="tFx" type="button">Sparkle effects</button>
@@ -432,11 +580,12 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
 
 /* ---------- settings ---------- */
 const SOUND_IDS = ['wax', 'popit', 'squishy', 'slime', 'sand', 'blue', 'brown', 'thock', 'typewriter', 'bubble', 'woodblock', 'marimba', 'chip', 'voice', 'mix'];
-const DEF = { mode: 'hover', sound: 'wax', pal: 'auto', cur: 'ring', curColor: 'auto', curSize: 30, trail: true,
+const DEF = { mode: 'hover', sound: 'wax', style: 'retro', pal: 'auto', cur: 'ring', curColor: 'auto', curSize: 30, trail: true,
   fx: true, echo: true, volume: 0.7, muted: false, count: 0, zen: 0 };
 let S = { ...DEF };
 try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
 if (!SOUND_IDS.includes(S.sound)) S.sound = DEF.sound;
+if (!['retro', 'typewriter', 'thrift', 'calc', 'modern'].includes(S.style)) S.style = DEF.style;
 let saveT = 0;
 function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('clack', JSON.stringify(S)); } catch (e) {} }, 300); }
 
@@ -474,6 +623,29 @@ const ROWS = [
 const ALIAS = { IntlBackslash: 'Backslash', ContextMenu: 'Fn', OSLeft: 'MetaLeft', OSRight: 'MetaRight' };
 
 const board = document.getElementById('board');
+const RETRO = { KeyF: 'r-ink', KeyK: 'r-ink', KeyY: 'r-ink', Backquote: 'r-ink', Digit8: 'r-clear', KeyH: 'r-clear', KeyC: 'r-clear', Slash: 'r-clear', BracketRight: 'r-bare', Comma: 'r-bare' };
+const DOODLE = {
+  KeyJ: '<path d="M12 3c.6 4.6 2.6 7.6 8 9-5.4 1.4-7.4 4.4-8 9-.6-4.6-2.6-7.6-8-9 5.4-1.4 7.4-4.4 8-9z"/>',
+  KeyG: '<path d="M6 15c-2-3 0-7 3-6 1 .3 2 1.4 2 2.6.4-2 2.6-3.4 4.4-2.2 2.6 1.8 1.4 6-2 8.6-1.6 1.2-4 1.6-7.4-3z"/><path d="M17 6l2-2"/>',
+  KeyI: '<path d="M8 20v-8l3-6c1.6.3 2 1.6 1.6 3L12 11h5.6c1.4 0 2.2 1.2 1.9 2.4l-1.4 5c-.3 1-1.1 1.6-2.1 1.6H8z"/><path d="M4.5 12h3.5v8H4.5z"/>'
+};
+const THRIFT = [
+  ['#ece6d2', '#f6f2e6', '#c5bda4', '#2a2824'], ['#f3f0e7', '#ffffff', '#cfcabd', '#2a2824'], ['#e8d9a6', '#f2e7c2', '#c2b07c', '#2a2824'],
+  ['#dbc68f', '#e9d9a9', '#b39e66', '#2a2824'], ['#bdbab1', '#cfccc4', '#97948b', '#1f1f1f'], ['#d8d6cf', '#e8e6e0', '#b0aea6', '#2c4a9a'],
+  ['#242424', '#353535', '#0e0e0e', '#ece8dc'], ['#3d3d3b', '#4c4c49', '#1f1f1d', '#e5e1d4'], ['#ece6d2', '#f6f2e6', '#c5bda4', '#b8463a']
+];
+const TFONTS = ['"Rubik", sans-serif', '"Courier Prime", monospace', '"IBM Plex Mono", monospace', '"Archivo Narrow", sans-serif', '"Figtree", sans-serif'];
+let tseed = 11;
+const trnd = () => { tseed = (tseed * 48271) % 2147483647; return (tseed - 1) / 2147483646; };
+function thriftify(el) {
+  const c = THRIFT[Math.floor(trnd() * THRIFT.length)], st = el.style;
+  st.setProperty('--t-face', c[0]); st.setProperty('--t-hi', c[1]); st.setProperty('--t-side', c[2]); st.setProperty('--t-leg', c[3]);
+  st.setProperty('--t-rot', ((trnd() - .5) * 3.4).toFixed(2) + 'deg');
+  st.setProperty('--t-dx', ((trnd() - .5) * .05).toFixed(3)); st.setProperty('--t-dy', ((trnd() - .5) * .05).toFixed(3));
+  st.setProperty('--t-font', TFONTS[Math.floor(trnd() * TFONTS.length)]);
+  st.setProperty('--t-style', trnd() < .22 ? 'italic' : 'normal');
+  st.setProperty('--t-wear', (trnd() * .28).toFixed(2)); st.setProperty('--t-wx', Math.round(trnd() * 100) + '%');
+}
 const keyEls = {};
 const keyInfo = new WeakMap();
 let seedN = 7;
@@ -485,9 +657,10 @@ ROWS.forEach((row, r) => {
   row.forEach(k => {
     if (k.gap) { const g = document.createElement('div'); g.className = 'gap'; g.style.width = `calc(var(--u) * ${k.gap})`; rowEl.appendChild(g); x += k.gap; return; }
     const el = document.createElement('div');
-    el.className = 'key ' + k.cls;
+    el.className = 'key ' + k.cls + (RETRO[k.code] ? ' ' + RETRO[k.code] : '');
     el.style.width = `calc(var(--u) * ${k.w})`;
-    el.innerHTML = `<div class="cap">${k.tp ? `<span class="tp">${k.tp}</span>` : ''}<span class="lg">${k.label}</span></div>`;
+    el.innerHTML = `<div class="cap">${k.tp ? `<span class="tp">${k.tp}</span>` : ''}<span class="lg">${k.label}</span>${DOODLE[k.code] ? `<svg class="dd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${DOODLE[k.code]}</svg>` : ''}</div>`;
+    thriftify(el);
     rowEl.appendChild(el);
     const info = { ...k, row: r, x: x + k.w / 2, big: k.w >= 1.75, seed: rnd(), holders: new Set(), downAt: 0, upT: 0, el };
     if (!info.en) info.en = k.label;
@@ -503,7 +676,8 @@ let U = 60;
 const stage = document.getElementById('stage');
 function fit() {
   const w = stage.clientWidth, h = stage.clientHeight;
-  U = Math.max(16, Math.min(96, Math.floor(Math.min((w - 4) / 15.64, (h - 16) / 7.05))));
+  const rowsH = S.style === 'calc' ? 8.55 : 7.05, colsW = S.style === 'retro' ? 15.7 : 15.64;
+  U = Math.max(16, Math.min(96, Math.floor(Math.min((w - 4) / colsW, (h - 16) / rowsH))));
   document.documentElement.style.setProperty('--u', U + 'px');
   fxResize();
 }
@@ -737,6 +911,7 @@ function press(k, src) {
   k.el.classList.add('down');
   k.downAt = performance.now();
   playKey(k, 'down');
+  lcdType(k);
   S.count++;
   if (S.sound === 'woodblock' || (S.sound === 'mix' && mixOf(k) === 'woodblock')) S.zen++;
   renderCount();
@@ -969,6 +1144,25 @@ let pulseT = 0;
 function pulseCursor() { cursorEl.classList.add('press'); clearTimeout(pulseT); pulseT = setTimeout(() => cursorEl.classList.remove('press'), 80); }
 
 /* ---------- palettes ---------- */
+const STYLES = {
+  retro:      { name: 'Retro', desc: "Beige '80s board, clear caps", dots: ['#e4dfcf', '#2d2d2b', '#cbc5b3'] },
+  typewriter: { name: 'Typewriter', desc: 'Glass keys in chrome rings', dots: ['#141414', '#d9d9d9', '#f0d48a'] },
+  thrift:     { name: 'Thrift Mix', desc: 'Mismatched vintage caps', dots: ['#e8d9a6', '#242424', '#d8d6cf'] },
+  calc:       { name: 'Calculator', desc: 'Two-tone keys and an LCD', dots: ['#f3f3f0', '#8d8d88', '#3d70e0'] },
+  modern:     { name: 'Modern', desc: 'Pick a colorway below', dots: ['#fbfcfe', '#5b6cff', '#262f4d'] }
+};
+const LCD_LEN = 12;
+let lcdStr = 'CLACK';
+function lcdRender() { $('segTxt').textContent = lcdStr.slice(-LCD_LEN); $('segGhost').textContent = '8'.repeat(LCD_LEN); }
+function lcdType(k) {
+  if (S.style !== 'calc') return;
+  if (k.code === 'Backspace') lcdStr = lcdStr.slice(0, -1);
+  else if (k.code === 'Enter' || k.code === 'Escape') lcdStr = '';
+  else if (k.code === 'Space') lcdStr += ' ';
+  else if (k.label.length === 1) lcdStr += k.label.toUpperCase();
+  lcdStr = lcdStr.slice(-LCD_LEN);
+  lcdRender();
+}
 const PALS = {
   auto:     { name: 'Auto', desc: 'Follows your device', dots: ['#fbfcfe', '#5b6cff', '#262f4d'] },
   cloud:    { name: 'Cloud', desc: 'White caps, periwinkle', dots: ['#fbfcfe', '#dde3ec', '#5b6cff'] },
@@ -980,7 +1174,10 @@ const PALS = {
 };
 const darkMQ = matchMedia('(prefers-color-scheme: dark)');
 function applyPal() {
-  if (S.pal === 'auto') document.body.removeAttribute('data-kb'); else document.body.setAttribute('data-kb', S.pal);
+  document.body.dataset.style = S.style;
+  if (S.style !== 'modern' || S.pal === 'auto') document.body.removeAttribute('data-kb'); else document.body.setAttribute('data-kb', S.pal);
+  $('cwBox').hidden = S.style !== 'modern';
+  lcdRender();
   requestAnimationFrame(() => { readColors(); curCache = curColor(); });
 }
 darkMQ.addEventListener && darkMQ.addEventListener('change', () => { readColors(); });
@@ -1009,7 +1206,7 @@ function renderAll() {
   $('hint').textContent = S.mode === 'hover' ? 'Glide your cursor across the keys' : 'Click or tap a key to play it';
   $('soundName').textContent = SOUNDS[S.sound].name;
   document.body.dataset.feel = SOUNDS[S.sound].feel || '';
-  syncOptions($('soundGrid'), S.sound); syncOptions($('soundGrid2'), S.sound); syncOptions($('palGrid'), S.pal); syncOptions($('curGrid'), S.cur);
+  syncOptions($('soundGrid'), S.sound); syncOptions($('soundGrid2'), S.sound); syncOptions($('palGrid'), S.pal); syncOptions($('styleGrid'), S.style); syncOptions($('curGrid'), S.cur);
   pressedAttr($('tFx'), S.fx); pressedAttr($('tEcho'), S.echo); pressedAttr($('tTrail'), S.trail);
   $('curColors').querySelectorAll('[data-c]').forEach(b => pressedAttr(b, b.dataset.c === S.curColor));
   const picked = !COLORS.includes(S.curColor);
@@ -1022,7 +1219,7 @@ function renderAll() {
 }
 function set(patch) {
   Object.assign(S, patch); save();
-  if ('pal' in patch) applyPal();
+  if ('pal' in patch || 'style' in patch) { applyPal(); fit(); }
   if ('cur' in patch || 'curColor' in patch || 'curSize' in patch) applyCursor();
   if ('volume' in patch || 'muted' in patch) { if (A.master) A.master.gain.setTargetAtTime(S.muted ? 0 : S.volume, A.ctx.currentTime, 0.02); if (S.muted && synth) synth.cancel(); }
   if ('mode' in patch) releaseAll('p');
@@ -1034,6 +1231,8 @@ buildOptions($('soundGrid'), Object.fromEntries(Object.entries(SOUNDS).filter(([
 buildOptions($('soundGrid2'), Object.fromEntries(Object.entries(SOUNDS).filter(([, v]) => v.group === 'classic')), S.sound, pickSound,
   (id, s) => `<b>${s.name}</b><span>${s.desc}</span>`);
 function pickSound(id) { set({ sound: id }); if (id === 'voice' && !synth) toast("This browser can't read keys out loud"); demo(); }
+buildOptions($('styleGrid'), STYLES, S.style, id => set({ style: id }),
+  (id, p) => `<span class="mini mini-${id}">${p.dots.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span>${p.desc}</span>`);
 buildOptions($('palGrid'), PALS, S.pal, id => set({ pal: id }),
   (id, p) => `<span class="pal"><span class="dots">${p.dots.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span>${p.desc}</span></span>`);
 buildOptions($('curGrid'), CURSORS, S.cur, id => set({ cur: id }),
