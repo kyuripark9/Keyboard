@@ -23,7 +23,7 @@
   color-scheme: light;
 }
 body[data-scene="goo"]   { --bg: #ffffff; --ink: #111111; --ink-soft: #5a5a5a; --line: rgba(17,17,17,.14); --panel: rgba(255,255,255,.88); --acc: #111111; --cursor: #111111; color-scheme: light; }
-body[data-scene="dots"]   { --bg: #2c62fb; --ink: #ffffff; --ink-soft: rgba(255,255,255,.78); --line: rgba(255,255,255,.26); --panel: rgba(28,72,214,.8); --acc: #ffffff; --cursor: #ffffff; color-scheme: dark; }
+body[data-scene="spin"]   { --bg: #f1f0ec; --ink: #111111; --ink-soft: #6a6a66; --line: rgba(17,17,17,.13); --panel: rgba(250,250,247,.88); --acc: #111111; --cursor: #111111; color-scheme: light; }
 body[data-scene="wrap"]   { --bg: #e6e6e3; --ink: #1c1c1c; --ink-soft: #616d78; --line: rgba(28,28,28,.14); --panel: rgba(244,244,241,.88); --acc: #2c62fb; --cursor: #1c1c1c; color-scheme: light; }
 body[data-scene="blob"]   { --bg: #f2f3f6; --ink: #1b2a6b; --ink-soft: #5a6890; --line: rgba(27,42,107,.13); --panel: rgba(255,255,255,.82); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 body[data-scene="foam"]   { --bg: #e6e6e3; --ink: #1c1c1c; --ink-soft: #616d78; --line: rgba(28,28,28,.14); --panel: rgba(244,244,241,.88); --acc: #5c80ea; --cursor: #1c1c1c; color-scheme: light; }
@@ -354,16 +354,18 @@ const SOUNDS = {
       hiss(t + 0.06, { type: 'lowpass', f: 650, f2: 240, ft: 0.16, a: 0.025, d: 0.16, q: 2, g: 0.7 });
     },
     up(k, t) { hiss(t, { f: 500, f2: 1100, ft: 0.08, q: 5, a: 0.01, d: 0.08, g: 0.4 }); } },
-  popit: { name: 'Pop It', desc: 'Flip the dots on a tiny planet', scene: 'dots',
+  popit: { name: 'Pop It', desc: 'Pop the beads on hanging spinners', scene: 'spin',
+    /* a tuned water-drop "bloop": lower on the screen means smaller beads and higher notes, so a swipe plays a melody */
     down(k, t, j) {
-      const f = (360 + k.seed * 220) * j;
-      tone('sine', f * 1.7, t, { f2: f, ft: 0.03, a: 0.001, d: 0.075, g: 0.8, wet: 0.12 });
-      hiss(t, { f: f * 3, q: 4, d: 0.012, g: 0.6 });
+      const deg = Math.floor(k.x * 0.7) + k.row * 2, f = mtof(57 + Math.floor(deg / 5) * 12 + PENTA[deg % 5]) * (0.998 + j * 0.002);
+      tone('sine', f * 0.72, t, { f2: f, ft: 0.03, a: 0.003, d: 0.2, g: 0.62, wet: 0.28 });
+      tone('sine', f * 2.01, t + 0.004, { a: 0.002, d: 0.07, g: 0.09, wet: 0.2 });
+      tone('triangle', f * 0.5, t, { a: 0.004, d: 0.09, g: 0.12 });
+      hiss(t, { f: f * 3.2, q: 7, d: 0.012, g: 0.22 });
     },
     up(k, t, j) {
-      const f = (420 + k.seed * 240) * j;
-      tone('sine', f * 1.4, t, { f2: f * 0.9, ft: 0.03, a: 0.001, d: 0.055, g: 0.45 });
-      hiss(t, { f: f * 3.5, q: 4, d: 0.008, g: 0.35 });
+      const deg = Math.floor(k.x * 0.7) + k.row * 2, f = mtof(69 + Math.floor(deg / 5) * 12 + PENTA[deg % 5]) * j;
+      tone('sine', f * 1.12, t, { f2: f * 0.94, ft: 0.04, a: 0.002, d: 0.07, g: 0.14, wet: 0.3 });
     } },
   bubble: { name: 'Bubble Wrap', desc: 'A sheet of bubbles to pop', scene: 'wrap',
     down(k, t, j) {
@@ -715,46 +717,80 @@ const SCENES = {
     }
   },
 
-  /* 02 Pop It: a dot-matrix planet on cobalt. Every dot you cross flips between a pressed coin and an open ring. */
-  dots: {
+  /* 02 Pop It: black spinner sculptures hang from threads. Every bead you cross pops: it splays into thin rings,
+     springs back, and the whole strand sways. */
+  spin: {
     init() {
-      const s2 = this.s = Math.max(14, Math.round(Math.min(SW, ZB - ZT) / 26));
-      const R = Math.min(SW, ZB - ZT) * .47, cx = SW / 2, cy = (ZT + ZB) / 2, n = vnoise(11);
-      this.dots = [];
-      for (let j = -Math.ceil(R / s2); j <= Math.ceil(R / s2); j++) for (let i = -Math.ceil(R / s2); i <= Math.ceil(R / s2); i++) {
-        const x = cx + i * s2, y = cy + j * s2;
-        if (Math.hypot(x - cx, y - cy) > R) continue;
-        const land = n(i * .2 + 3, j * .2 + 5) > .48;
-        if (!land && Math.random() < .35) continue;
-        this.dots.push({ x, y, st: land ? 1 : 0, sc: 1, v: 0 });
+      const H = ZB - ZT, n = this.n = clamp(Math.round(SW / 200), 3, 9);
+      this.st = [];
+      for (let i = 0; i < n; i++) {
+        const W = clamp(SW / n * rand(.2, .3), 22, 80), top = ZT + H * rand(.0, .16), L = Math.min(H * rand(.68, .9), ZB - 40 - top - W), beads = [];
+        let y = 0;
+        while (y < L - W * .6) {
+          const p = y / L, small = beads.length % 2 && Math.random() < .55, w = W * (1 - p * .8) * (small ? rand(.5, .7) : rand(.82, 1.05)), h = w * (p < .25 ? rand(.6, .9) : rand(.9, 1.4));
+          beads.push({ h, w, neck: Math.max(1.6, W * (1 - p * .8) * .12), s: 1, v: 0, open: 0, y0: 0, hh: h });
+          y += h;
+        }
+        this.st.push({ x: SW * (i + .5 + rand(-.22, .22)) / n, top, W, beads, th: 0, om: 0, ph: Math.random() * 6.283, tip: W * rand(.7, 1) });
       }
-      paper(dc, C.cobalt, .04);
-      dc.fillStyle = 'rgba(255,255,255,.85)'; dc.font = mono(11);
-      dc.fillText('PUSH  ·  POP  ·  REPEAT', 24, ZB - 16);
-      dc.textAlign = 'right'; dc.fillText(`${this.dots.length} BUBBLES`, SW - 24, ZB - 16); dc.textAlign = 'left';
+      paper(dc, '#f1f0ec', .035);
+      const g = dc.createRadialGradient(SW * .5, SH * .4, 0, SW * .5, SH * .4, Math.max(SW, SH) * .7);
+      g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(200,198,190,.25)');
+      dc.fillStyle = g; dc.fillRect(0, 0, SW, SH);
+      dc.fillStyle = '#111'; dc.font = mono(11);
+      dc.fillText('POP  ·  SPIN  ·  REPEAT', 24, ZB - 16);
+      dc.textAlign = 'right'; dc.fillText(`${n} SPINNERS`, SW - 24, ZB - 16); dc.textAlign = 'left';
+    },
+    local(st, x, y) { const a = st.th + Math.sin(performance.now() / 1700 + st.ph) * .006, dx = x - st.x, c = Math.cos(a), sn = Math.sin(a); return [dx * c + y * sn, -dx * sn + y * c]; },
+    move(x, y, dx) {
+      for (const st of this.st) { const [lx, ly] = this.local(st, x, y); if (Math.abs(lx) < st.W * 1.1 && ly > st.top && ly < st.top + st.len) st.om += dx * .0000045; }
     },
     hit(x, y) {
-      const s2 = this.s;
-      for (const d of this.dots) {
-        const dd = Math.hypot(d.x - x, d.y - y);
-        if (dd > s2 * 1.25) continue;
-        d.st = d.st ? 0 : 1;
-        d.v -= .12 * (1 - dd / (s2 * 1.25)) + .05;
+      for (const st of this.st) {
+        const [lx, ly] = this.local(st, x, y);
+        for (const b of st.beads) {
+          if (ly < b.y0 || ly > b.y0 + b.hh || Math.abs(lx) > b.w * b.s + 8) continue;
+          b.v -= .07; b.open = 1;
+          st.om += (lx < 0 ? 1 : -1) * rand(.00006, .00012);
+          return;
+        }
       }
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const rr = this.s * .42;
-      for (const d of this.dots) {
-        d.v += (1 - d.sc) * .012 * dt; d.v *= Math.pow(.86, dt / 16); d.sc += d.v * dt / 16;
-        const r2 = Math.max(1, rr * d.sc);
-        if (d.st) {
-          sc.fillStyle = '#ffffff'; sc.beginPath(); sc.arc(d.x, d.y, r2, 0, 7); sc.fill();
-          sc.strokeStyle = 'rgba(44,98,251,.45)'; sc.lineWidth = 1.2; sc.beginPath(); sc.arc(d.x, d.y, r2 * .62, 0, 7); sc.stroke();
-        } else {
-          sc.strokeStyle = 'rgba(255,255,255,.9)'; sc.lineWidth = 1.6; sc.beginPath(); sc.arc(d.x, d.y, r2 * .9, 0, 7); sc.stroke();
-          sc.fillStyle = '#ffffff'; sc.beginPath(); sc.arc(d.x, d.y, r2 * .16, 0, 7); sc.fill();
+      const fs2 = Math.pow(.86, dt / 16), fo = Math.pow(.18, dt / 1000), fd = Math.pow(.986, dt / 16);
+      for (const st of this.st) {
+        st.om += -st.th * .000028 * dt; st.om *= fd; st.th = clamp(st.th + st.om * dt, -.35, .35);
+        const a = st.th + Math.sin(now / 1700 + st.ph) * .006;
+        sc.save(); sc.translate(st.x, 0); sc.rotate(a);
+        sc.fillStyle = 'rgba(17,17,17,.35)'; sc.fillRect(-.5, 0, 1, st.top);
+        sc.fillStyle = '#111'; sc.fillRect(-1.2, st.top - 14, 2.4, 16);
+        let y = st.top;
+        for (const b of st.beads) {
+          b.v += (1 - b.s) * .01 * dt; b.v *= fs2; b.s += b.v * dt / 16; b.open *= fo;
+          const hh = b.h * (1 + b.open * .55), w = b.w * b.s, prof = u => b.neck + (w - b.neck) * Math.pow(Math.sin(Math.PI * u), .5);
+          b.y0 = y; b.hh = hh;
+          if (b.open > .06) {
+            const gap = 2 + b.open * 5;
+            sc.fillStyle = '#111';
+            for (let yy = 0; yy < hh; yy += gap) { const r = prof(yy / hh); sc.fillRect(-r, y + yy, r * 2, 1.3); }
+            sc.fillRect(-b.neck * .4, y, b.neck * .8, hh);
+          } else {
+            sc.fillStyle = '#111'; sc.beginPath();
+            for (let i = 0; i <= 16; i++) { const u = i / 16; sc.lineTo(-prof(u), y + u * hh); }
+            for (let i = 16; i >= 0; i--) { const u = i / 16; sc.lineTo(prof(u), y + u * hh); }
+            sc.fill();
+            sc.fillStyle = 'rgba(255,255,255,.07)';
+            for (let yy = 2; yy < hh - 1; yy += 3) { const r = prof(yy / hh) * .96; sc.fillRect(-r, y + yy, r * 2, .8); }
+          }
+          y += hh;
         }
+        // twisted tip
+        sc.fillStyle = '#111'; sc.beginPath(); sc.moveTo(-st.tip * .16, y); sc.lineTo(st.tip * .16, y); sc.lineTo(0, y + st.tip); sc.fill();
+        sc.strokeStyle = 'rgba(255,255,255,.18)'; sc.lineWidth = .8;
+        for (let i = 1; i < 5; i++) { const yy = y + st.tip * i / 5, r = st.tip * .16 * (1 - i / 5); sc.beginPath(); sc.moveTo(-r, yy); sc.lineTo(r, yy - st.tip * .06); sc.stroke(); }
+        st.len = y + st.tip - st.top;
+        sc.restore();
       }
     }
   },
@@ -1201,8 +1237,13 @@ function thumb(id) {
       return svg('#fff', b);
     }
     case 'popit':
-      for (let y = 7; y < 46; y += 5) for (let x = 20; x < 62; x += 5) { if (Math.hypot(x - 40, y - 26) > 19) continue; b += r() < .55 ? `<circle cx="${x}" cy="${y}" r="2" fill="#fff"/>` : `<circle cx="${x}" cy="${y}" r="1.7" fill="none" stroke="#fff" stroke-width=".7"/>`; }
-      return svg(C.cobalt, b);
+      [[22, 5, 7], [40, 2, 9], [58, 6, 8]].forEach(([x, y0, w]) => {
+        b += `<line x1="${x}" y1="0" x2="${x}" y2="${y0}" stroke="#111" stroke-width=".4"/>`;
+        let y = y0;
+        while (y < 44) { const p = (y - y0) / 42, ww = w * (1 - p * .75), h = ww * (p < .2 ? .9 : 1.3); b += `<ellipse cx="${x}" cy="${(y + h / 2).toFixed(1)}" rx="${ww.toFixed(1)}" ry="${(h / 2).toFixed(1)}" fill="#111"/>`; y += h; }
+        b += `<path d="M${x - 1} ${y}L${x + 1} ${y}L${x} ${y + 4}Z" fill="#111"/>`;
+      });
+      return svg('#f1f0ec', b);
     case 'bubble':
       for (let j = 0; j < 4; j++) for (let x = 6 + (j % 2) * 5; x < 80; x += 10) b += r() < .3 ? `<circle cx="${x}" cy="${10 + j * 9}" r="3" fill="none" stroke="${C.ink}" stroke-width=".5" stroke-dasharray="1 1"/>` : `<circle cx="${x}" cy="${10 + j * 9}" r="4" fill="${C.peri}" stroke="${C.ink}" stroke-width=".7"/>`;
       return svg(C.greyPaper, b);
