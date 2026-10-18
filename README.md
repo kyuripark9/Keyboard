@@ -13,7 +13,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 | 05 | Crunchy Slime | Rings, blue bead bars and black chunks that pop on grey paper |
 | 06 | Kinetic Sand | Letters that pour down into a pile |
 | 07 | Typewriter | Stamped type that wears off and drifts down the page |
-| 08 | Gaming | A segmented level meter with a live APM counter |
+| 08 | Gaming | A segmented level meter with a live APM counter, to a marbly linear-switch clack |
 | 09 | Voice | Each spoken letter lands as huge type that focuses, then blurs away |
 | 10 | Marimba | A halftone screen where every note sends out a ripple |
 
@@ -21,7 +21,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 - **Custom cursor**: 9 shapes, any color, adjustable size and trail.
 - Your real keyboard plays too (letters, digits, space, enter), and the left and right arrows switch sounds. Settings and your clack count are saved in the browser.
 
-All sounds are synthesized live with the Web Audio API, so there are no audio files. Voice uses the browser's speech synthesis. The palette comes from one moodboard: cobalt, periwinkle, grey and warm paper, and ink. Wax Ball is the exception: pure black on white, like a gig poster.
+All sounds are synthesized live with the Web Audio API, so there are no audio files. They are tuned for ASMR: soft attacks, rounded filters, small crisp details and a little reverb, with pitched sounds on a pentatonic scale. Voice uses the browser's speech synthesis. The palette comes from one moodboard: cobalt, periwinkle, grey and warm paper, and ink. Wax Ball is the exception: pure black on white, like a gig poster.
 
 ## Run locally
 

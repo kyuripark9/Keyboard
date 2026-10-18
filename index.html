@@ -303,9 +303,11 @@ function initAudio(C) {
   comp.threshold.value = -16; comp.knee.value = 10; comp.ratio.value = 5; comp.attack.value = 0.002; comp.release.value = 0.15;
   A.dry = C.createGain(); A.dry.gain.value = 1.9; A.dry.connect(comp);
   A.wet = C.createGain(); A.wet.gain.value = 1.1;
-  const verb = C.createConvolver(); verb.buffer = makeIR(C, 1.8, 3);
+  const verb = C.createConvolver(); verb.buffer = makeIR(C, 2.4, 3.4);
   A.wet.connect(verb); verb.connect(comp);
-  comp.connect(A.master); A.master.connect(C.destination);
+  // a gentle top-end roll-off keeps the tingle soft instead of sharp
+  const soft = C.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 10500; soft.Q.value = 0.5;
+  comp.connect(soft); soft.connect(A.master); A.master.connect(C.destination);
   const n = C.createBuffer(1, C.sampleRate, C.sampleRate), d = n.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   A.noise = n;
@@ -336,100 +338,102 @@ function hiss(t, o = {}) {
   s.start(t, Math.random() * 0.5); s.stop(t + a + d + 0.05);
 }
 const PENTA = [0, 2, 4, 7, 9];
-function noteOf(k, base = 48) {
-  const deg = Math.floor(k.x * 0.8) + (5 - k.row) * 2;
-  return base + Math.floor(deg / 5) * 12 + PENTA[deg % 5];
-}
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 const rand = (a, b) => a + Math.random() * (b - a);
 
-/* Each sound: scene = the picture it draws, desc = one line for the picker. */
+/* Each sound: scene = the picture it draws, desc = one line for the picker.
+   All ten are tuned for ASMR: soft attacks, rounded filters, tiny crisp details and a little room tone.
+   Pitched parts use a pentatonic scale so any swipe stays in tune. */
+const pent = (k, base, flip) => { const deg = Math.floor(k.x * 0.7) + (flip ? k.row : 5 - k.row) * 2; return mtof(base + Math.floor(deg / 5) * 12 + PENTA[deg % 5]); };
+function crinkle(t, n, spread, o = {}) {
+  const { lo = 2600, hi = 6000, g = 0.35, q = 2.5 } = o;
+  for (let i = 0; i < n; i++) { const at = t + Math.pow(Math.random(), 1.6) * spread; hiss(at, { f: rand(lo, hi), q, a: 0.0015, d: rand(0.004, 0.012), g: rand(0.4, 1) * g * (1 - (at - t) / spread * 0.6) }); }
+}
 const SOUNDS = {
   wax: { name: 'Wax Ball', desc: 'Crack the cells, stretch the goo', scene: 'goo',
+    // a thin shell snapping into crisp flakes, then a sticky, stretchy pull
     down(k, t, j) {
-      hiss(t, { f: 1900 * j, q: 2.5, d: 0.014, g: 1.6 });
-      hiss(t, { type: 'highpass', f: 5200, d: 0.006, g: 1.4 });
-      const n = 5 + Math.floor(Math.random() * 4);
-      for (let i = 0; i < n; i++) hiss(t + rand(0.004, 0.05), { type: 'highpass', f: rand(2800, 7000), d: rand(0.003, 0.008), g: rand(0.4, 1.1) });
-      hiss(t + 0.06, { type: 'lowpass', f: 650, f2: 240, ft: 0.16, a: 0.025, d: 0.16, q: 2, g: 0.7 });
+      hiss(t, { f: 2400 * j, q: 3, a: 0.002, d: 0.018, g: 1.3 });
+      crinkle(t + 0.004, 6 + Math.floor(Math.random() * 4), 0.07, { lo: 3000, hi: 6500, g: 0.45 });
+      hiss(t + 0.05, { f: 320 * j, f2: 820 * j, ft: 0.14, q: 9, a: 0.03, d: 0.16, g: 1.5, wet: 0.12 });
+      tone('sine', 140 * j, t + 0.05, { f2: 210 * j, ft: 0.12, a: 0.03, d: 0.14, g: 0.1 });
     },
-    up(k, t) { hiss(t, { f: 500, f2: 1100, ft: 0.08, q: 5, a: 0.01, d: 0.08, g: 0.4 }); } },
+    up(k, t, j) { hiss(t, { f: 900 * j, f2: 420, ft: 0.1, q: 10, a: 0.012, d: 0.1, g: 0.6 }); } },
   popit: { name: 'Pop It', desc: 'Pop the beads on hanging spinners', scene: 'spin',
-    /* a tuned water-drop "bloop": lower on the screen means smaller beads and higher notes, so a swipe plays a melody */
+    // a tuned water-drop bloop: lower on the screen means smaller beads and higher notes
     down(k, t, j) {
-      const deg = Math.floor(k.x * 0.7) + k.row * 2, f = mtof(57 + Math.floor(deg / 5) * 12 + PENTA[deg % 5]) * (0.998 + j * 0.002);
-      tone('sine', f * 0.72, t, { f2: f, ft: 0.03, a: 0.003, d: 0.2, g: 0.62, wet: 0.28 });
-      tone('sine', f * 2.01, t + 0.004, { a: 0.002, d: 0.07, g: 0.09, wet: 0.2 });
-      tone('triangle', f * 0.5, t, { a: 0.004, d: 0.09, g: 0.12 });
-      hiss(t, { f: f * 3.2, q: 7, d: 0.012, g: 0.22 });
+      const f = pent(k, 57, true) * (0.998 + j * 0.002);
+      tone('sine', f * 0.72, t, { f2: f, ft: 0.03, a: 0.003, d: 0.2, g: 0.62, wet: 0.3 });
+      tone('sine', f * 2.01, t + 0.004, { a: 0.002, d: 0.07, g: 0.08, wet: 0.22 });
+      tone('triangle', f * 0.5, t, { a: 0.004, d: 0.09, g: 0.1 });
+      hiss(t, { f: f * 3.2, q: 7, d: 0.012, g: 0.2 });
     },
-    up(k, t, j) {
-      const deg = Math.floor(k.x * 0.7) + k.row * 2, f = mtof(69 + Math.floor(deg / 5) * 12 + PENTA[deg % 5]) * j;
-      tone('sine', f * 1.12, t, { f2: f * 0.94, ft: 0.04, a: 0.002, d: 0.07, g: 0.14, wet: 0.3 });
-    } },
+    up(k, t, j) { const f = pent(k, 69, true) * j; tone('sine', f * 1.12, t, { f2: f * 0.94, ft: 0.04, a: 0.002, d: 0.07, g: 0.13, wet: 0.3 }); } },
   bubble: { name: 'Bubble Wrap', desc: 'A sheet of bubbles to pop', scene: 'wrap',
+    // a soft round pop with a whisper of plastic crinkle after it
     down(k, t, j) {
-      const f0 = (260 + k.seed * 280) * j;
-      tone('sine', f0, t, { f2: f0 * 2.7, ft: 0.06, a: 0.003, d: 0.085, g: 0.6, wet: 0.15 });
-      hiss(t, { f: 1800, q: 3, d: 0.006, g: 0.4 });
+      const f0 = (220 + k.seed * 160) * j;
+      hiss(t, { type: 'lowpass', f: 2200, q: 1.2, a: 0.001, d: 0.012, g: 1.3 });
+      tone('sine', f0, t, { f2: f0 * 2.4, ft: 0.05, a: 0.002, d: 0.07, g: 0.5, wet: 0.2 });
+      crinkle(t + 0.015, 4, 0.12, { lo: 3500, hi: 7000, g: 0.16 });
     } },
   squishy: { name: 'Squishy', desc: 'Soft blobs that slowly rise back', scene: 'blob',
+    // airy slow-rise foam: a breathy squeeze, a tiny rubber squeak and a soft exhale on release
     down(k, t, j) {
-      hiss(t, { f: 260 * j, f2: 950 * j, ft: 0.12, q: 5, a: 0.02, d: 0.16, g: 3.6 });
-      hiss(t + 0.05, { f: 720 * j, f2: 340, ft: 0.1, q: 6, a: 0.01, d: 0.1, g: 1.8 });
-      tone('sine', 120, t, { f2: 85, ft: 0.08, a: 0.01, d: 0.08, g: 0.45 });
+      hiss(t, { type: 'lowpass', f: 420 * j, f2: 1500 * j, ft: 0.22, q: 2.2, a: 0.05, d: 0.22, g: 1.6 });
+      hiss(t + 0.03, { f: 700 * j, f2: 1100 * j, ft: 0.15, q: 12, a: 0.03, d: 0.13, g: 0.45 });
+      tone('sine', 880 * j, t + 0.06, { f2: 1240 * j, ft: 0.08, a: 0.02, d: 0.07, g: 0.035 });
     },
-    up(k, t, j) { hiss(t, { f: 380 * j, f2: 1400 * j, ft: 0.07, q: 6, a: 0.01, d: 0.08, g: 1.4 }); } },
+    up(k, t, j) { hiss(t, { type: 'lowpass', f: 1300 * j, f2: 380, ft: 0.35, q: 1.5, a: 0.06, d: 0.34, g: 0.9 }); } },
   slime: { name: 'Crunchy Slime', desc: 'Foam beads, bars and chunks', scene: 'foam',
+    // foam beads bursting inside glossy slime: a wet press and a fizz of tiny crackles
     down(k, t, j) {
-      hiss(t, { f: 480 * j, f2: 300, ft: 0.1, q: 3, a: 0.02, d: 0.12, g: 0.8 });
-      const n = 8 + Math.floor(Math.random() * 6);
-      for (let i = 0; i < n; i++) {
-        const at = t + rand(0, 0.14);
-        hiss(at, { f: rand(2500, 6500), q: 2, d: rand(0.002, 0.005), g: rand(0.5, 1.3) });
-        if (Math.random() < 0.3) tone('sine', rand(1400, 3200), at, { a: 0.001, d: 0.012, g: 0.12 });
-      }
+      hiss(t, { f: 380 * j, f2: 700, ft: 0.1, q: 6, a: 0.025, d: 0.14, g: 1, wet: 0.08 });
+      crinkle(t + 0.01, 12 + Math.floor(Math.random() * 6), 0.18, { lo: 2800, hi: 7000, g: 0.6, q: 3 });
+      if (Math.random() < 0.5) tone('sine', rand(1800, 2600), t + rand(0.02, 0.1), { a: 0.002, d: 0.02, g: 0.04, wet: 0.3 });
     },
-    up(k, t) { hiss(t, { f: 600, f2: 1600, ft: 0.06, q: 5, a: 0.01, d: 0.06, g: 0.5 }); } },
+    up(k, t, j) { hiss(t, { f: 700 * j, f2: 1500, ft: 0.08, q: 8, a: 0.01, d: 0.08, g: 0.4 }); crinkle(t, 4, 0.06, { g: 0.2 }); } },
   sand: { name: 'Kinetic Sand', desc: 'Pour letters into a pile', scene: 'sand',
+    // a hushed slice through damp sand: soft hiss with a fine grain on top
     down(k, t, j) {
-      hiss(t, { type: 'lowpass', f: 1100 * j, a: 0.03, d: 0.16, g: 0.75 });
-      for (let i = 0; i < 20; i++) {
-        const at = rand(0, 0.19);
-        hiss(t + at, { f: rand(1500, 4200), q: 1, d: rand(0.004, 0.009), g: rand(0.25, 0.65) * (1 - at * 3) });
-      }
+      hiss(t, { type: 'lowpass', f: 900 * j, f2: 1600 * j, ft: 0.16, a: 0.04, d: 0.18, g: 0.75 });
+      crinkle(t + 0.01, 22, 0.22, { lo: 1800, hi: 5200, g: 0.26, q: 1.4 });
     } },
   typewriter: { name: 'Typewriter', desc: 'Stamp type that slowly wears off', scene: 'type',
+    // creamy, thocky keys with a soft upstroke, and a little bell on Enter
     down(k, t, j) {
-      if (k.code === 'Space') { hiss(t, { type: 'lowpass', f: 900, d: 0.05, g: 1 }); tone('sine', 80, t, { d: 0.08, g: 0.5 }); return; }
-      hiss(t, { f: 2600 * j, q: 0.7, d: 0.025, g: 1.4 });
-      tone('triangle', 1350 * j, t, { d: 0.06, g: 0.12 });
-      tone('triangle', 3100 * j, t, { d: 0.03, g: 0.06 });
-      tone('sine', 95, t, { a: 0.001, d: 0.06, g: 0.5 });
-      if (k.code === 'Enter') {
-        tone('sine', 2093, t + 0.02, { d: 1.4, g: 0.28, wet: 0.35 });
-        tone('sine', 4200, t + 0.02, { d: 0.6, g: 0.07 });
-        hiss(t + 0.08, { f: 700, f2: 3500, ft: 0.3, a: 0.03, d: 0.32, q: 1.2, g: 0.45 });
-      }
+      if (k.code === 'Space') { hiss(t, { type: 'lowpass', f: 700, d: 0.06, g: 1 }); tone('sine', 90, t, { f2: 60, ft: 0.06, d: 0.08, g: 0.45 }); return; }
+      hiss(t, { type: 'lowpass', f: 1500 * j, q: 2.4, a: 0.001, d: 0.03, g: 1.5 });
+      tone('sine', 230 * j, t, { f2: 150 * j, ft: 0.03, a: 0.001, d: 0.05, g: 0.4 });
+      hiss(t, { f: 4200 * j, q: 4, a: 0.001, d: 0.006, g: 0.25 });
+      if (k.code === 'Enter') { tone('sine', 2093, t + 0.02, { d: 1.6, g: 0.16, wet: 0.45 }); tone('sine', 4186, t + 0.02, { d: 0.5, g: 0.03, wet: 0.3 }); }
     },
-    up(k, t) { hiss(t, { f: 3800, q: 1, d: 0.008, g: 0.25 }); } },
-  gamered: { name: 'Gaming', desc: 'Linear switch, live APM meter', scene: 'bars',
+    up(k, t, j) { hiss(t, { type: 'lowpass', f: 2400 * j, q: 2, d: 0.012, g: 0.4 }); } },
+  gamered: { name: 'Gaming', desc: 'Marbly linear keys, live APM meter', scene: 'bars',
+    // the trendy "marbly" clack of a lubed linear switch: rounded, poppy, a touch of glass on top
     down(k, t, j) {
-      hiss(t, { f: 2400 * j, q: 1.2, d: 0.02, g: 1.8 });
-      hiss(t + 0.003, { type: 'lowpass', f: 650 * j, q: 1, d: 0.035, g: 1.4 });
-      tone('sine', 3900 * j, t, { a: 0.001, d: 0.09, g: 0.05 });
-      tone('sine', 5300 * j, t, { a: 0.001, d: 0.05, g: 0.03 });
+      const f = 340 + k.seed * 60;
+      hiss(t, { type: 'lowpass', f: 2600 * j, q: 3.2, a: 0.001, d: 0.022, g: 1.05 });
+      tone('sine', f * j, t, { f2: f * 0.62 * j, ft: 0.025, a: 0.001, d: 0.04, g: 0.35 });
+      tone('sine', 3100 * j, t, { a: 0.001, d: 0.025, g: 0.03 });
     },
-    up(k, t, j) { hiss(t, { f: 3000 * j, q: 1.2, d: 0.012, g: 0.75 }); tone('sine', 4200 * j, t, { a: 0.001, d: 0.05, g: 0.025 }); } },
+    up(k, t, j) { hiss(t, { type: 'lowpass', f: 3200 * j, q: 3, d: 0.012, g: 0.55 }); } },
   voice: { name: 'Voice', desc: 'Says each letter out loud', scene: 'blur',
-    down(k, t, j) { hiss(t, { type: 'lowpass', f: 900 * j, d: 0.035, g: 0.6 }); speak(k); } },
-  marimba: { name: 'Marimba', desc: 'Every step in tune, in ripples', scene: 'ripple',
+    // a soft glass chime under each spoken letter
     down(k, t, j) {
-      const f = mtof(noteOf(k)) * (0.997 + j * 0.003);
-      tone('sine', f, t, { a: 0.002, d: Math.max(0.25, 0.9 - f / 3500), g: 0.5, wet: 0.3 });
-      tone('sine', f * 4, t, { a: 0.001, d: 0.06, g: 0.12 });
-      tone('sine', f * 9.9, t, { a: 0.001, d: 0.015, g: 0.04 });
-      hiss(t, { f: f * 3, q: 4, d: 0.008, g: 0.12 });
+      const f = pent(k, 72);
+      tone('sine', f, t, { a: 0.004, d: 0.5, g: 0.12, wet: 0.4 });
+      tone('sine', f * 3, t, { a: 0.002, d: 0.12, g: 0.015, wet: 0.3 });
+      speak(k);
+    } },
+  marimba: { name: 'Marimba', desc: 'Every step in tune, in ripples', scene: 'ripple',
+    // a warm wooden bar with a music-box shimmer on top
+    down(k, t, j) {
+      const f = pent(k, 48) * (0.997 + j * 0.003);
+      tone('sine', f, t, { a: 0.004, d: Math.max(0.3, 1 - f / 3200), g: 0.42, wet: 0.36 });
+      tone('sine', f * 4, t, { a: 0.002, d: 0.08, g: 0.07, wet: 0.2 });
+      tone('sine', f * 6.02, t + 0.003, { a: 0.003, d: 0.35, g: 0.025, wet: 0.5 });
+      hiss(t, { type: 'lowpass', f: f * 3, q: 2, d: 0.01, g: 0.12 });
     } }
 };
 
@@ -458,7 +462,7 @@ function speak(k) {
     u.lang = 'en-US';
     const v = voices.find(v => v.lang && v.lang.replace('_', '-').toLowerCase() === 'en-us') || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
     if (v) u.voice = v;
-    u.rate = 1.3; u.pitch = 1.1; u.volume = Math.min(1, S.volume * 1.2);
+    u.rate = 1.05; u.pitch = 1.15; u.volume = Math.min(1, S.volume * 0.9);
     synth.speak(u);
   } catch (e) {}
 }
