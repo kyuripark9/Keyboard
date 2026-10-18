@@ -1,27 +1,27 @@
-# Clack Keyboard
+# Clack
 
-A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, with a graphic that matches the sound.
+A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, and each sound draws its own picture to play with.
 
-## Features
+## The 10 sounds
 
-- **Graphic view** (default): each sound draws its own interactive picture as you move.
-  - Wax Ball: a blue pixel mosaic that cracks and crumbles, with design-tool bounding boxes.
-  - Pop It, Bubble Wrap, Marimba: a dot-matrix globe that flips, pops or ripples.
-  - Squishy, Mochi: soft blobs that squash and slowly spring back.
-  - Crunchy Slime: rings, bars and chunks that pop on a grainy page.
-  - Kinetic Sand: letters that pour down into a pile.
-  - Typewriter, Voice and the classic switches: stamped type that slowly decays.
-  - Gaming: RGB equalizer bars with a live APM counter.
-- **Keyboard view**: switch under Look → View to play on a giant keyboard instead.
-- **Glide or Tap**: keys play as your cursor passes over them, or only when you click or tap. On touch screens, swipe a finger across the keys.
-- **ASMR & fidget sounds**: Wax Ball and Wax Ball XL (crack the wax shell, then squish), Pop It, Squishy, Mochi Squishy, Crunchy Slime, Kinetic Sand, Bubble Wrap, and Shuffle (a different sound on every key). Keys deform, dimple or crack to match.
-- **Gaming sounds**: Gaming Red (linear with spring ping), Optical, and Clicky Blue RGB, with rainbow RGB glow on every press.
-- **Classic sounds**: Clicky, Tactile, Thock, Typewriter, Wood Block, Marimba, 8-Bit, and Voice (reads each key out loud).
-- **Keyboard styles**: Retro (beige board on a black plate with clear caps, bare switches and doodle legends), Typewriter (glass keys in chrome rings), Thrift Mix (mismatched vintage caps), Calculator (two-tone keys under a segment LCD that shows what you type), and Modern with 7 colorways.
-- **Custom cursor**: 9 shapes, any color, adjustable size, sparkle trail.
-- Your real keyboard plays too. Settings and your clack count are saved in the browser.
+| # | Sound | Picture |
+|---|-------|---------|
+| 01 | Wax Ball | A cobalt pixel mosaic that cracks and crumbles, with design-tool bounding boxes |
+| 02 | Pop It | A dot-matrix planet whose dots flip between pressed coins and open rings |
+| 03 | Bubble Wrap | A sheet of bubbles that pop flat and slowly refill |
+| 04 | Squishy | Soft blue blobs that squash and slowly rise back |
+| 05 | Crunchy Slime | Rings, blue bead bars and black chunks that pop on grey paper |
+| 06 | Kinetic Sand | Letters that pour down into a pile |
+| 07 | Typewriter | Stamped type that wears off and drifts down the page |
+| 08 | Gaming | A segmented level meter with a live APM counter |
+| 09 | Voice | Each spoken letter lands as huge type that focuses, then blurs away |
+| 10 | Marimba | A halftone screen where every note sends out a ripple |
 
-All sounds are synthesized live with the Web Audio API, so there are no audio files. Voice mode uses the browser's speech synthesis.
+- **Glide or Tap**: play as your cursor moves, or only while you click, tap or drag. On touch screens, drag a finger.
+- **Custom cursor**: 9 shapes, any color, adjustable size and trail.
+- Your real keyboard plays too (letters, digits, space, enter), and the left and right arrows switch sounds. Settings and your clack count are saved in the browser.
+
+All sounds are synthesized live with the Web Audio API, so there are no audio files. Voice uses the browser's speech synthesis. The palette comes from one moodboard: cobalt, periwinkle, grey and warm paper, and ink.
 
 ## Run locally
 
