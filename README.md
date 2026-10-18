@@ -1,9 +1,18 @@
 # Clack Keyboard
 
-A stress-relief keyboard toy. Glide your mouse across a giant keyboard and every key you pass clicks.
+A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, with a graphic that matches the sound.
 
 ## Features
 
+- **Graphic view** (default): each sound draws its own interactive picture as you move.
+  - Wax Ball: a blue pixel mosaic that cracks and crumbles, with design-tool bounding boxes.
+  - Pop It, Bubble Wrap, Marimba: a dot-matrix globe that flips, pops or ripples.
+  - Squishy, Mochi: soft blobs that squash and slowly spring back.
+  - Crunchy Slime: rings, bars and chunks that pop on a grainy page.
+  - Kinetic Sand: letters that pour down into a pile.
+  - Typewriter, Voice and the classic switches: stamped type that slowly decays.
+  - Gaming: RGB equalizer bars with a live APM counter.
+- **Keyboard view**: switch under Look → View to play on a giant keyboard instead.
 - **Glide or Tap**: keys play as your cursor passes over them, or only when you click or tap. On touch screens, swipe a finger across the keys.
 - **ASMR & fidget sounds**: Wax Ball and Wax Ball XL (crack the wax shell, then squish), Pop It, Squishy, Mochi Squishy, Crunchy Slime, Kinetic Sand, Bubble Wrap, and Shuffle (a different sound on every key). Keys deform, dimple or crack to match.
 - **Gaming sounds**: Gaming Red (linear with spring ping), Optical, and Clicky Blue RGB, with rainbow RGB glow on every press.

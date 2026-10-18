@@ -207,6 +207,20 @@ body[data-style="calc"] .case::after { display: none; }
 body[data-style="calc"] .cap { border-radius: calc(var(--u) * .16); }
 body[data-style="calc"] .lg { font-weight: 500; }
 
+/* ===== Graphic view: each sound gets its own full-screen picture. Single-look palettes, chosen per scene. ===== */
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display: none; }
+body[data-view="graphic"] #scene { display: block; }
+body[data-view="graphic"] #board, body[data-view="graphic"] .echo, body[data-view="graphic"] .rotate-hint { display: none; }
+body[data-view="graphic"] #styleBox { display: none; }
+body[data-view="graphic"][data-scene="pixel"] { --bg: #f3f4f6; --ink: #1b2a55; --ink-soft: #5a6890; --line: rgba(27,42,85,.14); --panel: rgba(255,255,255,.82); --acc: #2f5bd3; --glow: #2f5bd3; --cursor: #2f5bd3; color-scheme: light; }
+body[data-view="graphic"][data-scene="dots"] { --bg: #2f5df0; --ink: #ffffff; --ink-soft: rgba(255,255,255,.78); --line: rgba(255,255,255,.24); --panel: rgba(30,62,196,.78); --acc: #ffffff; --glow: #ffffff; --cursor: #ffffff; color-scheme: dark; }
+body[data-view="graphic"][data-scene="blob"] { --bg: #eef0f5; --ink: #1f2a4d; --ink-soft: #5d6684; --line: rgba(31,42,77,.13); --panel: rgba(255,255,255,.78); --acc: #3f6ae0; --glow: #3f6ae0; --cursor: #3f6ae0; color-scheme: light; }
+body[data-view="graphic"][data-scene="foam"] { --bg: #e9e7e1; --ink: #1e1e1c; --ink-soft: #5f5d57; --line: rgba(30,30,28,.14); --panel: rgba(245,243,238,.86); --acc: #4f86d0; --glow: #4f86d0; --cursor: #1e1e1c; color-scheme: light; }
+body[data-view="graphic"][data-scene="sand"] { --bg: #f7f6f2; --ink: #111111; --ink-soft: #6a6a66; --line: rgba(17,17,17,.13); --panel: rgba(255,255,255,.86); --acc: #111111; --glow: #111111; --cursor: #111111; color-scheme: light; }
+body[data-view="graphic"][data-scene="type"] { --bg: #efe8d7; --ink: #1b1a17; --ink-soft: #6a6352; --line: rgba(27,26,23,.14); --panel: rgba(246,241,229,.88); --acc: #1b1a17; --glow: #1b1a17; --cursor: #1b1a17; color-scheme: light; }
+body[data-view="graphic"][data-scene="bars"] { --bg: #0b0d12; --ink: #e8ecf5; --ink-soft: #8a93a8; --line: rgba(232,236,245,.14); --panel: rgba(20,24,34,.86); --acc: #7cc8ff; --glow: #7cc8ff; --cursor: #ffffff; color-scheme: dark; }
+body[data-view="graphic"] .app { z-index: 1; }
+
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
@@ -473,6 +487,7 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
 </style>
 </head>
 <body>
+<canvas id="scene" aria-label="Interactive graphic"></canvas>
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
@@ -515,7 +530,7 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
       </button>
       <button class="dbtn" type="button" data-panel="kb" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M8 14.5h8"/></svg>
-        <span class="lbl">Keyboard</span>
+        <span class="lbl">Look</span>
       </button>
       <button class="dbtn" type="button" data-panel="cursor" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z"/></svg>
@@ -537,12 +552,19 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
       <div class="grid" id="soundGrid2"></div>
     </section>
 
-    <section class="panel" id="panel-kb" hidden aria-label="Style the keyboard">
-      <h2>STYLE</h2>
-      <div class="grid" id="styleGrid"></div>
-      <div id="cwBox">
-        <h2>COLORWAY</h2>
-        <div class="grid" id="palGrid"></div>
+    <section class="panel" id="panel-kb" hidden aria-label="Change the look">
+      <h2>VIEW</h2>
+      <div class="chips" id="viewChips">
+        <button class="chip" type="button" data-v="graphic">Graphic (changes with the sound)</button>
+        <button class="chip" type="button" data-v="keyboard">Keyboard</button>
+      </div>
+      <div id="styleBox">
+        <h2>KEYBOARD STYLE</h2>
+        <div class="grid" id="styleGrid"></div>
+        <div id="cwBox">
+          <h2>COLORWAY</h2>
+          <div class="grid" id="palGrid"></div>
+        </div>
       </div>
       <h2>DISPLAY</h2>
       <div class="toggles">
@@ -584,11 +606,12 @@ body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
 
 /* ---------- settings ---------- */
 const SOUND_IDS = ['wax', 'waxxl', 'popit', 'squishy', 'mochi', 'slime', 'sand', 'gamered', 'optical', 'gameclicky', 'blue', 'brown', 'thock', 'typewriter', 'bubble', 'woodblock', 'marimba', 'chip', 'voice', 'mix'];
-const DEF = { mode: 'hover', sound: 'wax', style: 'retro', pal: 'auto', cur: 'ring', curColor: 'auto', curSize: 30, trail: true,
+const DEF = { mode: 'hover', sound: 'wax', view: 'graphic', style: 'retro', pal: 'auto', cur: 'ring', curColor: 'auto', curSize: 30, trail: true,
   fx: true, echo: true, volume: 0.7, muted: false, count: 0, zen: 0 };
 let S = { ...DEF };
 try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
 if (!SOUND_IDS.includes(S.sound)) S.sound = DEF.sound;
+if (S.view !== 'keyboard') S.view = 'graphic';
 if (!['retro', 'typewriter', 'thrift', 'calc', 'modern'].includes(S.style)) S.style = DEF.style;
 let saveT = 0;
 function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('clack', JSON.stringify(S)); } catch (e) {} }, 300); }
@@ -953,8 +976,10 @@ function press(k, src) {
   k.holders.add(src);
   if (was) return;
   clearTimeout(k.upT);
-  k.el.classList.add('down');
-  k.el.style.setProperty('--hue', Math.round((performance.now() / 8 + k.x * 22) % 360));
+  if (k.el) {
+    k.el.classList.add('down');
+    k.el.style.setProperty('--hue', Math.round((performance.now() / 8 + k.x * 22) % 360));
+  }
   k.downAt = performance.now();
   playKey(k, 'down');
   lcdType(k);
@@ -962,20 +987,24 @@ function press(k, src) {
   if (S.sound === 'woodblock' || (S.sound === 'mix' && mixOf(k) === 'woodblock')) S.zen++;
   renderCount();
   save();
-  const r = k.el.getBoundingClientRect();
-  if (S.fx) burst(r.left + r.width / 2, r.top + r.height / 2, k);
-  if (S.echo) showEcho(k);
+  if (graphic()) sceneHit(k);
+  else {
+    const r = k.el.getBoundingClientRect();
+    if (S.fx) burst(r.left + r.width / 2, r.top + r.height / 2, k);
+    if (S.echo) showEcho(k);
+  }
   pulseCursor();
 }
 function release(k, src) {
   if (!k.holders.delete(src) || k.holders.size) return;
   playKey(k, 'up');
+  if (!k.el) return;
   const held = performance.now() - k.downAt;
   const rel = () => k.el.classList.remove('down');
   if (held < MIN_DOWN) k.upT = setTimeout(rel, MIN_DOWN - held); else rel();
 }
 function releaseAll(prefix) {
-  Object.values(keyEls).forEach(k => [...k.holders].forEach(h => { if (!prefix || h.startsWith(prefix)) release(k, h); }));
+  [...Object.values(keyEls), ...cells.values()].forEach(k => [...k.holders].forEach(h => { if (!prefix || h.startsWith(prefix)) release(k, h); }));
   if (!prefix || prefix === 'p') active.clear();
 }
 function renderCount() {
@@ -998,6 +1027,7 @@ const active = new Map();   // pointerId -> key under it
 const lastPt = new Map();
 const pressed = new Set();
 function keyAt(x, y) {
+  if (graphic()) { const el = document.elementFromPoint(x, y); return el && el.closest('.dock-wrap, .intro, .top') ? null : cellAt(x, y); }
   const el = document.elementFromPoint(x, y);
   if (!el || !board.contains(el)) return null;
   const kEl = el.closest('.key');
@@ -1014,7 +1044,7 @@ function travel(id, x1, y1) {
   lastPt.set(id, [x1, y1]);
   if (!p) return enter(id, keyAt(x1, y1));
   const dx = x1 - p[0], dy = y1 - p[1], dist = Math.hypot(dx, dy);
-  const n = Math.min(48, Math.ceil(dist / Math.max(4, U * 0.28)));
+  const n = Math.min(48, Math.ceil(dist / Math.max(4, graphic() ? CELL * 0.4 : U * 0.28)));
   if (!n) return enter(id, keyAt(x1, y1));
   for (let i = 1; i <= n; i++) enter(id, keyAt(p[0] + dx * i / n, p[1] + dy * i / n));
 }
@@ -1034,6 +1064,7 @@ addEventListener('pointerdown', e => {
 addEventListener('pointermove', e => {
   moveCursor(e);
   if (!glides(e)) { lastPt.set(e.pointerId, [e.clientX, e.clientY]); return; }
+  if (graphic() && scene && scene.move) { const p = lastPt.get(e.pointerId) || [e.clientX, e.clientY]; scene.move(e.clientX, e.clientY, e.clientX - p[0], e.clientY - p[1]); }
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
   if (evs.length > 1) evs.forEach(c => travel(e.pointerId, c.clientX, c.clientY));
   else travel(e.pointerId, e.clientX, e.clientY);
@@ -1047,7 +1078,7 @@ addEventListener('pointercancel', lift);
 document.addEventListener('pointerleave', e => { enter(e.pointerId, null); lastPt.delete(e.pointerId); cursorEl.classList.remove('on'); });
 document.documentElement.addEventListener('mouseleave', () => { releaseAll('p'); cursorEl.classList.remove('on'); });
 addEventListener('blur', () => releaseAll());
-addEventListener('contextmenu', e => { if (board.contains(e.target)) e.preventDefault(); });
+addEventListener('contextmenu', e => { if (board.contains(e.target) || e.target === scn) e.preventDefault(); });
 
 /* physical keyboard */
 addEventListener('keydown', e => {
@@ -1061,6 +1092,436 @@ addEventListener('keydown', e => {
   press(k, 'k' + e.code);
 });
 addEventListener('keyup', e => { const k = keyEls[ALIAS[e.code] || e.code]; if (k) release(k, 'k' + e.code); });
+
+
+/* ---------- graphic scenes: the cursor path becomes a grid of invisible "keys"; each sound has its own picture ---------- */
+const scn = document.getElementById('scene'), sc = scn.getContext('2d');
+let SW = 0, SH = 0, SDPR = 1, scene = null, sceneId = '', CELL = 40, ZT = 0, ZB = 0;
+const deco = document.createElement('canvas'), dc = deco.getContext('2d');
+const SCENE_OF = { wax: 'pixel', waxxl: 'pixel', mix: 'pixel', popit: 'dots', bubble: 'dots', marimba: 'dots', squishy: 'blob', mochi: 'blob',
+  slime: 'foam', sand: 'sand', gamered: 'bars', optical: 'bars', gameclicky: 'bars', chip: 'bars',
+  typewriter: 'type', voice: 'type', blue: 'type', brown: 'type', thock: 'type', woodblock: 'type' };
+const graphic = () => S.view === 'graphic';
+const cells = new Map();
+const ALNUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+function cellAt(x, y) {
+  if (y < ZT || y > ZB) return null;
+  const ci = Math.floor(x / CELL), cj = Math.floor(y / CELL), id = ci + ',' + cj;
+  let k = cells.get(id);
+  if (!k) {
+    const h = Math.abs(Math.sin(ci * 12.9898 + cj * 78.233) * 43758.5453) % 1, ch = ALNUM[(ci * 7 + cj * 13) % 36];
+    k = { code: 'Cell', label: ch, en: ch, x: Math.min(14.9, (ci + .5) * CELL / SW * 15), row: Math.max(0, Math.min(5, Math.floor((cj + .5) * CELL / SH * 6))),
+      big: false, seed: h, holders: new Set(), downAt: 0, upT: 0, el: null, px: (ci + .5) * CELL, py: (cj + .5) * CELL };
+    cells.set(id, k);
+  }
+  k.hx = x; k.hy = y;
+  return k;
+}
+function sceneHit(k) {
+  if (!scene) return;
+  let x = k.hx, y = k.hy;
+  if (k.code !== 'Cell') { // a physical key: place it where it sits on a keyboard laid over the screen
+    x = SW * (.06 + .88 * k.x / 15) + (Math.random() - .5) * 10;
+    y = ZT + (ZB - ZT) * (.1 + .8 * (k.row + .5) / 6) + (Math.random() - .5) * 10;
+  }
+  scene.hit(x, y, k, performance.now());
+}
+function vnoise(seed) {
+  const h = (x, y) => { const n = Math.sin(x * 127.1 + y * 311.7 + seed * 74.7) * 43758.5453; return n - Math.floor(n); };
+  return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    const a = h(xi, yi), b = h(xi + 1, yi), c = h(xi, yi + 1), d = h(xi + 1, yi + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; };
+}
+function grainFill(ctx, w, h, alpha) {
+  const img = ctx.createImageData(w, h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = Math.random() * 255 * alpha; }
+  const t = document.createElement('canvas'); t.width = w; t.height = h; t.getContext('2d').putImageData(img, 0, 0);
+  return t;
+}
+function paper(ctx, color, alpha) {
+  ctx.fillStyle = color; ctx.fillRect(0, 0, SW, SH);
+  const g = grainFill(ctx, 160, 160, alpha);
+  ctx.save(); ctx.fillStyle = ctx.createPattern(g, 'repeat'); ctx.fillRect(0, 0, SW, SH); ctx.restore();
+}
+function blurText(ctx, text, x, y, size, color, blur, spacing) {
+  ctx.save(); ctx.filter = `blur(${blur}px)`; ctx.fillStyle = color; ctx.font = `700 ${size}px "Figtree", sans-serif`; ctx.textBaseline = 'alphabetic';
+  if (spacing) { let cx = x; for (const ch of text) { ctx.fillText(ch, cx, y); cx += spacing; } } else ctx.fillText(text, x, y);
+  ctx.restore();
+}
+function guideBox(ctx, x, y, w, h, color) {
+  ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.strokeRect(Math.round(x) + .5, Math.round(y) + .5, Math.round(w), Math.round(h));
+  ctx.fillStyle = '#ffffff';
+  for (const [hx, hy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h], [x + w / 2, y], [x + w / 2, y + h], [x, y + h / 2], [x + w, y + h / 2]]) {
+    ctx.fillRect(Math.round(hx) - 3, Math.round(hy) - 3, 6, 6); ctx.strokeRect(Math.round(hx) - 2.5, Math.round(hy) - 2.5, 5, 5);
+  }
+}
+const mono = (sz, w = 500) => `${w} ${sz}px "IBM Plex Mono", ui-monospace, monospace`;
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+const SCENES = {
+  /* Wax Ball: a pixel-mosaic ball. The cursor cracks the shell, pixels drop away and soft goo shows through, then the shell grows back. */
+  pixel: {
+    init() {
+      const c = this.c = Math.max(10, Math.round(Math.min(SW, ZB - ZT) / 34));
+      const n = vnoise(3), cx = SW * .5, cy = (ZT + ZB) / 2, R = Math.min(SW * .42, (ZB - ZT) * .46);
+      this.cells = []; this.bits = []; this.goo = []; this.cracks = []; this.box = null;
+      const SH4 = ['#dbe5fb', '#a8c0f4', '#6a92e8', '#2f5bd3'];
+      for (let j = 0; j * c < SH; j++) for (let i = 0; i * c < SW; i++) {
+        const x = i * c + c / 2, y = j * c + c / 2, d = Math.hypot((x - cx) / 1.12, y - cy) / R, w = n(i * .16, j * .16);
+        if (d < .78 + w * .3) this.cells.push({ x, y, col: SH4[clamp(Math.floor(n(i * .35 + 9, j * .35) * 3.2 + (1 - d) * 1.6), 0, 3)], alive: true, back: 0, born: 0 });
+      }
+      paper(dc, '#f3f4f6', .05);
+      const B = 'rgba(47,91,211,.7)';
+      guideBox(dc, cx - R * 1.2, cy - R * 1.05, R * 2.4, R * 2.1, B);
+      guideBox(dc, SW * .62, ZT + (ZB - ZT) * .08, SW * .3, (ZB - ZT) * .22, B);
+      guideBox(dc, SW * .05, ZT + (ZB - ZT) * .64, SW * .26, (ZB - ZT) * .26, B);
+      dc.strokeStyle = 'rgba(47,91,211,.45)'; dc.beginPath(); dc.arc(cx, cy, R * 1.02, 0, 7); dc.stroke();
+      dc.beginPath(); dc.moveTo(SW * .62, ZT + (ZB - ZT) * .3); dc.lineTo(cx + R * .3, cy - R * .4); dc.lineTo(SW * .31, ZT + (ZB - ZT) * .64); dc.stroke();
+      dc.fillStyle = '#2f5bd3'; dc.font = mono(11);
+      ['Is it okay to just crack it?', 'What is inside a wax ball?', 'How long does the shell take to grow back?'].forEach((t, i) => dc.fillText(t, SW * .06, ZT + (ZB - ZT) * .7 + i * 20));
+      dc.fillText('shell: paraffin wax', SW * .63, ZT + (ZB - ZT) * .12); dc.fillText('core: soft putty', SW * .63, ZT + (ZB - ZT) * .12 + 18);
+      const fs = Math.min(SH * .2, SW * .14);
+      blurText(dc, 'CRACK', SW * .02, SH - fs * .05, fs, 'rgba(47,91,211,.38)', 16, fs * .95);
+    },
+    hit(x, y, k, now) {
+      const c = this.c, r = c * (S.sound === 'waxxl' ? 2.6 : 1.8);
+      let n = 0;
+      for (const p of this.cells) {
+        if (!p.alive) continue;
+        const d = Math.hypot(p.x - x, p.y - y);
+        if (d > r) continue;
+        p.alive = false; p.back = now + 2600 + Math.random() * 3200; n++;
+        if (this.bits.length < 900) this.bits.push({ x: p.x, y: p.y, vx: (p.x - x) * .004 + (Math.random() - .5) * .12, vy: -Math.random() * .22, col: p.col, rot: 0, vr: (Math.random() - .5) * .02, s: c - 2 });
+      }
+      if (n) {
+        this.goo.push({ x, y, r: r * 1.1, t0: now });
+        const rays = 3 + Math.floor(Math.random() * 3), pts = [];
+        for (let i = 0; i < rays; i++) { let a = Math.random() * 7, px = x, py = y; const line = [[px, py]]; for (let s2 = 0; s2 < 4; s2++) { a += (Math.random() - .5) * 1.2; px += Math.cos(a) * c * .9; py += Math.sin(a) * c * .9; line.push([px, py]); } pts.push(line); }
+        this.cracks.push({ lines: pts, t0: now });
+        const b = { x: x - r * 1.3, y: y - r * 1.3, w: r * 2.6, h: r * 2.6 };
+        this.box = this.box ? { x: lerp(this.box.x, b.x, .5), y: lerp(this.box.y, b.y, .5), w: lerp(this.box.w, b.w, .5), h: lerp(this.box.h, b.h, .5), t: now } : { ...b, t: now };
+      }
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      this.goo = this.goo.filter(g => now - g.t0 < 5000);
+      for (const g of this.goo) {
+        const a = 1 - (now - g.t0) / 5000, gr = sc.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r);
+        gr.addColorStop(0, `rgba(47,91,211,${.32 * a})`); gr.addColorStop(1, 'rgba(47,91,211,0)');
+        sc.fillStyle = gr; sc.beginPath(); sc.arc(g.x, g.y, g.r, 0, 7); sc.fill();
+      }
+      const c = this.c;
+      for (const p of this.cells) {
+        if (!p.alive && now > p.back) { p.alive = true; p.born = now; }
+        if (!p.alive) continue;
+        const s2 = (c - 2) * Math.min(1, (now - p.born) / 260 + (p.born ? 0 : 1));
+        sc.fillStyle = p.col; sc.fillRect(p.x - s2 / 2, p.y - s2 / 2, s2, s2);
+      }
+      sc.strokeStyle = '#1d3fa8'; sc.lineWidth = 1.2;
+      this.cracks = this.cracks.filter(cr => now - cr.t0 < 700);
+      for (const cr of this.cracks) { sc.globalAlpha = 1 - (now - cr.t0) / 700; for (const l of cr.lines) { sc.beginPath(); l.forEach(([px, py], i) => i ? sc.lineTo(px, py) : sc.moveTo(px, py)); sc.stroke(); } }
+      sc.globalAlpha = 1;
+      for (const b of this.bits) { b.vy += .0012 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.vr * dt; sc.save(); sc.translate(b.x, b.y); sc.rotate(b.rot); sc.fillStyle = b.col; sc.fillRect(-b.s / 2, -b.s / 2, b.s, b.s); sc.restore(); }
+      this.bits = this.bits.filter(b => b.y < SH + 30);
+      if (this.box) {
+        const a = 1 - clamp((now - this.box.t - 900) / 500, 0, 1);
+        if (a <= 0) this.box = null;
+        else { sc.globalAlpha = a; guideBox(sc, this.box.x, this.box.y, this.box.w, this.box.h, '#2f5bd3'); sc.fillStyle = '#2f5bd3'; sc.font = mono(10);
+          sc.fillText(`W ${Math.round(this.box.w)}  H ${Math.round(this.box.h)}`, this.box.x, this.box.y + this.box.h + 16); sc.globalAlpha = 1; }
+      }
+    }
+  },
+
+  /* Pop It, Bubble Wrap, Marimba: a dot-matrix globe. Land is pressed coins, sea is open rings. */
+  dots: {
+    init() {
+      const s2 = this.s = Math.max(14, Math.round(Math.min(SW, ZB - ZT) / 26));
+      const R = Math.min(SW, ZB - ZT) * .47, cx = SW / 2, cy = (ZT + ZB) / 2, n = vnoise(11);
+      this.dots = []; this.rip = [];
+      for (let j = -Math.ceil(R / s2); j <= Math.ceil(R / s2); j++) for (let i = -Math.ceil(R / s2); i <= Math.ceil(R / s2); i++) {
+        const x = cx + i * s2, y = cy + j * s2;
+        if (Math.hypot(x - cx, y - cy) > R) continue;
+        const land = n(i * .2 + 3, j * .2 + 5) > .48;
+        if (!land && Math.random() < .35) continue;
+        this.dots.push({ x, y, land, st: land ? 1 : 0, sc: 1, v: 0, back: 0 });
+      }
+      paper(dc, '#2f5df0', .04);
+    },
+    hit(x, y, k, now) {
+      const s2 = this.s;
+      for (const d of this.dots) {
+        const dd = Math.hypot(d.x - x, d.y - y);
+        if (dd > s2 * 1.25) continue;
+        if (S.sound === 'popit') d.st = d.st === 1 ? 0 : 1;
+        else if (S.sound === 'bubble') { if (d.st !== 2) { d.st = 2; d.back = now + 7000 + Math.random() * 3000; } }
+        d.v -= .12 * (1 - dd / (s2 * 1.25)) + .05;
+      }
+      if (S.sound === 'marimba') this.rip.push({ x, y, t0: now });
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      this.rip = this.rip.filter(r2 => now - r2.t0 < 1400);
+      sc.lineWidth = 1.5;
+      for (const r2 of this.rip) { const a = (now - r2.t0) / 1400; sc.strokeStyle = `rgba(255,255,255,${.6 * (1 - a)})`; sc.beginPath(); sc.arc(r2.x, r2.y, a * this.s * 9, 0, 7); sc.stroke();
+        for (const d of this.dots) { const dd = Math.abs(Math.hypot(d.x - r2.x, d.y - r2.y) - a * this.s * 9); if (dd < this.s * .5) d.v -= .01; } }
+      const rr = this.s * .42;
+      for (const d of this.dots) {
+        if (d.st === 2 && now > d.back) { d.st = d.land ? 1 : 0; d.v -= .1; }
+        d.v += (1 - d.sc) * .012 * dt; d.v *= Math.pow(.86, dt / 16); d.sc += d.v * dt / 16;
+        const r2 = Math.max(1, rr * d.sc);
+        if (d.st === 1) {
+          sc.fillStyle = '#ffffff'; sc.beginPath(); sc.arc(d.x, d.y, r2, 0, 7); sc.fill();
+          sc.strokeStyle = 'rgba(47,93,240,.45)'; sc.lineWidth = 1.2; sc.beginPath(); sc.arc(d.x, d.y, r2 * .62, 0, 7); sc.stroke();
+          sc.fillStyle = 'rgba(47,93,240,.55)'; sc.beginPath(); sc.arc(d.x, d.y, r2 * .16, 0, 7); sc.fill();
+        } else if (d.st === 0) {
+          sc.strokeStyle = 'rgba(255,255,255,.9)'; sc.lineWidth = 1.6; sc.beginPath(); sc.arc(d.x, d.y, r2 * .92, 0, 7); sc.stroke();
+          sc.fillStyle = '#ffffff'; sc.beginPath(); sc.arc(d.x, d.y, r2 * .18, 0, 7); sc.fill();
+        } else {
+          sc.strokeStyle = 'rgba(255,255,255,.45)'; sc.lineWidth = 1.2; sc.beginPath(); sc.arc(d.x, d.y, r2 * .9, .4, 2.2); sc.arc(d.x, d.y, r2 * .9, 3.4, 5.4); sc.stroke();
+          sc.fillStyle = 'rgba(255,255,255,.5)'; sc.beginPath(); sc.ellipse(d.x, d.y + r2 * .2, r2 * .5, r2 * .18, 0, 0, 7); sc.fill();
+        }
+      }
+    }
+  },
+
+  /* Squishy, Mochi Squishy: a lattice of soft blue bodies that squash under the cursor and slowly rise back. */
+  blob: {
+    init() {
+      const s2 = this.s = Math.round(Math.min(SW, ZB - ZT) / 6.5);
+      this.nodes = [];
+      for (let j = 0; ZT + j * s2 * .87 < ZB + s2; j++) for (let i = -1; i * s2 < SW + s2; i++) {
+        this.nodes.push({ x: i * s2 + (j % 2) * s2 / 2, y: ZT + s2 * .3 + j * s2 * .87, sx: 1, sy: 1, vx: 0, vy: 0, ox: 0, oy: 0, vox: 0, voy: 0 });
+      }
+      paper(dc, '#eef0f5', .04);
+      const fs = Math.min(SH * .3, SW * .2);
+      blurText(dc, 'SQUISH', SW * .03, ZT + fs * .9, fs, 'rgba(63,106,224,.35)', 26, fs * .78);
+      blurText(dc, 'SLOW', SW * .4, ZB - fs * .1, fs * .9, 'rgba(63,106,224,.28)', 30, fs * .7);
+      dc.fillStyle = '#3f6ae0'; dc.font = mono(11);
+      dc.fillText('squeeze → hold → let go', SW * .05, ZB - 12); dc.fillText('slow-rise foam, 4–6 s', SW * .75, ZT + 20);
+    },
+    push(x, y, f, dx, dy) {
+      const R = this.s * 1.15;
+      for (const n of this.nodes) {
+        const d = Math.hypot(n.x - x, n.y - y); if (d > R) continue;
+        const w = (1 - d / R) * f, horiz = Math.abs(dx) >= Math.abs(dy);
+        n.vx += (horiz ? -1 : 1) * w * .02; n.vy += (horiz ? 1 : -1) * w * .02;
+        n.vox += (n.x - x) / (d || 1) * w * .6; n.voy += (n.y - y) / (d || 1) * w * .6;
+      }
+    },
+    move(x, y, dx, dy) { this.push(x, y, Math.min(1.5, Math.hypot(dx, dy) * .05), dx, dy); },
+    hit(x, y) { this.push(x, y, 3, 1, 0); },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const k = S.sound === 'mochi' ? .0016 : .004, damp = S.sound === 'mochi' ? .9 : .84, f = Math.pow(damp, dt / 16), r = this.s * .28;
+      for (const n of this.nodes) {
+        n.vx += (1 - n.sx) * k * dt; n.vy += (1 - n.sy) * k * dt; n.vx *= f; n.vy *= f; n.sx = clamp(n.sx + n.vx, .45, 1.8); n.sy = clamp(n.sy + n.vy, .45, 1.8);
+        n.vox += -n.ox * k * dt * 3; n.voy += -n.oy * k * dt * 3; n.vox *= f; n.voy *= f; n.ox += n.vox * dt / 16; n.oy += n.voy * dt / 16;
+        const x = n.x + n.ox, y = n.y + n.oy;
+        sc.save(); sc.translate(x, y); sc.scale(n.sx, n.sy);
+        const g = sc.createRadialGradient(0, -r * .2, r * .1, 0, 0, r * 1.3);
+        g.addColorStop(0, 'rgba(90,130,240,.95)'); g.addColorStop(.6, 'rgba(63,106,224,.55)'); g.addColorStop(1, 'rgba(63,106,224,0)');
+        sc.fillStyle = g; sc.beginPath(); sc.arc(0, 0, r * 1.3, 0, 7); sc.fill();
+        sc.strokeStyle = 'rgba(31,42,77,.35)'; sc.lineWidth = 1 / Math.max(n.sx, n.sy); sc.beginPath(); sc.arc(0, 0, r, 0, 7); sc.stroke();
+        sc.restore();
+      }
+    }
+  },
+
+  /* Crunchy Slime: rings, blue bead bars and black chunks pile up along the path; hitting a ring again pops it. */
+  foam: {
+    init() {
+      const s2 = this.s = Math.max(12, Math.round(Math.min(SW, ZB - ZT) / 36));
+      this.items = []; this.pops = [];
+      paper(dc, '#e9e7e1', .07);
+      dc.strokeStyle = '#2a2a28'; dc.lineWidth = 1.2;
+      for (let y = ZT + s2 * 4; y < ZB - s2 * 2; y += s2 * 1.6) { dc.beginPath(); dc.arc(SW * .06, y, s2 * .4, 0, 7); dc.stroke(); }
+      dc.fillStyle = '#2a2a28'; dc.font = mono(15, 600);
+      dc.fillText('ON|OFF', SW * .06 - s2, ZT + s2 * 2); dc.fillText('<CRUNCH>', SW * .12, ZB - s2 * 3);
+      dc.font = mono(15, 600); dc.fillText('••••••', SW * .06 - s2, ZT + s2 * .9);
+      dc.fillRect(SW * .14, ZB - s2 * 2, 2, s2 * 1.2); dc.fillRect(SW * .14 + 6, ZB - s2 * 2.2, 2, s2 * 1.5); dc.fillRect(SW * .2, ZB - s2 * 1.4, 2, s2);
+      const cx = SW * .68, cy = (ZT + ZB) / 2;
+      for (let i = 0; i < 70; i++) this.add(cx + (Math.random() - .5) * SW * .35, cy + (Math.random() - .5) * (ZB - ZT) * .6, 0);
+    },
+    add(x, y, now) {
+      const s2 = this.s, gx = Math.round(x / s2) * s2, gy = Math.round(y / s2) * s2, r = Math.random();
+      const it = r < .58 ? { t: 'c', r: s2 * .42 } : r < .72 ? { t: 'c', r: s2 * (.7 + Math.random() * .4) } : r < .93 ? { t: 'b' } : { t: 'q', w: s2 * (.9 + Math.random() * .9) };
+      Object.assign(it, { x: gx, y: gy, t0: now });
+      this.items.push(it);
+      if (this.items.length > 1600) this.items.splice(0, this.items.length - 1600);
+    },
+    hit(x, y, k, now) {
+      const s2 = this.s;
+      for (let i = this.items.length - 1; i >= 0; i--) {
+        const it = this.items[i];
+        if (it.t === 'c' && now - it.t0 > 400 && Math.hypot(it.x - x, it.y - y) < it.r) { this.pops.push({ x: it.x, y: it.y, r: it.r, t0: now }); this.items.splice(i, 1); return; }
+      }
+      const n = 3 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < n; i++) this.add(x + (Math.random() - .5) * s2 * 3, y + (Math.random() - .5) * s2 * 3, now);
+    },
+    draw(now) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const s2 = this.s;
+      for (const it of this.items) {
+        const g = it.t0 ? Math.min(1, (now - it.t0) / 180) : 1, e = g < 1 ? 1 + Math.sin(g * Math.PI) * .25 : 1;
+        if (it.t === 'c') { sc.fillStyle = '#e9e7e1'; sc.strokeStyle = '#2a2a28'; sc.lineWidth = 1.2; sc.beginPath(); sc.arc(it.x, it.y, it.r * g * e, 0, 7); sc.fill(); sc.stroke(); }
+        else if (it.t === 'b') { sc.fillStyle = '#6c9bd8'; const h = s2 * .95 * g; sc.fillRect(it.x - s2 * .3, it.y - h / 2, s2 * .17, h); sc.fillRect(it.x + s2 * .1, it.y - h / 2, s2 * .17, h); }
+        else { sc.fillStyle = '#2b2b29'; const w = it.w * g; sc.fillRect(it.x - w / 2, it.y - w / 2, w, w); }
+      }
+      this.pops = this.pops.filter(p => now - p.t0 < 350);
+      for (const p of this.pops) { const a = (now - p.t0) / 350; sc.strokeStyle = `rgba(42,42,40,${1 - a})`; sc.setLineDash([2, 3]); sc.beginPath(); sc.arc(p.x, p.y, p.r * (1 + a), 0, 7); sc.stroke(); sc.setLineDash([]); }
+    }
+  },
+
+  /* Kinetic Sand: letters pour out of the cursor and settle into a dune of words. */
+  sand: {
+    init() {
+      this.col = 5; this.h = new Float32Array(Math.ceil(SW / this.col) + 1); this.gr = []; this.i = 0;
+      this.pile = this.pile || document.createElement('canvas'); this.pile.width = SW * SDPR; this.pile.height = SH * SDPR;
+      this.pc = this.pile.getContext('2d'); this.pc.setTransform(SDPR, 0, 0, SDPR, 0, 0);
+      this.base = ZB - 6;
+      paper(dc, '#f7f6f2', .04);
+      dc.fillStyle = '#1a1a1a'; dc.font = '13px "Figtree", sans-serif';
+      const para = 'Kinetic sand is about 98% sand and 2% polydimethylsiloxane, a silicone oil that lets the grains stick to each other and never to you. Press it and it holds the shape. Slice it and it crumbles in slow motion. Pour it and it piles up like wet beach sand, then slumps. Nobody needs a reason to play with it. That is the point.';
+      const wrap = (txt, x, y, w) => { let line = '', yy = y; for (const word of txt.split(' ')) { const t = line ? line + ' ' + word : word; if (dc.measureText(t).width > w) { dc.fillText(line, x, yy); line = word; yy += 18; } else line = t; } dc.fillText(line, x, yy); };
+      const w = Math.min(340, SW * .36);
+      wrap(para, SW * .05, ZT + 30, w);
+      dc.textAlign = 'right'; wrap('pour  ·  slice  ·  press  ·  slump', SW * .95, ZT + 30, w); dc.textAlign = 'left';
+      this.word = 'slice pour press crumble sand ';
+    },
+    spawn(x, y, n) {
+      for (let i = 0; i < n; i++) {
+        if (this.gr.length > 1400) break;
+        this.gr.push({ x: x + (Math.random() - .5) * 8, y, vx: (Math.random() - .5) * .05, vy: Math.random() * .08, ch: this.word[this.i++ % this.word.length], sz: 9 + Math.random() * 6, rot: (Math.random() - .5) * 1.4 });
+      }
+    },
+    move(x, y, dx, dy) { if (y > ZT && y < ZB) this.spawn(x, y, Math.min(4, 1 + Math.hypot(dx, dy) / 12 | 0)); },
+    hit(x, y) { this.spawn(x, y, 5); },
+    settle(g) {
+      let ci = clamp(Math.round(g.x / this.col), 0, this.h.length - 1);
+      for (let n = 0; n < 6; n++) {
+        const l = ci > 0 ? this.h[ci - 1] : 1e9, r = ci < this.h.length - 1 ? this.h[ci + 1] : 1e9;
+        if (this.h[ci] - Math.min(l, r) > 5) ci += l < r ? -1 : 1; else break;
+      }
+      const y = this.base - this.h[ci];
+      const pc = this.pc; pc.save(); pc.translate(ci * this.col, y); pc.rotate(g.rot); pc.fillStyle = '#141414'; pc.font = `${g.sz}px "Figtree", sans-serif`; pc.textAlign = 'center'; pc.fillText(g.ch, 0, 0); pc.restore();
+      this.h[ci] += 2.4; if (ci > 0) this.h[ci - 1] += .5; if (ci < this.h.length - 1) this.h[ci + 1] += .5;
+      if (this.h[ci] > (ZB - ZT) * .5) { this.pc.clearRect(0, 0, SW, SH); this.h.fill(0); }
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      sc.drawImage(this.pile, 0, 0, SW, SH);
+      sc.fillStyle = '#141414';
+      for (const g of this.gr) {
+        g.vy += .0014 * dt; g.x += g.vx * dt; g.y += g.vy * dt;
+        const ci = clamp(Math.round(g.x / this.col), 0, this.h.length - 1);
+        if (g.y >= this.base - this.h[ci]) { this.settle(g); g.done = true; continue; }
+        sc.save(); sc.translate(g.x, g.y); sc.rotate(g.rot); sc.font = `${g.sz}px "Figtree", sans-serif`; sc.fillText(g.ch, 0, 0); sc.restore();
+      }
+      this.gr = this.gr.filter(g => !g.done);
+    }
+  },
+
+  /* Typewriter, Voice and the classic switches: type stamps onto a grid, then wears away and drifts down the page. */
+  type: {
+    init() {
+      const cw = this.cw = clamp(Math.round(Math.min(SW, ZB - ZT) / 26), 14, 34); this.chh = Math.round(cw * 1.45);
+      this.st = new Map(); this.i = 0;
+      paper(dc, '#efe8d7', .09);
+      dc.fillStyle = 'rgba(27,26,23,.9)'; dc.font = `700 ${cw * .8}px "Courier Prime", monospace`;
+      const head = (this.phrase().trim() + ' ').repeat(4).split('').slice(0, Math.floor(SW / cw / 1.6));
+      head.forEach((ch, i) => dc.fillText(ch, cw + i * cw * 1.6, ZT + this.chh));
+      dc.font = `700 ${Math.max(12, cw * .55)}px "Courier Prime", monospace`;
+      dc.fillText('A TOY ABOUT DOING NOTHING', cw, ZB - 14);
+      dc.textAlign = 'right'; dc.fillText('BY YOU', SW - cw, ZB - 14); dc.textAlign = 'left';
+    },
+    phrase() { return { typewriter: 'CLACK ', voice: 'ABC ', blue: 'CLICK ', brown: 'TACTILE ', thock: 'THOCK ', woodblock: 'TOK ' }[S.sound] || 'CLACK '; },
+    hit(x, y, k, now) {
+      const ci = Math.floor(x / this.cw), cj = Math.floor((y - ZT) / this.chh);
+      const ph = this.phrase();
+      let ch = S.sound === 'voice' || k.code !== 'Cell' ? (k.label.length === 1 ? k.label.toUpperCase() : k.label[0].toUpperCase()) : ph[this.i++ % ph.length];
+      if (ch === ' ') ch = ph[this.i++ % ph.length];
+      const id = ci + ',' + cj, prev = this.st.get(id);
+      this.st.set(id, { ci, cj, ch, t0: now, over: prev && now - prev.t0 < 2000 ? prev.ch : '', jx: (Math.random() - .5) * 2, ink: .75 + Math.random() * .25 });
+    },
+    draw(now) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const cw = this.cw, chh = this.chh;
+      sc.font = `700 ${cw * .8}px "Courier Prime", monospace`; sc.textAlign = 'center';
+      for (const [id, s2] of this.st) {
+        const age = now - s2.t0, p = clamp((age - 2600) / 7000, 0, 1);
+        if (p >= 1) { this.st.delete(id); continue; }
+        const x = s2.ci * cw + cw / 2 + s2.jx, y = ZT + s2.cj * chh + chh * .75 + p * p * chh * 4;
+        sc.globalAlpha = s2.ink * (1 - p * .7) * Math.min(1, age / 40 + .4);
+        sc.save();
+        if (p > 0) { sc.beginPath(); sc.rect(x - cw, y - chh * .75 + chh * .7 * p, cw * 2, chh); sc.clip(); }
+        sc.fillStyle = '#1b1a17'; sc.fillText(s2.ch, x, y);
+        if (s2.over) sc.fillText(s2.over, x + 1.5, y + 1);
+        sc.restore();
+      }
+      sc.globalAlpha = 1; sc.textAlign = 'left';
+    }
+  },
+
+  /* Gaming: an RGB bar meter. The cursor charges the columns it crosses, higher on screen means taller bars. */
+  bars: {
+    init() {
+      this.bw = Math.max(9, Math.round(SW / 96)); this.n = Math.ceil(SW / this.bw); this.e = new Float32Array(this.n); this.pk = new Float32Array(this.n); this.hits = [];
+      dc.fillStyle = '#0b0d12'; dc.fillRect(0, 0, SW, SH);
+      dc.fillStyle = 'rgba(232,236,245,.06)';
+      for (let y = ZT; y < ZB; y += 16) for (let x = 8; x < SW; x += 16) dc.fillRect(x, y, 1.5, 1.5);
+      dc.fillStyle = 'rgba(232,236,245,.75)'; dc.font = mono(13, 600);
+      dc.fillText('<RGB ON>', 24, ZT + 26);
+      dc.fillStyle = 'rgba(232,236,245,.35)'; dc.fillRect(0, ZB - 1, SW, 1);
+    },
+    hit(x, y, k, now) {
+      const ci = Math.floor(x / this.bw), amt = .35 + .65 * clamp((ZB - y) / (ZB - ZT), 0, 1);
+      for (let d = -3; d <= 3; d++) { const i = ci + d; if (i < 0 || i >= this.n) continue; this.e[i] = Math.min(1, this.e[i] + amt * (1 - Math.abs(d) / 4) * .7); }
+      this.hits.push(now);
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const H = ZB - ZT - 40, bw = this.bw, seg = 7, gap = 3, decay = Math.pow(.25, dt / 1000);
+      for (let i = 0; i < this.n; i++) {
+        this.e[i] *= decay; this.pk[i] = Math.max(this.e[i], this.pk[i] - dt * .00025);
+        const h = this.e[i] * H, hue = (i * 4 + now / 12) % 360;
+        sc.fillStyle = `hsl(${hue} 95% 62%)`;
+        for (let y = 0; y < h; y += seg + gap) sc.fillRect(i * bw + 1, ZB - 2 - y - seg, bw - 3, seg);
+        if (this.pk[i] > .02) { sc.fillStyle = '#ffffff'; sc.fillRect(i * bw + 1, ZB - 2 - this.pk[i] * H - seg - 4, bw - 3, 2); }
+      }
+      this.hits = this.hits.filter(t => now - t < 10000);
+      sc.fillStyle = 'rgba(232,236,245,.75)'; sc.font = mono(13, 600);
+      sc.fillText(`APM ${String(this.hits.length * 6).padStart(3, '0')}`, 24, ZT + 48);
+    }
+  }
+};
+
+function sceneResize() {
+  SDPR = Math.min(2, devicePixelRatio || 1); SW = innerWidth; SH = innerHeight;
+  scn.width = SW * SDPR; scn.height = SH * SDPR; deco.width = SW * SDPR; deco.height = SH * SDPR;
+  dc.setTransform(SDPR, 0, 0, SDPR, 0, 0); sc.setTransform(SDPR, 0, 0, SDPR, 0, 0);
+  const z = stage.getBoundingClientRect(); ZT = z.top; ZB = z.bottom;
+  CELL = Math.max(26, Math.round(Math.min(SW, SH) / 20));
+  cells.clear();
+  if (scene) { dc.clearRect(0, 0, SW, SH); scene.init(); }
+}
+function setScene() {
+  const id = SCENE_OF[S.sound] || 'pixel';
+  document.body.dataset.scene = id;
+  if (id === sceneId && scene) { if (id === 'type' && scene.lastSound !== S.sound) { scene.lastSound = S.sound; sceneResize(); } return; }
+  sceneId = id; scene = SCENES[id]; scene.lastSound = S.sound;
+  if (SW) sceneResize();
+  readColors();
+}
+let sLast = 0;
+function sceneLoop() {
+  requestAnimationFrame(sceneLoop);
+  const now = performance.now();
+  const dt = Math.min(40, now - (sLast || now)); sLast = now;
+  if (!graphic() || !scene || document.hidden || !SW) return;
+  sc.setTransform(SDPR, 0, 0, SDPR, 0, 0);
+  scene.draw(now, dt);
+}
+requestAnimationFrame(sceneLoop);
 
 /* ---------- FX canvas ---------- */
 const fx = document.getElementById('fx'), g2 = fx.getContext('2d');
@@ -1249,7 +1710,11 @@ function syncOptions(host, cur) { host.querySelectorAll('[data-id]').forEach(b =
 
 function renderAll() {
   pressedAttr($('modeHover'), S.mode === 'hover'); pressedAttr($('modeClick'), S.mode === 'click');
-  $('hint').textContent = S.mode === 'hover' ? 'Glide your cursor across the keys' : 'Click or tap a key to play it';
+  $('hint').textContent = graphic() ? (S.mode === 'hover' ? 'Move your cursor. Each sound draws its own picture' : 'Click, tap or drag to play')
+    : (S.mode === 'hover' ? 'Glide your cursor across the keys' : 'Click or tap a key to play it');
+  $('viewChips').querySelectorAll('[data-v]').forEach(b => pressedAttr(b, b.dataset.v === S.view));
+  document.body.dataset.view = S.view;
+  setScene();
   $('soundName').textContent = SOUNDS[S.sound].name;
   document.body.dataset.feel = SOUNDS[S.sound].feel || '';
   syncOptions($('soundGrid'), S.sound); syncOptions($('soundGrid2'), S.sound); syncOptions($('soundGrid3'), S.sound); syncOptions($('palGrid'), S.pal); syncOptions($('styleGrid'), S.style); syncOptions($('curGrid'), S.cur);
@@ -1265,7 +1730,8 @@ function renderAll() {
 }
 function set(patch) {
   Object.assign(S, patch); save();
-  if ('pal' in patch || 'style' in patch) { applyPal(); fit(); }
+  if ('pal' in patch || 'style' in patch || 'view' in patch) { applyPal(); fit(); }
+  if ('view' in patch) releaseAll('p');
   if ('cur' in patch || 'curColor' in patch || 'curSize' in patch) applyCursor();
   if ('volume' in patch || 'muted' in patch) { if (A.master) A.master.gain.setTargetAtTime(S.muted ? 0 : S.volume, A.ctx.currentTime, 0.02); if (S.muted && synth) synth.cancel(); }
   if ('mode' in patch) releaseAll('p');
@@ -1300,6 +1766,7 @@ $('curColors').appendChild(pick);
 $('modeHover').addEventListener('click', () => set({ mode: 'hover' }));
 $('modeClick').addEventListener('click', () => set({ mode: 'click' }));
 $('tFx').addEventListener('click', () => set({ fx: !S.fx }));
+$('viewChips').querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => set({ view: b.dataset.v })));
 $('tEcho').addEventListener('click', () => set({ echo: !S.echo }));
 $('tTrail').addEventListener('click', () => set({ trail: !S.trail }));
 $('mute').addEventListener('click', () => { initAudio(); set({ muted: !S.muted }); });
@@ -1337,8 +1804,9 @@ function start() {
 $('go').addEventListener('click', e => { e.stopPropagation(); start(); });
 $('intro').addEventListener('pointerdown', e => { if (e.target.id !== 'go') start(); });
 
-addEventListener('resize', fit);
-applyPal(); applyCursor(); renderAll(); fit();
+addEventListener('resize', () => { fit(); sceneResize(); });
+applyPal(); applyCursor(); renderAll(); fit(); sceneResize();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { sceneResize(); });
 readColors();
 window.__clack = { S, SOUNDS, keyEls, initAudio, A }; // handy for debugging in the console
 })();
