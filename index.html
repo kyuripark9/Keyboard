@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--artifact:start-->
+<title>딸깍 키보드</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="마우스를 스치기만 해도 딸깍딸깍. 스트레스 풀리는 키보드 놀이터.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Rubik:wght@400;500;600&display=swap">
+<style>
+/* Layout: one screen. A keyboard case fills the viewport between a slim header and a floating dock;
+   a giant echo of the last key glows behind it. Colors come from keycap palettes (tokens below). */
+:root {
+  --bg: #e3e7ee; --bg-2: #cdd4e0;
+  --ink: #1f2633; --ink-soft: #5d6778; --line: rgba(31,38,51,.12); --panel: rgba(255,255,255,.76);
+  --case: #eef1f6; --case-hi: #ffffff; --case-lo: #b9c2d1;
+  --cap: #fbfcfe; --cap-hi: #ffffff; --cap-side: #c8cfdc; --legend: #2b3342;
+  --mod: #dde3ec; --mod-hi: #e9eef5; --mod-side: #b3bccb; --mod-legend: #4a5466;
+  --acc: #5b6cff; --acc-hi: #7886ff; --acc-side: #3743b8; --acc-legend: #ffffff;
+  --ko: #8a93a5; --glow: #5b6cff; --cursor: #5b6cff; --echo: rgba(91,108,255,.16);
+
+  --font-display: "Black Han Sans", "IBM Plex Sans KR", system-ui, sans-serif;
+  --font-ui: "IBM Plex Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-cap: "Rubik", "IBM Plex Sans KR", system-ui, sans-serif;
+  --u: 60px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1020; --bg-2: #18203a;
+    --ink: #e6e9f5; --ink-soft: #9099b8; --line: rgba(230,233,245,.12); --panel: rgba(22,28,50,.8);
+    --case: #161d33; --case-hi: #222b48; --case-lo: #05070f;
+    --cap: #262f4d; --cap-hi: #313b5e; --cap-side: #121829; --legend: #dfe5ff;
+    --mod: #1d2540; --mod-hi: #262f4f; --mod-side: #0c1120; --mod-legend: #9aa4c8;
+    --acc: #3fd8e8; --acc-hi: #73e7f3; --acc-side: #168391; --acc-legend: #062026;
+    --ko: #6f7aa3; --glow: #5fe3f0; --cursor: #5fe3f0; --echo: rgba(95,227,240,.14); --echo-blend: screen;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1020; --bg-2: #18203a;
+  --ink: #e6e9f5; --ink-soft: #9099b8; --line: rgba(230,233,245,.12); --panel: rgba(22,28,50,.8);
+  --case: #161d33; --case-hi: #222b48; --case-lo: #05070f;
+  --cap: #262f4d; --cap-hi: #313b5e; --cap-side: #121829; --legend: #dfe5ff;
+  --mod: #1d2540; --mod-hi: #262f4f; --mod-side: #0c1120; --mod-legend: #9aa4c8;
+  --acc: #3fd8e8; --acc-hi: #73e7f3; --acc-side: #168391; --acc-legend: #062026;
+  --ko: #6f7aa3; --glow: #5fe3f0; --cursor: #5fe3f0; --echo: rgba(95,227,240,.14); --echo-blend: screen;
+  color-scheme: dark;
+}
+/* Keycap palettes picked in the 키보드 panel. */
+body[data-kb="cloud"] {
+  --bg: #e3e7ee; --bg-2: #cdd4e0; --ink: #1f2633; --ink-soft: #5d6778; --line: rgba(31,38,51,.12); --panel: rgba(255,255,255,.76);
+  --case: #eef1f6; --case-hi: #ffffff; --case-lo: #b9c2d1; --cap: #fbfcfe; --cap-hi: #ffffff; --cap-side: #c8cfdc; --legend: #2b3342;
+  --mod: #dde3ec; --mod-hi: #e9eef5; --mod-side: #b3bccb; --mod-legend: #4a5466; --acc: #5b6cff; --acc-hi: #7886ff; --acc-side: #3743b8; --acc-legend: #ffffff;
+  --ko: #8a93a5; --glow: #5b6cff; --cursor: #5b6cff; --echo: rgba(91,108,255,.16); --echo-blend: multiply; color-scheme: light;
+}
+body[data-kb="midnight"] {
+  --bg: #0b1020; --bg-2: #18203a; --ink: #e6e9f5; --ink-soft: #9099b8; --line: rgba(230,233,245,.12); --panel: rgba(22,28,50,.8);
+  --case: #161d33; --case-hi: #222b48; --case-lo: #05070f; --cap: #262f4d; --cap-hi: #313b5e; --cap-side: #121829; --legend: #dfe5ff;
+  --mod: #1d2540; --mod-hi: #262f4f; --mod-side: #0c1120; --mod-legend: #9aa4c8; --acc: #3fd8e8; --acc-hi: #73e7f3; --acc-side: #168391; --acc-legend: #062026;
+  --ko: #6f7aa3; --glow: #5fe3f0; --cursor: #5fe3f0; --echo: rgba(95,227,240,.14); --echo-blend: screen; color-scheme: dark;
+}
+body[data-kb="mint"] {
+  --bg: #c4e6da; --bg-2: #9fcfbf; --ink: #2c1f1b; --ink-soft: #5b4a43; --line: rgba(44,31,27,.14); --panel: rgba(242,251,247,.8);
+  --case: #4a3129; --case-hi: #5e4036; --case-lo: #22140f; --cap: #e3f6ef; --cap-hi: #f4fcf8; --cap-side: #a2cfbf; --legend: #3b2a24;
+  --mod: #7a5547; --mod-hi: #8b6455; --mod-side: #452c23; --mod-legend: #f1e4dc; --acc: #5fcfae; --acc-hi: #82dcc1; --acc-side: #2b8c72; --acc-legend: #173229;
+  --ko: #7aa898; --glow: #38c497; --cursor: #4a3129; --echo: rgba(56,196,151,.2); --echo-blend: multiply; color-scheme: light;
+}
+body[data-kb="retro"] {
+  --bg: #b7beb4; --bg-2: #9aa398; --ink: #23251f; --ink-soft: #50554a; --line: rgba(35,37,31,.15); --panel: rgba(236,232,220,.84);
+  --case: #d5cebb; --case-hi: #e6e0d0; --case-lo: #8f8774; --cap: #ebe5d6; --cap-hi: #f6f2e8; --cap-side: #b5ab94; --legend: #3a3a33;
+  --mod: #9b978b; --mod-hi: #aba79b; --mod-side: #6a665b; --mod-legend: #f3efe4; --acc: #e0612f; --acc-hi: #ec7d50; --acc-side: #9f3e19; --acc-legend: #fff4ea;
+  --ko: #8e8775; --glow: #e8692f; --cursor: #c4501f; --echo: rgba(224,97,47,.18); --echo-blend: multiply; color-scheme: light;
+}
+body[data-kb="sakura"] {
+  --bg: #f6dfe6; --bg-2: #eec3d1; --ink: #3a2330; --ink-soft: #7a5868; --line: rgba(58,35,48,.12); --panel: rgba(255,247,250,.82);
+  --case: #fff7fa; --case-hi: #ffffff; --case-lo: #dcaabc; --cap: #fff5f8; --cap-hi: #ffffff; --cap-side: #ebc4d1; --legend: #5a3446;
+  --mod: #f6cad8; --mod-hi: #fad8e3; --mod-side: #d79db2; --mod-legend: #6e3a52; --acc: #e5588a; --acc-hi: #ef78a2; --acc-side: #ad3462; --acc-legend: #ffffff;
+  --ko: #c48aa0; --glow: #e5588a; --cursor: #d4467a; --echo: rgba(229,88,138,.18); --echo-blend: multiply; color-scheme: light;
+}
+body[data-kb="blackout"] {
+  --bg: #d8d8d4; --bg-2: #bcbcb7; --ink: #151515; --ink-soft: #55554f; --line: rgba(21,21,21,.14); --panel: rgba(246,246,243,.84);
+  --case: #141414; --case-hi: #222222; --case-lo: #000000; --cap: #1e1e1e; --cap-hi: #2a2a2a; --cap-side: #060606; --legend: #ededed;
+  --mod: #2b2b2b; --mod-hi: #353535; --mod-side: #0b0b0b; --mod-legend: #b8b8b8; --acc: #f1f1ec; --acc-hi: #ffffff; --acc-side: #a3a39d; --acc-legend: #111111;
+  --ko: #7a7a76; --glow: #ffffff; --cursor: #111111; --echo: rgba(255,255,255,.12); --echo-blend: screen; color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 10%, var(--bg) 0%, var(--bg) 40%, var(--bg-2) 100%);
+  background-color: var(--bg);
+  color: var(--ink); font-family: var(--font-ui);
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  transition: background-color .4s;
+}
+body.custom-cursor, body.custom-cursor * { cursor: none !important; }
+
+.app {
+  height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr); position: relative;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Header */
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding-block: 14px 6px; position: relative; z-index: 3;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand h1 { margin: 0; font: 400 30px/1 var(--font-display); letter-spacing: .01em; color: var(--ink); }
+.brand h1 i { font-style: normal; color: var(--acc); }
+body[data-kb="blackout"] .brand h1 i { color: var(--ink); }
+.brand p { margin: 0; font-size: 13px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tally { text-align: right; line-height: 1.1; }
+.tally b { display: block; font: 600 24px/1 var(--font-cap); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.tally span { font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
+
+/* Stage + keyboard */
+.stage { position: relative; display: grid; place-items: center; min-height: 0; min-width: 0; overflow: hidden; }
+.echo {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 2; opacity: 0;
+  font: 400 min(56vh, 42vw)/1 var(--font-display); color: var(--echo); mix-blend-mode: var(--echo-blend, multiply); white-space: nowrap; overflow: hidden;
+}
+.case {
+  position: relative; z-index: 1;
+  padding: calc(var(--u) * .32);
+  border-radius: calc(var(--u) * .46);
+  background: linear-gradient(180deg, var(--case-hi), var(--case) 30%, var(--case));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.35),
+    inset 0 calc(var(--u) * -.06) 0 rgba(0,0,0,.12),
+    0 calc(var(--u) * .1) 0 var(--case-lo),
+    0 calc(var(--u) * .3) calc(var(--u) * .7) rgba(10,14,30,.28);
+  transition: background .4s, box-shadow .4s;
+}
+.case::after { /* brand plate */
+  content: "DDALKKAK · 60%"; position: absolute; right: calc(var(--u) * .5); top: calc(var(--u) * .09);
+  font: 500 calc(var(--u) * .12)/1 var(--font-cap); letter-spacing: .3em; color: var(--mod-legend); opacity: .45;
+}
+.row { display: flex; }
+.row.fn { margin-bottom: calc(var(--u) * .22); }
+.gap { flex: none; }
+.key {
+  --c-face: var(--cap); --c-hi: var(--cap-hi); --c-side: var(--cap-side); --c-leg: var(--legend);
+  flex: none; height: var(--u); padding: calc(var(--u) * .04); position: relative;
+}
+.key.mod { --c-face: var(--mod); --c-hi: var(--mod-hi); --c-side: var(--mod-side); --c-leg: var(--mod-legend); }
+.key.acc { --c-face: var(--acc); --c-hi: var(--acc-hi); --c-side: var(--acc-side); --c-leg: var(--acc-legend); }
+.cap {
+  position: relative; height: 100%;
+  border-radius: calc(var(--u) * .15);
+  background: linear-gradient(180deg, var(--c-face), var(--c-side) 115%);
+  box-shadow:
+    0 calc(var(--u) * .065) 0 var(--c-side),
+    0 calc(var(--u) * .1) calc(var(--u) * .14) rgba(0,0,0,.22);
+  transition: transform 70ms cubic-bezier(.3,.7,.4,1.6), box-shadow 70ms;
+}
+.cap::before { /* sculpted top face */
+  content: ""; position: absolute;
+  inset: calc(var(--u) * .04) calc(var(--u) * .075) calc(var(--u) * .13);
+  border-radius: calc(var(--u) * .11);
+  background: linear-gradient(165deg, var(--c-hi), var(--c-face) 70%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+}
+.cap::after { /* press glow */
+  content: ""; position: absolute; inset: 0; border-radius: inherit; opacity: 0;
+  background: radial-gradient(70% 70% at 50% 40%, color-mix(in srgb, var(--glow) 45%, transparent), transparent 75%);
+  transition: opacity .35s;
+}
+.key.down .cap {
+  transform: translateY(calc(var(--u) * .055));
+  box-shadow: 0 calc(var(--u) * .012) 0 var(--c-side), 0 calc(var(--u) * .03) calc(var(--u) * .05) rgba(0,0,0,.2);
+  transition-duration: 25ms;
+}
+.key.down .cap::after { opacity: 1; transition-duration: 0s; }
+.lg, .ko, .tp {
+  position: absolute; z-index: 1; pointer-events: none; color: var(--c-leg);
+  font-family: var(--font-cap); line-height: 1;
+}
+.lg { left: calc(var(--u) * .2); top: calc(var(--u) * .16); font-size: calc(var(--u) * .28); font-weight: 500; }
+.ko { right: calc(var(--u) * .2); bottom: calc(var(--u) * .22); font-size: calc(var(--u) * .2); color: var(--ko); font-family: var(--font-ui); }
+.key.acc .ko, .key.mod .ko { color: var(--c-leg); opacity: .7; }
+.tp { left: calc(var(--u) * .2); top: calc(var(--u) * .15); font-size: calc(var(--u) * .18); opacity: .6; }
+.key.num .lg { top: auto; bottom: calc(var(--u) * .24); }
+.key.small .lg { top: auto; bottom: calc(var(--u) * .23); font-size: calc(var(--u) * .16); font-weight: 400; letter-spacing: .04em; }
+.key.fk .lg { font-size: calc(var(--u) * .17); font-weight: 400; top: calc(var(--u) * .17); }
+body.no-ko .ko { display: none; }
+
+/* FX canvas + custom cursor */
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+.cursor {
+  position: fixed; left: 0; top: 0; z-index: 50; pointer-events: none; color: var(--cursor);
+  width: var(--cs, 28px); height: var(--cs, 28px); margin: calc(var(--cs, 28px) / -2) 0 0 calc(var(--cs, 28px) / -2);
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); will-change: transform; opacity: 0; transition: opacity .2s;
+}
+.cursor.on { opacity: 1; }
+.cursor.tl { margin: -2px 0 0 -3px; }
+.cursor svg { width: 100%; height: 100%; display: block; transition: transform 90ms ease-out; }
+.cursor.press svg { transform: scale(.78); transition-duration: 30ms; }
+
+/* Dock */
+.dock-wrap {
+  position: relative; z-index: 20; display: flex; justify-content: center;
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 0px)); padding-top: 6px;
+}
+.dock {
+  display: flex; align-items: center; gap: 4px; padding: 6px; max-width: 100%;
+  border-radius: 999px; background: var(--panel); border: 1px solid var(--line);
+  backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow: 0 10px 30px rgba(10,14,30,.16);
+  overflow-x: auto; scrollbar-width: none;
+}
+.dock::-webkit-scrollbar { display: none; }
+.seg { display: flex; background: var(--line); border-radius: 999px; padding: 3px; flex: none; }
+.seg button, .dbtn {
+  font: 500 13px/1 var(--font-ui); color: var(--ink); background: transparent; border: 0;
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; flex: none;
+  padding: 9px 13px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s;
+}
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.dbtn:hover, .dbtn[aria-expanded="true"] { background: var(--line); }
+.dbtn small { color: var(--ink-soft); font-size: 12px; font-weight: 400; }
+.dbtn svg, .seg svg { width: 16px; height: 16px; flex: none; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; flex: none; }
+.vol { display: flex; align-items: center; gap: 6px; padding-right: 8px; flex: none; }
+input[type="range"] { accent-color: var(--ink); width: 92px; }
+
+/* Panels */
+.panel {
+  position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+  width: min(620px, calc(100vw - 32px)); max-height: min(62vh, 520px); overflow: auto;
+  padding: 18px; border-radius: 22px; background: var(--panel); border: 1px solid var(--line);
+  backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  box-shadow: 0 20px 50px rgba(10,14,30,.22);
+  animation: rise .18s ease-out;
+}
+@keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } }
+.panel h2 { margin: 0 0 12px; font: 600 12px/1 var(--font-ui); letter-spacing: .12em; color: var(--ink-soft); }
+.panel h2 + * { margin-bottom: 18px; }
+.panel > :last-child { margin-bottom: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; }
+.opt {
+  text-align: left; font: inherit; color: var(--ink); cursor: pointer;
+  padding: 11px 12px; border-radius: 14px; border: 1px solid var(--line); background: transparent;
+  display: flex; flex-direction: column; gap: 4px; transition: border-color .15s, background .15s;
+}
+.opt:hover { background: var(--line); }
+.opt[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.opt b { font-size: 14px; font-weight: 600; }
+.opt span { font-size: 12px; color: var(--ink-soft); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip {
+  font: 500 13px/1 var(--font-ui); color: var(--ink); padding: 9px 13px; border-radius: 999px;
+  border: 1px solid var(--line); background: transparent; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sw {
+  width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--panel); cursor: pointer; padding: 0;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ink); }
+.sw.auto { background: conic-gradient(#5b6cff, #3fd8e8, #5fcfae, #e0612f, #e5588a, #5b6cff); }
+.sw.pick { position: relative; overflow: hidden; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
+.sw.pick input { position: absolute; inset: -6px; width: 200%; height: 200%; opacity: 0; cursor: pointer; }
+.pal { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 10px; }
+.pal .dots { grid-row: span 2; display: flex; }
+.pal .dots i { width: 18px; height: 18px; border-radius: 50%; margin-right: -6px; box-shadow: 0 0 0 2px var(--panel); }
+.cur-opt { align-items: center; text-align: center; }
+.cur-opt svg { width: 26px; height: 26px; color: var(--ink); }
+.row-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--ink-soft); }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Intro */
+.intro {
+  position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; text-align: center;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.intro-card { max-width: 440px; display: grid; justify-items: center; gap: 14px; }
+.intro h2 { margin: 0; font: 400 clamp(64px, 14vw, 120px)/.9 var(--font-display); color: var(--ink); text-wrap: balance; }
+.intro h2 i { font-style: normal; color: var(--acc); }
+body[data-kb="blackout"] .intro h2 i { color: var(--ink); }
+.intro p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink-soft); text-wrap: balance; }
+.go {
+  margin-top: 6px; font: 600 16px/1 var(--font-ui); padding: 16px 28px; border-radius: 999px; border: 0;
+  background: var(--ink); color: var(--bg); cursor: pointer; box-shadow: 0 10px 24px rgba(10,14,30,.25);
+}
+.toast {
+  position: fixed; left: 50%; top: max(70px, calc(env(safe-area-inset-top, 0px) + 60px)); transform: translateX(-50%);
+  z-index: 30; padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--bg); font-size: 13px;
+  pointer-events: none; transition: opacity .3s; opacity: 0;
+}
+.toast.on { opacity: 1; }
+
+@media (max-width: 720px) {
+  .dbtn small, .dbtn .lbl, .brand p { display: none; }
+  .seg button { padding: 9px 11px; }
+  input[type="range"] { width: 64px; }
+  .tally b { font-size: 20px; }
+  .brand h1 { font-size: 26px; }
+}
+.rotate-hint { display: none; }
+@media (max-width: 520px) and (orientation: portrait) {
+  .rotate-hint {
+    display: block; position: absolute; left: 0; right: 0; bottom: 12%; text-align: center;
+    font-size: 13px; color: var(--ink-soft); pointer-events: none;
+  }
+  .vol input { display: none; }
+}
+@media (max-height: 520px) {
+  .top { padding-block: 8px 2px; }
+  .brand h1 { font-size: 22px; }
+  .brand p { display: none; }
+  .tally b { font-size: 18px; }
+  .dock-wrap { padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); padding-top: 4px; }
+  .dock { padding: 4px; }
+  .seg button, .dbtn { padding: 7px 10px; }
+  .dbtn small, .dbtn .lbl { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cap, .cap::after, .panel { transition: none; animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <h1>딸<i>깍</i></h1>
+      <p id="hint">키보드 위로 커서를 스쳐 보세요</p>
+    </div>
+    <div class="tally" aria-live="off">
+      <b id="count">0</b>
+      <span id="countLbl">누적 딸깍</span>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="echo" id="echo" aria-hidden="true"></div>
+    <div class="case" id="board" role="application" aria-label="키보드"></div>
+    <p class="rotate-hint">휴대폰을 가로로 돌리면 키보드가 더 커져요</p>
+  </main>
+
+  <div class="dock-wrap" id="dockWrap">
+    <nav class="dock" id="dock" aria-label="설정">
+      <div class="seg" role="group" aria-label="소리 나는 방식">
+        <button id="modeHover" type="button" title="커서만 움직여도 소리가 나요">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12c3-5 5 5 8 0s5 5 8 0"/></svg>
+          <span class="lbl">스치기</span>
+        </button>
+        <button id="modeClick" type="button" title="클릭하거나 터치할 때만 소리가 나요">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a5.5 5.5 0 0 1-5.5 5.5h-.8a5 5 0 0 1-4-2L5 14.5a1.5 1.5 0 0 1 2.3-1.9L9 14"/></svg>
+          <span class="lbl">누르기</span>
+        </button>
+      </div>
+      <span class="sep"></span>
+      <button class="dbtn" type="button" data-panel="sound" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
+        <span class="lbl">소리</span><small id="soundName"></small>
+      </button>
+      <button class="dbtn" type="button" data-panel="kb" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M8 14.5h8"/></svg>
+        <span class="lbl">키보드</span>
+      </button>
+      <button class="dbtn" type="button" data-panel="cursor" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z"/></svg>
+        <span class="lbl">커서</span>
+      </button>
+      <span class="sep"></span>
+      <div class="vol">
+        <button class="dbtn" id="mute" type="button" aria-label="소리 끄기" style="padding:9px"></button>
+        <input id="volume" type="range" min="0" max="1" step="0.01" aria-label="볼륨">
+      </div>
+    </nav>
+
+    <section class="panel" id="panel-sound" hidden aria-label="소리 고르기">
+      <h2>소리 고르기</h2>
+      <div class="grid" id="soundGrid"></div>
+      <div id="voiceOpts" hidden>
+        <h2>목소리 언어</h2>
+        <div class="chips" id="voiceLang"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-kb" hidden aria-label="키보드 꾸미기">
+      <h2>키캡 컬러</h2>
+      <div class="grid" id="palGrid"></div>
+      <h2>표시</h2>
+      <div class="toggles">
+        <button class="chip" id="tKo" type="button">한글 자판 각인</button>
+        <button class="chip" id="tFx" type="button">반짝이 효과</button>
+        <button class="chip" id="tEcho" type="button">큰 글자 잔상</button>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-cursor" hidden aria-label="커서 꾸미기">
+      <h2>커서 모양</h2>
+      <div class="grid" id="curGrid" style="grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));"></div>
+      <h2>커서 색</h2>
+      <div class="swatches" id="curColors"></div>
+      <h2>크기와 꼬리</h2>
+      <div class="row-line">
+        <label for="curSize">크기</label>
+        <input id="curSize" type="range" min="16" max="64" step="1">
+        <button class="chip" id="tTrail" type="button">반짝이 꼬리</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="cursor" id="cursor" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<div class="intro" id="intro">
+  <div class="intro-card">
+    <h2>딸<i>깍</i></h2>
+    <p>키보드 위로 마우스를 스치기만 해도 딸깍딸깍.<br>소리를 바꾸고, 커서를 꾸미고, 마음껏 두드려 보세요.</p>
+    <button class="go" id="go" type="button">소리 켜고 시작하기</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- settings ---------- */
+const DEF = { mode: 'hover', sound: 'blue', pal: 'auto', cur: 'ring', curColor: 'auto', curSize: 30, trail: true,
+  ko: true, fx: true, echo: true, volume: 0.7, muted: false, voiceLang: 'en', count: 0, merit: 0 };
+let S = { ...DEF };
+try { Object.assign(S, JSON.parse(localStorage.getItem('ddalkkak') || '{}')); } catch (e) {}
+let saveT = 0;
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('ddalkkak', JSON.stringify(S)); } catch (e) {} }, 300); }
+
+/* ---------- layout ---------- */
+const KO = { KeyQ:'ㅂ',KeyW:'ㅈ',KeyE:'ㄷ',KeyR:'ㄱ',KeyT:'ㅅ',KeyY:'ㅛ',KeyU:'ㅕ',KeyI:'ㅑ',KeyO:'ㅐ',KeyP:'ㅔ',
+  KeyA:'ㅁ',KeyS:'ㄴ',KeyD:'ㅇ',KeyF:'ㄹ',KeyG:'ㅎ',KeyH:'ㅗ',KeyJ:'ㅓ',KeyK:'ㅏ',KeyL:'ㅣ',
+  KeyZ:'ㅋ',KeyX:'ㅌ',KeyC:'ㅊ',KeyV:'ㅍ',KeyB:'ㅠ',KeyN:'ㅜ',KeyM:'ㅡ' };
+const JAMO = { 'ㄱ':'기역','ㄴ':'니은','ㄷ':'디귿','ㄹ':'리을','ㅁ':'미음','ㅂ':'비읍','ㅅ':'시옷','ㅇ':'이응','ㅈ':'지읒','ㅊ':'치읓',
+  'ㅋ':'키읔','ㅌ':'티읕','ㅍ':'피읖','ㅎ':'히읗','ㅏ':'아','ㅐ':'애','ㅑ':'야','ㅓ':'어','ㅔ':'에','ㅕ':'여','ㅗ':'오','ㅛ':'요',
+  'ㅜ':'우','ㅠ':'유','ㅡ':'으','ㅣ':'이' };
+const NUM_KO = ['영','일','이','삼','사','오','육','칠','팔','구'];
+const NUM_EN = ['zero','one','two','three','four','five','six','seven','eight','nine'];
+// [code, label, width, class, shiftLegend, sayEn, sayKo]
+const K = (code, label, w = 1, cls = '', tp = '', en = '', ko = '') => ({ code, label, w, cls, tp, en, ko });
+const G = w => ({ gap: w });
+const ROWS = [
+  [K('Escape','esc',1,'acc small','', 'escape','이에스씨'), G(1),
+   ...[1,2,3,4].map(n => K('F'+n,'F'+n,1,'mod fk','', 'F '+n, '에프 '+NUM_KO[n])), G(.5),
+   ...[5,6,7,8].map(n => K('F'+n,'F'+n,1,'mod fk','', 'F '+n, '에프 '+NUM_KO[n])), G(.5),
+   ...[9,10,11,12].map(n => K('F'+n,'F'+n,1,'mod fk','', 'F '+n, '에프 '+(n===9?'구':'십'+(n>10?NUM_KO[n-10]:''))))],
+  [K('Backquote','`',1,'num','~','tilde','물결'),
+   ...'1234567890'.split('').map((d,i) => K('Digit'+d, d, 1, 'num', '!@#$%^&*()'[i], NUM_EN[+d], NUM_KO[+d])),
+   K('Minus','-',1,'num','_','minus','빼기'), K('Equal','=',1,'num','+','equals','같다'),
+   K('Backspace','backspace',2,'mod small','','backspace','백스페이스')],
+  [K('Tab','tab',1.5,'mod small','','tab','탭'),
+   ...'QWERTYUIOP'.split('').map(c => K('Key'+c, c)),
+   K('BracketLeft','[',1,'num','{','bracket','대괄호'), K('BracketRight',']',1,'num','}','bracket','대괄호'),
+   K('Backslash','\\',1.5,'num','|','backslash','역슬래시')],
+  [K('CapsLock','caps lock',1.75,'mod small','','caps lock','캡스락'),
+   ...'ASDFGHJKL'.split('').map(c => K('Key'+c, c)),
+   K('Semicolon',';',1,'num',':','semicolon','세미콜론'), K('Quote',"'",1,'num','"','quote','따옴표'),
+   K('Enter','enter',2.25,'acc small','','enter','엔터')],
+  [K('ShiftLeft','shift',2.25,'mod small','','shift','시프트'),
+   ...'ZXCVBNM'.split('').map(c => K('Key'+c, c)),
+   K('Comma',',',1,'num','<','comma','쉼표'), K('Period','.',1,'num','>','dot','마침표'), K('Slash','/',1,'num','?','slash','슬래시'),
+   K('ShiftRight','shift',2.75,'mod small','','shift','시프트')],
+  [K('ControlLeft','ctrl',1.25,'mod small','','control','컨트롤'), K('AltLeft','opt',1.25,'mod small','','option','옵션'),
+   K('MetaLeft','cmd',1.25,'mod small','','command','커맨드'), K('Space','',6.25,'','','space','스페이스'),
+   K('Lang1','한/영',1.25,'acc small','','han yeong','한영'), K('MetaRight','cmd',1.25,'mod small','','command','커맨드'),
+   K('Fn','fn',1.25,'mod small','','function','펑션'), K('ControlRight','ctrl',1.25,'mod small','','control','컨트롤')]
+];
+const ALIAS = { AltRight: 'Lang1', HangulMode: 'Lang1', Lang2: 'Lang1', IntlBackslash: 'Backslash', ContextMenu: 'Fn' };
+
+const board = document.getElementById('board');
+const keyEls = {};
+const keyInfo = new WeakMap();
+let seedN = 7;
+const rnd = () => { seedN = (seedN * 16807) % 2147483647; return (seedN - 1) / 2147483646; };
+ROWS.forEach((row, r) => {
+  const rowEl = document.createElement('div');
+  rowEl.className = 'row' + (r === 0 ? ' fn' : '');
+  let x = 0;
+  row.forEach(k => {
+    if (k.gap) { const g = document.createElement('div'); g.className = 'gap'; g.style.width = `calc(var(--u) * ${k.gap})`; rowEl.appendChild(g); x += k.gap; return; }
+    const el = document.createElement('div');
+    el.className = 'key ' + k.cls;
+    el.style.width = `calc(var(--u) * ${k.w})`;
+    const ko = KO[k.code] || '';
+    el.innerHTML = `<div class="cap">${k.tp ? `<span class="tp">${k.tp}</span>` : ''}<span class="lg">${k.label}</span>${ko ? `<span class="ko">${ko}</span>` : ''}</div>`;
+    rowEl.appendChild(el);
+    const info = { ...k, row: r, x: x + k.w / 2, big: k.w >= 1.75, seed: rnd(), kj: ko, holders: new Set(), downAt: 0, upT: 0, el };
+    if (!info.en) info.en = k.label;
+    if (!info.ko) info.ko = ko ? JAMO[ko] : k.label;
+    keyInfo.set(el, info);
+    keyEls[k.code] = info;
+    x += k.w;
+  });
+  board.appendChild(rowEl);
+});
+
+/* sizing: one key unit fits 15u wide x ~6.9u tall in the stage */
+let U = 60;
+const stage = document.getElementById('stage');
+function fit() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  U = Math.max(16, Math.min(96, Math.floor(Math.min((w - 4) / 15.64, (h - 16) / 7.05))));
+  document.documentElement.style.setProperty('--u', U + 'px');
+  fxResize();
+}
+
+/* ---------- audio ---------- */
+const A = { ctx: null };
+function makeIR(C, secs, decay) {
+  const len = Math.floor(C.sampleRate * secs), b = C.createBuffer(2, len, C.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay); }
+  return b;
+}
+function initAudio(C) {
+  if (A.ctx && !C) { if (A.ctx.state === 'suspended') A.ctx.resume(); return; }
+  C = C || new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+  A.ctx = C;
+  A.master = C.createGain(); A.master.gain.value = S.muted ? 0 : S.volume;
+  const comp = C.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.knee.value = 10; comp.ratio.value = 5; comp.attack.value = 0.002; comp.release.value = 0.15;
+  A.dry = C.createGain(); A.dry.gain.value = 1.9; A.dry.connect(comp);
+  A.wet = C.createGain(); A.wet.gain.value = 1.1;
+  const verb = C.createConvolver(); verb.buffer = makeIR(C, 1.8, 3);
+  A.wet.connect(verb); verb.connect(comp);
+  comp.connect(A.master); A.master.connect(C.destination);
+  const n = C.createBuffer(1, C.sampleRate, C.sampleRate), d = n.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  A.noise = n;
+}
+function env(v, t, a, d, g) {
+  v.gain.setValueAtTime(0.0001, t);
+  v.gain.exponentialRampToValueAtTime(g, t + a);
+  v.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
+}
+function out(v, wet) {
+  v.connect(A.dry);
+  if (wet) { const s = A.ctx.createGain(); s.gain.value = wet; v.connect(s); s.connect(A.wet); }
+}
+function tone(type, f, t, o = {}) {
+  const { a = 0.002, d = 0.1, g = 0.5, f2 = 0, ft = 0.05, wet = 0 } = o;
+  const C = A.ctx, osc = C.createOscillator(), v = C.createGain();
+  osc.type = type; osc.frequency.setValueAtTime(f, t);
+  if (f2) osc.frequency.exponentialRampToValueAtTime(f2, t + ft);
+  env(v, t, a, d, g); osc.connect(v); out(v, wet);
+  osc.start(t); osc.stop(t + a + d + 0.05);
+}
+function hiss(t, o = {}) {
+  const { type = 'bandpass', f = 2000, q = 1, a = 0.001, d = 0.03, g = 0.5, f2 = 0, ft = 0.05, wet = 0 } = o;
+  const C = A.ctx, s = C.createBufferSource(), fl = C.createBiquadFilter(), v = C.createGain();
+  s.buffer = A.noise; s.playbackRate.value = 0.9 + Math.random() * 0.2;
+  fl.type = type; fl.frequency.setValueAtTime(f, t); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + ft); fl.Q.value = q;
+  env(v, t, a, d, g); s.connect(fl); fl.connect(v); out(v, wet);
+  s.start(t, Math.random() * 0.5); s.stop(t + a + d + 0.05);
+}
+const PENTA = [0, 2, 4, 7, 9];
+function noteOf(k, base = 48) {
+  const deg = Math.floor(k.x * 0.8) + (5 - k.row) * 2;
+  return base + Math.floor(deg / 5) * 12 + PENTA[deg % 5];
+}
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+
+const SOUNDS = {
+  blue: { name: '청축', desc: '찰칵찰칵 또렷한 클릭', fx: 'spark',
+    down(k, t, j) {
+      hiss(t, { f: 4300 * j, q: 1.4, d: 0.012, g: 2.3 });
+      tone('square', 2500 * j, t, { d: 0.007, g: 0.07 });
+      hiss(t + 0.003, { f: (k.big ? 650 : 1150) * j, q: 2.2, d: 0.045, g: 1.6 });
+      if (k.big) hiss(t + 0.016, { f: 3000, q: 2, d: 0.012, g: 0.5 });
+    },
+    up(k, t, j) { hiss(t, { f: 3300 * j, q: 1.4, d: 0.01, g: 0.55 }); } },
+  brown: { name: '갈축', desc: '톡톡 부드러운 걸림', fx: 'spark',
+    down(k, t, j) {
+      hiss(t, { f: 2100 * j, q: 1, d: 0.018, g: 1.6 });
+      hiss(t + 0.002, { f: (k.big ? 450 : 720) * j, q: 1.8, d: 0.05, g: 2 });
+      tone('sine', 320 * j, t, { f2: 180, ft: 0.04, d: 0.045, g: 0.4 });
+    },
+    up(k, t, j) { hiss(t, { f: 1900 * j, q: 1, d: 0.012, g: 0.35 }); } },
+  thock: { name: '도각도각', desc: '윤활한 리니어, 묵직한 톡', fx: 'spark',
+    down(k, t, j) {
+      hiss(t, { type: 'lowpass', f: (k.big ? 420 : 820) * j, q: 0.8, d: k.big ? 0.09 : 0.055, g: 1.4 });
+      tone('sine', (k.big ? 120 : 200) * j, t, { f2: (k.big ? 70 : 115) * j, ft: 0.05, d: 0.07, g: 0.6 });
+      hiss(t, { f: 2600, q: 1, d: 0.006, g: 0.2 });
+    },
+    up(k, t, j) { hiss(t, { type: 'lowpass', f: 1500 * j, q: 0.8, d: 0.025, g: 0.35 }); } },
+  typewriter: { name: '타자기', desc: '탁탁, 엔터엔 띵!', fx: 'spark',
+    down(k, t, j) {
+      if (k.code === 'Space') {
+        hiss(t, { type: 'lowpass', f: 900, d: 0.05, g: 1 }); tone('sine', 80, t, { d: 0.08, g: 0.5 }); return;
+      }
+      hiss(t, { f: 2600 * j, q: 0.7, d: 0.025, g: 1.4 });
+      tone('triangle', 1350 * j, t, { d: 0.06, g: 0.12 });
+      tone('triangle', 3100 * j, t, { d: 0.03, g: 0.06 });
+      tone('sine', 95, t, { a: 0.001, d: 0.06, g: 0.5 });
+      if (k.code === 'Enter') {
+        tone('sine', 2093, t + 0.02, { d: 1.4, g: 0.28, wet: 0.35 });
+        tone('sine', 4200, t + 0.02, { d: 0.6, g: 0.07 });
+        hiss(t + 0.08, { f: 700, f2: 3500, ft: 0.3, a: 0.03, d: 0.32, q: 1.2, g: 0.45 });
+      }
+    },
+    up(k, t) { hiss(t, { f: 3800, q: 1, d: 0.008, g: 0.25 }); } },
+  bubble: { name: '뽁뽁이', desc: '터지는 에어캡', fx: 'bubble',
+    down(k, t, j) {
+      const f0 = (k.big ? 150 : 260 + k.seed * 280) * j;
+      tone('sine', f0, t, { f2: f0 * 2.7, ft: 0.06, a: 0.003, d: 0.085, g: 0.6, wet: 0.15 });
+      hiss(t, { f: 1800, q: 3, d: 0.006, g: 0.4 });
+    } },
+  moktak: { name: '목탁', desc: '똑, 공덕이 쌓여요', fx: 'merit',
+    down(k, t, j) {
+      const f = 560 * (1 + (k.seed - 0.5) * 0.08) * j;
+      tone('sine', f, t, { a: 0.001, d: 0.24, g: 0.75, wet: 0.3 });
+      tone('sine', f * 2.73, t, { a: 0.001, d: 0.05, g: 0.18 });
+      tone('triangle', f * 1.5, t, { a: 0.001, d: 0.03, g: 0.1 });
+      hiss(t, { f: f * 2.2, q: 6, d: 0.02, g: 0.7 });
+    } },
+  marimba: { name: '마림바', desc: '어떻게 쳐도 화음이 돼요', fx: 'ring',
+    down(k, t, j) {
+      const f = mtof(noteOf(k)) * (0.997 + j * 0.003);
+      tone('sine', f, t, { a: 0.002, d: Math.max(0.25, 0.9 - f / 3500), g: 0.5, wet: 0.3 });
+      tone('sine', f * 4, t, { a: 0.001, d: 0.06, g: 0.12 });
+      tone('sine', f * 9.9, t, { a: 0.001, d: 0.015, g: 0.04 });
+      hiss(t, { f: f * 3, q: 4, d: 0.008, g: 0.12 });
+    } },
+  chip: { name: '8비트', desc: '오락실 뿅뿅', fx: 'pixel',
+    down(k, t) {
+      if (k.code === 'Space') { tone('triangle', 180, t, { f2: 45, ft: 0.12, d: 0.15, g: 0.7 }); hiss(t, { type: 'highpass', f: 6000, d: 0.03, g: 0.25 }); return; }
+      const f = mtof(noteOf(k, 60));
+      tone('square', f, t, { d: 0.05, g: 0.26 });
+      tone('square', f * 1.5, t + 0.035, { d: 0.05, g: 0.2 });
+      tone('square', f * 2, t + 0.07, { d: 0.08, g: 0.17 });
+    } },
+  voice: { name: '목소리', desc: 'A, B, C 소리 내어 읽기', fx: 'ring',
+    down(k, t, j) {
+      hiss(t, { type: 'lowpass', f: 900 * j, d: 0.035, g: 0.6 });
+      speak(k);
+    } },
+  mix: { name: '키마다 랜덤', desc: '키마다 다른 소리', fx: 'mix',
+    down(k, t, j) { SOUNDS[mixOf(k)].down(k, t, j); },
+    up(k, t, j) { const s = SOUNDS[mixOf(k)]; if (s.up) s.up(k, t, j); } }
+};
+const MIX = ['blue', 'brown', 'thock', 'typewriter', 'bubble', 'moktak', 'marimba', 'chip'];
+const mixOf = k => MIX[Math.floor(k.seed * 9973) % MIX.length];
+
+function playKey(k, phase) {
+  if (!A.ctx || A.ctx.state !== 'running' || S.muted) { if (phase === 'down' && S.sound === 'voice' && !S.muted) speak(k); return; }
+  const s = SOUNDS[S.sound], fn = s[phase];
+  if (!fn) return;
+  const j = 0.96 + Math.random() * 0.08;
+  try { fn(k, A.ctx.currentTime + 0.002, j); } catch (e) {}
+}
+
+/* speech */
+let voices = [];
+const synth = window.speechSynthesis;
+function loadVoices() { try { voices = synth.getVoices(); } catch (e) {} }
+if (synth) { loadVoices(); synth.onvoiceschanged = loadVoices; }
+let lastSpeak = 0;
+function speak(k) {
+  if (!synth || S.muted) return;
+  const now = performance.now();
+  const lang = S.voiceLang;
+  const text = lang === 'ko' ? k.ko : (k.en.length === 1 ? k.en.toUpperCase() : k.en);
+  if (!text) return;
+  if (now - lastSpeak < 40) return;
+  lastSpeak = now;
+  try {
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
+    const v = voices.find(v => v.lang && v.lang.replace('_', '-').toLowerCase().startsWith(lang));
+    if (v) u.voice = v;
+    u.rate = 1.3; u.pitch = 1.1; u.volume = Math.min(1, S.volume * 1.2);
+    synth.speak(u);
+  } catch (e) {}
+}
+
+/* ---------- press / release ---------- */
+const echo = document.getElementById('echo');
+const countEl = document.getElementById('count');
+const countLbl = document.getElementById('countLbl');
+const MIN_DOWN = 70;
+function press(k, src) {
+  if (!started) start();
+  const was = k.holders.size;
+  k.holders.add(src);
+  if (was) return;
+  clearTimeout(k.upT);
+  k.el.classList.add('down');
+  k.downAt = performance.now();
+  playKey(k, 'down');
+  S.count++;
+  if (S.sound === 'moktak' || (S.sound === 'mix' && mixOf(k) === 'moktak')) S.merit++;
+  renderCount();
+  save();
+  const r = k.el.getBoundingClientRect();
+  if (S.fx) burst(r.left + r.width / 2, r.top + r.height / 2, k);
+  if (S.echo) showEcho(k);
+  pulseCursor();
+}
+function release(k, src) {
+  if (!k.holders.delete(src) || k.holders.size) return;
+  playKey(k, 'up');
+  const held = performance.now() - k.downAt;
+  const rel = () => k.el.classList.remove('down');
+  if (held < MIN_DOWN) k.upT = setTimeout(rel, MIN_DOWN - held); else rel();
+}
+function releaseAll(prefix) {
+  Object.values(keyEls).forEach(k => [...k.holders].forEach(h => { if (!prefix || h.startsWith(prefix)) release(k, h); }));
+  if (!prefix || prefix === 'p') active.clear();
+}
+function renderCount() {
+  const moktak = S.sound === 'moktak';
+  countEl.textContent = (moktak ? S.merit : S.count).toLocaleString('ko-KR');
+  countLbl.textContent = moktak ? '쌓은 공덕' : '누적 딸깍';
+}
+let echoAnim;
+function showEcho(k) {
+  echo.textContent = k.kj && S.voiceLang === 'ko' && S.sound === 'voice' ? k.kj : (k.code === 'Space' ? '␣' : k.label.length > 3 ? k.label.split(' ')[0] : k.label);
+  try {
+    if (echoAnim) echoAnim.cancel();
+    echoAnim = echo.animate([{ transform: 'scale(.86)', opacity: 1 }, { transform: 'scale(1)', opacity: 1, offset: .3 }, { transform: 'scale(1.05)', opacity: 0 }],
+      { duration: 1100, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+  } catch (e) {}
+}
+
+/* ---------- pointer input ---------- */
+const active = new Map();   // pointerId -> key under it
+const lastPt = new Map();
+const pressed = new Set();
+function keyAt(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el || !board.contains(el)) return null;
+  const kEl = el.closest('.key');
+  return kEl ? keyInfo.get(kEl) : null;
+}
+function enter(id, k) {
+  const cur = active.get(id);
+  if (cur === k) return;
+  if (cur) release(cur, 'p' + id);
+  if (k) { active.set(id, k); press(k, 'p' + id); } else active.delete(id);
+}
+function travel(id, x1, y1) {
+  const p = lastPt.get(id);
+  lastPt.set(id, [x1, y1]);
+  if (!p) return enter(id, keyAt(x1, y1));
+  const dx = x1 - p[0], dy = y1 - p[1], dist = Math.hypot(dx, dy);
+  const n = Math.min(48, Math.ceil(dist / Math.max(4, U * 0.28)));
+  if (!n) return enter(id, keyAt(x1, y1));
+  for (let i = 1; i <= n; i++) enter(id, keyAt(p[0] + dx * i / n, p[1] + dy * i / n));
+}
+const glides = e => e.pointerType !== 'mouse' && e.pointerType !== 'pen' ? pressed.has(e.pointerId) : (S.mode === 'hover' || pressed.has(e.pointerId));
+const inUI = t => t && t.closest && t.closest('.dock-wrap, .intro');
+
+addEventListener('pointerdown', e => {
+  moveCursor(e);
+  if (inUI(e.target)) return;
+  closePanels();
+  pressed.add(e.pointerId);
+  lastPt.set(e.pointerId, [e.clientX, e.clientY]);
+  const k = keyAt(e.clientX, e.clientY);
+  if (k && active.get(e.pointerId) === k) enter(e.pointerId, null); // click on a hovered key re-strikes it
+  enter(e.pointerId, k);
+});
+addEventListener('pointermove', e => {
+  moveCursor(e);
+  if (!glides(e)) { lastPt.set(e.pointerId, [e.clientX, e.clientY]); return; }
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  if (evs.length > 1) evs.forEach(c => travel(e.pointerId, c.clientX, c.clientY));
+  else travel(e.pointerId, e.clientX, e.clientY);
+});
+function lift(e) {
+  pressed.delete(e.pointerId);
+  if (e.type !== 'pointerup' || e.pointerType !== 'mouse' || S.mode === 'click') { enter(e.pointerId, null); lastPt.delete(e.pointerId); }
+}
+addEventListener('pointerup', lift);
+addEventListener('pointercancel', lift);
+document.addEventListener('pointerleave', e => { enter(e.pointerId, null); lastPt.delete(e.pointerId); cursorEl.classList.remove('on'); });
+document.documentElement.addEventListener('mouseleave', () => { releaseAll('p'); cursorEl.classList.remove('on'); });
+addEventListener('blur', () => releaseAll());
+addEventListener('contextmenu', e => { if (board.contains(e.target)) e.preventDefault(); });
+
+/* physical keyboard */
+addEventListener('keydown', e => {
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' && t.type !== 'range')) return;
+  const k = keyEls[ALIAS[e.code] || e.code];
+  if (!k) return;
+  if (!e.metaKey && !e.ctrlKey) e.preventDefault();
+  if (e.code === 'Escape') closePanels();
+  if (e.repeat) return;
+  press(k, 'k' + e.code);
+});
+addEventListener('keyup', e => { const k = keyEls[ALIAS[e.code] || e.code]; if (k) release(k, 'k' + e.code); });
+
+/* ---------- FX canvas ---------- */
+const fx = document.getElementById('fx'), g2 = fx.getContext('2d');
+let DPR = 1, parts = [], trail = [], raf = 0;
+function fxResize() { DPR = Math.min(2, devicePixelRatio || 1); fx.width = innerWidth * DPR; fx.height = innerHeight * DPR; }
+function cssVar(n) { return getComputedStyle(document.body).getPropertyValue(n).trim(); }
+let glowC = '#5b6cff', capC = '#fff';
+function readColors() { glowC = cssVar('--glow') || glowC; capC = cssVar('--case-hi') || capC; }
+function burst(x, y, k) {
+  const kind = SOUNDS[S.sound].fx === 'mix' ? SOUNDS[mixOf(k)].fx : SOUNDS[S.sound].fx;
+  const now = performance.now();
+  if (kind === 'merit') {
+    if (now - lastMerit < 140) return;
+    lastMerit = now;
+    parts.push({ k: 'text', x, y: y - U * 0.3, vx: 0, vy: -0.05, t0: now, life: 900, s: '공덕 +1' });
+  } else if (kind === 'ring') {
+    parts.push({ k: 'ring', x, y, t0: now, life: 700, r: U * 0.5 });
+  } else if (kind === 'bubble') {
+    for (let i = 0; i < 4; i++) parts.push({ k: 'bub', x: x + (Math.random() - .5) * U * .5, y, vx: (Math.random() - .5) * .04, vy: -.06 - Math.random() * .08, t0: now, life: 900 + Math.random() * 400, r: U * (.06 + Math.random() * .1) });
+  } else {
+    const n = 7;
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (Math.random() - .5) * 2.6, sp = .12 + Math.random() * .22;
+      parts.push({ k: kind === 'pixel' ? 'pix' : 'spark', x, y: y - U * .2, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, t0: now, life: 420 + Math.random() * 260, r: U * (.04 + Math.random() * .05), rot: Math.random() * 6 });
+    }
+  }
+  if (parts.length > 400) parts.splice(0, parts.length - 400);
+  loop();
+}
+let lastFrame = 0, lastMerit = 0;
+function frame(now) {
+  raf = 0;
+  const dt = Math.min(40, now - (lastFrame || now)); lastFrame = now;
+  g2.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g2.clearRect(0, 0, innerWidth, innerHeight);
+  // cursor trail
+  if (S.trail && S.cur !== 'system') {
+    trail = trail.filter(p => now - p.t < 260);
+    for (let i = 1; i < trail.length; i++) {
+      const p = trail[i], q = trail[i - 1], a = 1 - (now - p.t) / 260;
+      if (Math.abs(p.x - q.x) + Math.abs(p.y - q.y) > 240) continue;
+      g2.strokeStyle = curColor(); g2.globalAlpha = a * .55; g2.lineCap = 'round';
+      g2.lineWidth = Math.max(1, (S.curSize / 4) * a);
+      g2.beginPath(); g2.moveTo(q.x, q.y); g2.lineTo(p.x, p.y); g2.stroke();
+    }
+  } else trail.length = 0;
+  parts = parts.filter(p => now - p.t0 < p.life);
+  for (const p of parts) {
+    const age = (now - p.t0) / p.life, a = 1 - age;
+    p.x += (p.vx || 0) * dt; p.y += (p.vy || 0) * dt;
+    if (p.k === 'spark' || p.k === 'pix') p.vy += .0006 * dt;
+    g2.globalAlpha = a;
+    if (p.k === 'spark') {
+      g2.fillStyle = glowC; g2.save(); g2.translate(p.x, p.y); g2.rotate(p.rot + age * 4);
+      g2.fillRect(-p.r, -p.r * .35, p.r * 2, p.r * .7); g2.restore();
+    } else if (p.k === 'pix') {
+      g2.fillStyle = glowC; const s = Math.round(p.r * 1.6); g2.fillRect(Math.round(p.x), Math.round(p.y), s, s);
+    } else if (p.k === 'ring') {
+      g2.strokeStyle = glowC; g2.lineWidth = 2 * a + .5; g2.beginPath(); g2.arc(p.x, p.y, p.r + age * U * 1.2, 0, 7); g2.stroke();
+    } else if (p.k === 'bub') {
+      p.x += Math.sin((now - p.t0) / 120) * .3;
+      g2.strokeStyle = glowC; g2.lineWidth = 1.5; g2.beginPath(); g2.arc(p.x, p.y, p.r * (1 + age * .6), 0, 7); g2.stroke();
+    } else if (p.k === 'text') {
+      g2.font = `600 ${Math.max(12, U * .22)}px "IBM Plex Sans KR", sans-serif`; g2.textAlign = 'center'; g2.lineJoin = 'round';
+      g2.globalAlpha = Math.min(1, a * 1.6);
+      g2.strokeStyle = capC; g2.lineWidth = 4; g2.strokeText(p.s, p.x, p.y);
+      g2.fillStyle = glowC; g2.fillText(p.s, p.x, p.y);
+    }
+  }
+  g2.globalAlpha = 1;
+  if (parts.length || trail.length) loop();
+}
+function loop() { if (!raf) raf = requestAnimationFrame(frame); }
+
+/* ---------- custom cursor ---------- */
+const CURSORS = {
+  system: { name: '기본', svg: '<path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>' },
+  ring:   { name: '링', svg: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>' },
+  dot:    { name: '구슬', svg: '<circle cx="12" cy="12" r="7" fill="currentColor"/><circle cx="9.6" cy="9.4" r="2" fill="#fff" opacity=".55"/>' },
+  arrow:  { name: '화살표', tl: true, svg: '<path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z" fill="currentColor" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>' },
+  star:   { name: '별', svg: '<path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>' },
+  heart:  { name: '하트', svg: '<path d="M12 20.5s-7.8-4.7-7.8-10.3A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.8 2.6c0 5.6-7.8 10.3-7.8 10.3z" fill="currentColor" stroke="#fff" stroke-width="1.2"/>' },
+  paw:    { name: '발바닥', svg: '<g fill="currentColor" stroke="#fff" stroke-width="1"><ellipse cx="12" cy="15.6" rx="5.2" ry="4.4"/><ellipse cx="5.6" cy="10.4" rx="2.1" ry="2.6"/><ellipse cx="9.4" cy="6.4" rx="2.1" ry="2.7"/><ellipse cx="14.6" cy="6.4" rx="2.1" ry="2.7"/><ellipse cx="18.4" cy="10.4" rx="2.1" ry="2.6"/></g>' },
+  sparkle:{ name: '반짝', svg: '<path d="M12 1.5c.8 5.4 3.6 8.5 10.5 10.5-6.9 2-9.7 5.1-10.5 10.5C11.2 17.1 8.4 14 1.5 12 8.4 10 11.2 6.9 12 1.5z" fill="currentColor" stroke="#fff" stroke-width="1"/>' },
+  cross:  { name: '조준', svg: '<g stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/></g><circle cx="12" cy="12" r="1.6" fill="currentColor"/>' }
+};
+const COLORS = ['auto', '#ff5a5f', '#ff9f1c', '#ffd23f', '#3ccf91', '#3fb6ff', '#7b61ff', '#ff6fb5', '#1c1c1c', '#ffffff'];
+const cursorEl = document.getElementById('cursor');
+function curColor() { return S.curColor === 'auto' ? (cssVar('--cursor') || glowC) : S.curColor; }
+let curCache = '#5b6cff';
+function applyCursor() {
+  const c = CURSORS[S.cur] || CURSORS.ring;
+  const custom = S.cur !== 'system' && matchMedia('(any-pointer: fine)').matches;
+  document.body.classList.toggle('custom-cursor', custom);
+  cursorEl.hidden = !custom;
+  cursorEl.innerHTML = `<svg viewBox="0 0 24 24">${c.svg}</svg>`;
+  cursorEl.classList.toggle('tl', !!c.tl);
+  cursorEl.style.setProperty('--cs', S.curSize + 'px');
+  cursorEl.style.color = S.curColor === 'auto' ? '' : S.curColor;
+  curCache = curColor();
+}
+function moveCursor(e) {
+  if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+  cursorEl.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+  cursorEl.classList.add('on');
+  if (S.trail && S.cur !== 'system') { trail.push({ x: e.clientX, y: e.clientY, t: performance.now() }); if (trail.length > 60) trail.shift(); loop(); }
+}
+let pulseT = 0;
+function pulseCursor() { cursorEl.classList.add('press'); clearTimeout(pulseT); pulseT = setTimeout(() => cursorEl.classList.remove('press'), 80); }
+
+/* ---------- palettes ---------- */
+const PALS = {
+  auto:     { name: '자동', desc: '기기 테마를 따라가요', dots: ['#fbfcfe', '#5b6cff', '#262f4d'] },
+  cloud:    { name: '구름', desc: '하얀 키캡, 페리윙클', dots: ['#fbfcfe', '#dde3ec', '#5b6cff'] },
+  midnight: { name: '미드나잇', desc: '남색에 청록 불빛', dots: ['#262f4d', '#1d2540', '#3fd8e8'] },
+  mint:     { name: '민트초코', desc: '민트 키캡, 초코 하우징', dots: ['#e3f6ef', '#7a5547', '#5fcfae'] },
+  retro:    { name: '레트로', desc: '90년대 베이지 PC', dots: ['#ebe5d6', '#9b978b', '#e0612f'] },
+  sakura:   { name: '벚꽃', desc: '연분홍 봄 키캡', dots: ['#fff5f8', '#f6cad8', '#e5588a'] },
+  blackout: { name: '블랙아웃', desc: '올 블랙, 하얀 포인트', dots: ['#1e1e1e', '#2b2b2b', '#f1f1ec'] }
+};
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+function applyPal() {
+  if (S.pal === 'auto') document.body.removeAttribute('data-kb'); else document.body.setAttribute('data-kb', S.pal);
+  requestAnimationFrame(() => { readColors(); curCache = curColor(); });
+}
+darkMQ.addEventListener && darkMQ.addEventListener('change', () => { readColors(); });
+
+/* ---------- UI ---------- */
+const $ = id => document.getElementById(id);
+const ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>';
+function pressedAttr(el, on) { el.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+
+function buildOptions(host, items, cur, onPick, render) {
+  host.innerHTML = '';
+  Object.entries(items).forEach(([id, it]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'opt'; b.dataset.id = id;
+    b.innerHTML = render(id, it);
+    b.addEventListener('click', () => onPick(id));
+    host.appendChild(b);
+  });
+  syncOptions(host, cur);
+}
+function syncOptions(host, cur) { host.querySelectorAll('[data-id]').forEach(b => pressedAttr(b, b.dataset.id === cur)); }
+
+function renderAll() {
+  pressedAttr($('modeHover'), S.mode === 'hover'); pressedAttr($('modeClick'), S.mode === 'click');
+  $('hint').textContent = S.mode === 'hover' ? '키보드 위로 커서를 스쳐 보세요' : '키를 클릭하거나 터치해 보세요';
+  $('soundName').textContent = SOUNDS[S.sound].name;
+  syncOptions($('soundGrid'), S.sound); syncOptions($('palGrid'), S.pal); syncOptions($('curGrid'), S.cur);
+  $('voiceOpts').hidden = S.sound !== 'voice';
+  $('voiceLang').querySelectorAll('[data-l]').forEach(b => pressedAttr(b, b.dataset.l === S.voiceLang));
+  pressedAttr($('tKo'), S.ko); pressedAttr($('tFx'), S.fx); pressedAttr($('tEcho'), S.echo); pressedAttr($('tTrail'), S.trail);
+  document.body.classList.toggle('no-ko', !S.ko);
+  $('curColors').querySelectorAll('[data-c]').forEach(b => pressedAttr(b, b.dataset.c === S.curColor));
+  const picked = !COLORS.includes(S.curColor);
+  pressedAttr($('curPick'), picked);
+  $('mute').innerHTML = S.muted ? ICON_OFF : ICON_ON;
+  $('mute').setAttribute('aria-label', S.muted ? '소리 켜기' : '소리 끄기');
+  $('volume').value = S.volume;
+  if (!echo.textContent) echo.textContent = S.sound === 'moktak' ? '똑' : 'A';
+  renderCount();
+}
+function set(patch) {
+  Object.assign(S, patch); save();
+  if ('pal' in patch) applyPal();
+  if ('cur' in patch || 'curColor' in patch || 'curSize' in patch) applyCursor();
+  if ('volume' in patch || 'muted' in patch) { if (A.master) A.master.gain.setTargetAtTime(S.muted ? 0 : S.volume, A.ctx.currentTime, 0.02); if (S.muted && synth) synth.cancel(); }
+  if ('mode' in patch) releaseAll('p');
+  renderAll();
+}
+
+buildOptions($('soundGrid'), SOUNDS, S.sound, id => { set({ sound: id }); if (id === 'voice' && !synth) toast('이 브라우저는 목소리 읽기를 지원하지 않아요'); demo(); },
+  (id, s) => `<b>${s.name}</b><span>${s.desc}</span>`);
+buildOptions($('palGrid'), PALS, S.pal, id => set({ pal: id }),
+  (id, p) => `<span class="pal"><span class="dots">${p.dots.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span>${p.desc}</span></span>`);
+buildOptions($('curGrid'), CURSORS, S.cur, id => set({ cur: id }),
+  (id, c) => `<svg viewBox="0 0 24 24">${c.svg.replace(/stroke="#fff"/g, 'stroke="none"')}</svg><span>${c.name}</span>`);
+$('curGrid').querySelectorAll('.opt').forEach(b => b.classList.add('cur-opt'));
+[['en', '영어 (A, B, C)'], ['ko', '한국어 (기역, 니은)']].forEach(([l, t]) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.l = l; b.textContent = t;
+  b.addEventListener('click', () => set({ voiceLang: l })); $('voiceLang').appendChild(b);
+});
+COLORS.forEach(c => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'sw' + (c === 'auto' ? ' auto' : ''); b.dataset.c = c;
+  b.setAttribute('aria-label', c === 'auto' ? '키보드에 맞춤' : c); b.title = c === 'auto' ? '키보드에 맞춤' : c;
+  if (c !== 'auto') b.style.background = c;
+  b.addEventListener('click', () => set({ curColor: c })); $('curColors').appendChild(b);
+});
+const pick = document.createElement('label'); pick.className = 'sw pick'; pick.id = 'curPick'; pick.title = '직접 고르기';
+pick.innerHTML = '<input id="curPickInput" type="color" aria-label="커서 색 직접 고르기" value="#ff7a59">';
+pick.querySelector('input').addEventListener('input', e => set({ curColor: e.target.value }));
+$('curColors').appendChild(pick);
+
+$('modeHover').addEventListener('click', () => set({ mode: 'hover' }));
+$('modeClick').addEventListener('click', () => set({ mode: 'click' }));
+$('tKo').addEventListener('click', () => set({ ko: !S.ko }));
+$('tFx').addEventListener('click', () => set({ fx: !S.fx }));
+$('tEcho').addEventListener('click', () => set({ echo: !S.echo }));
+$('tTrail').addEventListener('click', () => set({ trail: !S.trail }));
+$('mute').addEventListener('click', () => { initAudio(); set({ muted: !S.muted }); });
+$('volume').addEventListener('input', e => set({ volume: +e.target.value, muted: false }));
+$('curSize').value = S.curSize;
+$('curSize').addEventListener('input', e => set({ curSize: +e.target.value }));
+
+document.querySelectorAll('[data-panel]').forEach(b => b.addEventListener('click', () => {
+  const p = $('panel-' + b.dataset.panel), open = p.hidden;
+  closePanels();
+  if (open) { p.hidden = false; b.setAttribute('aria-expanded', 'true'); }
+}));
+function closePanels() {
+  document.querySelectorAll('.panel').forEach(p => p.hidden = true);
+  document.querySelectorAll('[data-panel]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+}
+let toastT = 0;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
+
+/* a little preview riff when a sound is picked */
+function demo() {
+  initAudio();
+  const seq = S.sound === 'voice' ? ['KeyA', 'KeyB', 'KeyC'] : ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'Space'];
+  seq.forEach((c, i) => setTimeout(() => { const k = keyEls[c]; press(k, 'demo'); setTimeout(() => release(k, 'demo'), 90); }, i * (S.sound === 'voice' ? 420 : 110)));
+}
+
+/* ---------- start ---------- */
+let started = false;
+function start() {
+  if (started) return;
+  started = true;
+  initAudio();
+  $('intro').hidden = true;
+}
+$('go').addEventListener('click', e => { e.stopPropagation(); start(); });
+$('intro').addEventListener('pointerdown', e => { if (e.target.id !== 'go') start(); });
+
+addEventListener('resize', fit);
+applyPal(); applyCursor(); renderAll(); fit();
+readColors();
+window.__ddalkkak = { S, SOUNDS, keyEls, initAudio, A }; // handy for debugging in the console
+})();
+</script>
+<!--artifact:end-->
+</body>
+</html>
