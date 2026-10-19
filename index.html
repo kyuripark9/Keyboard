@@ -305,7 +305,7 @@ const SOUNDS = {
     down(k, t, j) {
       const f0 = (210 + k.seed * 120) * j;
       hiss(t, { type: 'lowpass', f: 1400, q: 0.7, a: 0.003, d: 0.014, g: 0.55 });
-      tone('sine', f0, t, { f2: f0 * 1.6, ft: 0.06, a: 0.006, d: 0.08, g: 0.28, wet: 0.15 });
+      tone('sine', f0, t, { f2: f0 * 1.6, ft: 0.06, a: 0.006, d: 0.08, g: 0.28, wet: 0.04 });
       crinkle(t + 0.015, 3, 0.1, { lo: 3000, hi: 5500, g: 0.08 });
     } },
   slime: { name: 'Crunchy Slime', desc: 'Crumple a sheet of stitches', scene: 'cloth', noTrail: true,
