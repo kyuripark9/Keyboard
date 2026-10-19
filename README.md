@@ -8,7 +8,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 |---|-------|---------|
 | 01 | Bubble Wrap | The sheet as a blue contour map on cream paper: each bubble is a hill of rings, and a pop flattens it and sends a ripple through its neighbours before it slowly refills |
 | 02 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
-| 03 | Kinetic Sand | White tick marks on grainy green rippling out from a bright band; the cursor parts the ticks like a finger in sand, and each step spills a trickle of grains that patter down and settle |
+| 03 | Kinetic Sand | White tick marks on grainy green in rippling rings; the cursor parts them like a finger in sand, and each step knocks grains loose that fall under gravity into a dune along the bottom while the hole slowly refills |
 
 - **Just move**: sounds play as your cursor moves. On touch screens, drag a finger. The page always opens on 01 Bubble Wrap.
 - **Custom cursor**: 9 shapes, any color, adjustable size and trail.

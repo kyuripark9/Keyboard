@@ -652,13 +652,14 @@ const SCENES = {
     }
   },
 
-  /* 05 Kinetic Sand: white tick marks on grainy green, laid out on rows like a raked sand garden. Rings spread out
-     from a bright band, packed tight near it and wide apart far away. The ticks are grains: the cursor parts them like
-     a finger dragged through sand and they shiver as it passes, and each step spills a trickle of loose grains that
-     patter down, settle on a row and sink back in, matching the hiss and tiny grain ticks of the sound. */
+  /* 03 Kinetic Sand: white tick marks on grainy green, laid out on rows like a raked sand garden, in rings packed
+     tight near the centre and wide apart far away. The ticks are grains: the cursor parts them like a finger dragged
+     through sand, and each step knocks the grains around it loose. They fall under gravity, pile up along the bottom
+     in a little dune, and the hole they left in the rings slowly fills back in. */
   sand: {
     init() {
-      this.cy = (ZT + ZB) / 2; this.ty = this.cy; this.ph = 0; this.boost = 0; this.pulses = []; this.gr = [];
+      this.cy = (ZT + ZB) / 2; this.ty = this.cy; this.ph = 0; this.boost = 0; this.pulses = []; this.gr = []; this.holes = [];
+      this.pile = new Float32Array(Math.ceil(SW / 3) + 2);
       this.cur = { x: -999, y: -999, t: 0, a: 0 };
       this.row = clamp(Math.round(Math.min(SW, SH) / 70), 9, 14);
       paper(dc, '#4d7c66', .16);
@@ -666,9 +667,9 @@ const SCENES = {
     move(x, y) { this.ty = clamp(y, ZT + 40, ZB - 40); this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
     hit(x, y, k, now) {
       this.boost = Math.min(3, this.boost + .12); this.pulses.push({ t0: now }); if (this.pulses.length > 10) this.pulses.shift();
-      // the sound plays sixteen grain ticks spread over a quarter second, so spill as many grains, staggered the same way
-      for (let i = 0; i < 16; i++) this.gr.push({ x: x + rand(-8, 8), y: y + rand(-6, 4), vx: rand(-.9, .9), vy: rand(-1.2, .2), t0: now + Math.pow(Math.random(), 1.6) * 260, land: 0 });
-      if (this.gr.length > 400) this.gr.splice(0, this.gr.length - 400);
+      // knock a hole in the rings; the next frame turns every tick inside it into a falling grain
+      this.holes.push({ x, y, t0: now, R: this.row * rand(2.6, 3.6), fresh: true });
+      if (this.holes.length > 40) this.holes.shift();
     },
     // a grain's place on a ring, nudged away from the finger and shivering while the finger is near
     shift(x, y, now) {
@@ -684,11 +685,19 @@ const SCENES = {
       this.ph = (this.ph + dt * .00012 * (1 + this.boost * 3)) % 1;
       this.pulses = this.pulses.filter(p => now - p.t0 < 3000);
       const c = this.cur; c.a += (clamp(1 - (now - c.t - 250) / 700, 0, 1) - c.a) * Math.min(1, dt * .01);
-      const left = SW * .05, right = SW * .93, cx = SW * .72, cy = this.cy, Rmax = cx - left * 1.6, N = 34, row = this.row, th = row * .45;
+      const left = SW * .05, right = SW * .95, cx = SW * .72, cy = this.cy, Rmax = cx - left * 1.6, N = 34, row = this.row, th = row * .45;
       const top = ZT + row, bot = ZB - row * 2;
       sc.fillStyle = '#f4f6ef';
-      // the frame: two dashed rules at the edges
-      for (let y = top; y < bot; y += row) { sc.globalAlpha = .7; sc.fillRect(left, y, 1.4, th); sc.fillRect(right, y, 1.4, th); }
+      // holes refill from the rim inward over a few seconds
+      this.holes = this.holes.filter(hl => now - hl.t0 < 5000);
+      const k2 = dt / 16, holes = this.holes;
+      const tick = (x, y) => {
+        for (const hl of holes) {
+          const dx = x - hl.x, dy = y - hl.y, rr = hl.R * (hl.fresh ? 1 : Math.min(1, 1.25 - (now - hl.t0) / 4000));
+          if (dx * dx + dy * dy < rr * rr) { if (hl.fresh && this.gr.length < 700) this.gr.push({ x, y, vx: rand(-.5, .5) + dx * .02, vy: rand(-1.4, -.2), t0: now + Math.random() * 180, land: 0 }); return; }
+        }
+        sc.fillRect(this.shift(x, y, now), y, 1.4, th);
+      };
       for (let k = 0; k < N; k++) {
         // radii bunch up near the band: equal steps in a power curve, sliding outward with the phase
         const u = (k + this.ph) / N, r = Rmax * Math.pow(u, 1.7);
@@ -699,25 +708,31 @@ const SCENES = {
         for (let y = top; y < bot; y += row) {
           const dy = y + th / 2 - cy; if (Math.abs(dy) >= r) continue;
           const dx = Math.sqrt(r * r - dy * dy);
-          sc.fillRect(this.shift(cx - dx, y, now), y, 1.4, th);
-          if (cx + dx < right - 4) sc.fillRect(this.shift(cx + dx, y, now), y, 1.4, th);
+          tick(cx - dx, y);
+          if (cx + dx < right - 4) tick(cx + dx, y);
         }
       }
-      // the bright band: rows of short dashes stacked tight where every ring begins
-      sc.globalAlpha = .95;
-      for (let y = top; y < bot; y += row) { const fall = 1 - Math.min(1, Math.abs(y - cy) / (SH * .55)); for (let i = -3; i <= 3; i++) if (Math.abs(i) < 1 + fall * 3.2) sc.fillRect(this.shift(cx + i * 3 - .7, y, now), y, 2.2, th); }
-      // loose grains: fall, land on the next row of ticks, rest a moment and sink back into the sand
-      const k2 = dt / 16;
-      this.gr = this.gr.filter(g => now < g.t0 || (g.land ? now - g.land < 900 : g.y < bot));
+      for (const hl of holes) hl.fresh = false;
+      // loose grains fall under gravity and heap up along the floor; a grain slides off any slope steeper than its
+      // neighbours, so the heap spreads into a dune. Grains sink away after a while and the dune shrinks with them.
+      const P = this.pile, floor = bot + th, gh = th * .6;
+      this.gr = this.gr.filter(g => {
+        if (!g.land || now - g.land < 7000) return true;
+        P[g.bin] = Math.max(0, P[g.bin] - gh); return false;
+      });
       for (const g of this.gr) {
         if (now < g.t0) continue;
         if (!g.land) {
-          g.vy += .14 * k2; g.vx *= Math.pow(.97, k2); g.x += g.vx * k2; g.y += g.vy * k2;
-          const r0 = top + Math.ceil((g.y - top) / row) * row; // the row just below
-          if (g.vy > 0 && g.y + th >= r0 && g.y + th - g.vy * k2 < r0 && Math.random() < .35) { g.y = r0; g.land = now; }
+          g.vy = Math.min(g.vy + .18 * k2, 9); g.vx *= Math.pow(.985, k2); g.x += g.vx * k2; g.y += g.vy * k2;
+          let bin = clamp(Math.round(g.x / 3), 1, P.length - 2);
+          if (g.y + th >= floor - P[bin]) {
+            for (let n = 0; n < 12; n++) { const l = P[bin - 1], r = P[bin + 1], m = P[bin]; if (l < m - gh * 1.5 && bin > 1 && (l <= r || bin >= P.length - 2)) bin--; else if (r < m - gh * 1.5 && bin < P.length - 2) bin++; else break; }
+            g.bin = bin; g.x = bin * 3 + rand(-.6, .6); g.y = floor - P[bin] - th; P[bin] += gh; g.land = now;
+          }
         }
-        sc.globalAlpha = g.land ? .9 * (1 - (now - g.land) / 900) : .9;
-        sc.fillRect(g.x, g.y, 1.4, g.land ? th : th * .7);
+        const fade = g.land ? clamp((7000 - (now - g.land)) / 1500, 0, 1) : 1;
+        sc.globalAlpha = .92 * fade;
+        sc.fillRect(g.x, g.y, 1.4, th);
       }
       sc.globalAlpha = 1;
     }
