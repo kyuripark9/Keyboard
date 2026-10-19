@@ -573,22 +573,36 @@ function roundPoly(p, P, r) {
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
   /* 01 Bubble Wrap: the sheet drawn as a contour map in pale grey on mint paper, after a photo. Every bubble is a
-     hill of rings, the sheet sways gently, and a pop flattens its hill and sends a ripple through the neighbours'
-     rings. */
+     hill of rings: big droplets of mixed sizes, each nudged off its row and stretched and tilted its own way, so no two
+     match, and neighbours that touch share their outer rings. The sheet sways gently, and a pop flattens its hill and
+     sends a ripple through the neighbours' rings. */
   wrap: {
     frame: 'full',
     init() {
       const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
       this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
       this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
-      this.F = new Float32Array(w * h);
-      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 11), 40, 80);
-      // bubbles sit on a square lattice; each keeps its own height so the inner rings vary from bubble to bubble
-      this.cols = Math.ceil(SW / s2) + 3; this.rows = Math.ceil(SH / s2) + 3;
-      this.amp = new Float32Array(this.cols * this.rows); this.base = new Float32Array(this.amp.length); this.back = new Float64Array(this.amp.length);
-      for (let i = 0; i < this.amp.length; i++) this.amp[i] = this.base[i] = rand(.8, 1);
-      this.x0 = (SW % s2) / 2; this.y0 = ((ZT + ZB) / 2) % s2;
-      this.cosT = Float32Array.from({ length: 1024 }, (_, i) => .5 + .5 * Math.cos(i / 1024 * 6.2832));
+      this.F = new Float32Array(w * h); this.w2 = (w >> 1) + 2; this.h2 = (h >> 1) + 2; this.K = new Float32Array(this.w2 * this.h2);
+      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 7), 56, 130);
+      // bubbles sit in rows a cell apart, each row slid sideways by its own amount. Every bubble is nudged off its spot
+      // and gets its own size, stretch and tilt, a few are small droplets and some spots stay empty; bigger ones stand
+      // taller, so they carry more rings, and no peak sits just over a ring's level, where that ring would shrink to a
+      // speck. None reaches further than .8 of a cell from its centre, the furthest draw() looks for it
+      const cols = this.cols = Math.ceil(SW / s2) + 4, rows = this.rows = Math.ceil(SH / s2) + 4, n = cols * rows;
+      this.ro = Float32Array.from({ length: rows }, Math.random);
+      this.bx = new Float32Array(n); this.by = new Float32Array(n); this.ca = new Float32Array(n); this.sa = new Float32Array(n);
+      this.irx = new Float32Array(n); this.iry = new Float32Array(n);
+      this.amp = new Float32Array(n); this.base = new Float32Array(n); this.back = new Float64Array(n);
+      for (let j = 0, q = 0; j < rows; j++) for (let i = 0; i < cols; i++, q++) {
+        const R = Math.random() < .15 ? rand(.26, .38) : rand(.45, .78), e = rand(.8, 1.25), a = rand(0, Math.PI);
+        this.bx[q] = i + this.ro[j] + rand(-.2, .2); this.by[q] = j + rand(-.2, .2);
+        this.ca[q] = Math.cos(a); this.sa[q] = Math.sin(a);
+        this.irx[q] = 1 / Math.min(.8, R * e); this.iry[q] = 1 / Math.min(.8, R / e);
+        let A = clamp(.35 + .85 * R, .5, 1) * rand(.92, 1);
+        for (const L of [.375, .625, .875]) if (A > L - .02 && A < L + .07) A = L + .07;
+        this.amp[q] = this.base[q] = Math.random() < .15 ? 0 : A;
+      }
+      this.x0 = this.y0 = -s2 * 1.5;
       this.rip = []; this.cur = { x: -999, y: -999, a: 0, t: 0 };
       this.M = new Float32Array(w * h); this.mk = ''; this.mt = 0;
       paper(dc, '#69bca9', .07);
@@ -613,41 +627,62 @@ const SCENES = {
       }
     },
     move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
+    // the sheet sways: rows slide sideways (ox) and columns bob (oy), so the rows stretch into soft, uneven loops; and
+    // the hills stretch wider toward the sides (xs), as if the sheet were pulled from the middle
+    ox(y, t) { const s = this.s; return s * (.2 * Math.sin(y / s * 1.9 + t * .35) + .08 * Math.sin(y / s * .53 - t * .2)); },
+    oy(x, t) { const s = this.s; return s * (.12 * Math.sin(x / s * 1.3 - t * .3) + .06 * Math.sin(x / s * .41 + t * .25)); },
+    xs(x) { const d = x - SW / 2; return SW / 2 + d * (1 - .28 * Math.abs(d) / SW); },
+    // how far sheet point (u, v) sits from bubble q's centre, squared, in units of its radius along each of its axes
+    d2(q, u, v) {
+      const dx = u - this.bx[q], dy = v - this.by[q], a = (dx * this.ca[q] + dy * this.sa[q]) * this.irx[q], b = (dy * this.ca[q] - dx * this.sa[q]) * this.iry[q];
+      return a * a + b * b;
+    },
     hit(x, y, k, now) {
-      const s2 = this.s, i = Math.round((x - this.x0) / s2) + 1, j = Math.round((y - this.y0) / s2) + 1;
-      if (i < 0 || j < 0 || i >= this.cols || j >= this.rows) return;
-      const q = j * this.cols + i;
-      if (this.back[q]) return;
+      // the step pops the nearest of the four bubbles around it on the sheet
+      const t = now / 1000, u = (this.xs(x) + this.ox(y, t) - this.x0) / this.s, v = (y + this.oy(x, t) - this.y0) / this.s;
+      let q = -1, best = 2.5;
+      for (let r = v | 0; r <= (v | 0) + 1; r++) for (let p = r * this.cols + ((u - this.ro[r]) | 0), e = p + 2; p < e; p++) {
+        const d = this.d2(p, u, v); if (d < best && this.base[p]) { best = d; q = p; }
+      }
+      if (q < 0 || this.back[q]) return;
       this.back[q] = now + 9000 + Math.random() * 6000;
-      this.rip.push({ x: this.x0 + (i - 1) * s2, y: this.y0 + (j - 1) * s2, t0: now });
+      this.rip.push({ x, y, t0: now });
       if (this.rip.length > 24) this.rip.shift();
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const G = this.G, w = this.w, h = this.h, F = this.F, s2 = this.s, cols = this.cols, amp = this.amp, cosT = this.cosT;
+      const G = this.G, w = this.w, h = this.h, F = this.F, s2 = this.s, cols = this.cols, amp = this.amp, ro = this.ro;
       // popped hills sink fast, refilled ones swell back slowly
       for (let q = 0; q < amp.length; q++) {
         if (this.back[q] && now > this.back[q]) this.back[q] = 0;
         const target = this.back[q] ? .2 : this.base[q];
         amp[q] += (target - amp[q]) * Math.min(1, dt * (this.back[q] ? .02 : .0025));
       }
-      // the sheet sways: rows slide sideways and columns bob, so the lattice stretches into soft, uneven loops
-      const t = now / 1000, ox = new Float32Array(h), oy = new Float32Array(w);
-      for (let j = 0; j < h; j++) ox[j] = s2 * (.2 * Math.sin(j * G / s2 * 1.9 + t * .35) + .08 * Math.sin(j * G / s2 * .53 - t * .2));
-      for (let i = 0; i < w; i++) oy[i] = s2 * (.12 * Math.sin(i * G / s2 * 1.3 - t * .3) + .06 * Math.sin(i * G / s2 * .41 + t * .25));
-      // and the hills stretch wider toward the sides, as if the sheet were pulled from the middle
-      const x0 = this.x0 - s2, y0 = this.y0 - s2, inv = 1 / s2, mid = SW / 2, xs = new Float32Array(w);
-      for (let i = 0; i < w; i++) { const dx = i * G - mid; xs[i] = mid + dx * (1 - .28 * Math.abs(dx) / SW); }
-      for (let j = 0, o = 0; j < h; j++) {
-        const y = j * G;
-        for (let i = 0; i < w; i++, o++) {
-          const u = (xs[i] + ox[j] - x0) * inv, v = (y + oy[i] - y0) * inv, ci = Math.round(u), cj = Math.round(v);
-          // blend heights between neighbouring bubbles so a popped hill never leaves a hard seam in the ridge
-          const uf = Math.floor(u), tt = u - uf, sm = tt * tt * (3 - 2 * tt), row = cj * cols;
-          const a = uf >= 0 && cj >= 0 && uf + 1 < cols && cj < this.rows ? amp[row + uf] + (amp[row + uf + 1] - amp[row + uf]) * sm : 1;
-          // each row is a ridge and each bubble a hill on it, so the outer rings join their neighbours and pinch between them
-          F[o] = a * cosT[((v - cj + 1) * 1024 | 0) & 1023] * (.36 + .64 * cosT[((u - ci + 1) * 1024 | 0) & 1023]);
+      // the hills are worked out on a grid twice as coarse (K) and filled in between, as they are smooth at that scale
+      const W2 = this.w2, H2 = this.h2, K = this.K, G2 = G * 2, t = now / 1000;
+      const ox = new Float32Array(H2), oy = new Float32Array(W2), xs = new Float32Array(W2);
+      for (let j = 0; j < H2; j++) ox[j] = this.ox(j * G2, t);
+      for (let i = 0; i < W2; i++) { oy[i] = this.oy(i * G2, t); xs[i] = this.xs(i * G2); }
+      const x0 = this.x0, y0 = this.y0, inv = 1 / s2, { bx, by, ca: cos, sa: sin, irx, iry } = this;
+      for (let j = 0, o = 0; j < H2; j++) {
+        const y = j * G2;
+        for (let i = 0; i < W2; i++, o++) {
+          // the four bubbles around this point, two from each nearby row (d2() inlined). Touching hills merge softly and
+          // never rise past full height, so their outer rings join and pinch between them while the inner ones stay apart
+          const u = (xs[i] + ox[j] - x0) * inv, v = (y + oy[i] - y0) * inv;
+          let keep = 1;
+          for (let r = v | 0, r1 = r + 1; r <= r1; r++) for (let q = r * cols + ((u - ro[r]) | 0), e = q + 2; q < e; q++) {
+            const dx = u - bx[q], dy = v - by[q];
+            if (dx * dx + dy * dy > .64) continue;
+            const a = (dx * cos[q] + dy * sin[q]) * irx[q], b = (dy * cos[q] - dx * sin[q]) * iry[q], d = a * a + b * b;
+            if (d < 1) { const k = 1 - d; keep *= 1 - amp[q] * k * k; }
+          }
+          K[o] = 1 - keep;
         }
+      }
+      for (let j = 0, o = 0; j < h; j++) {
+        const r0 = (j >> 1) * W2, r1 = j & 1 ? r0 + W2 : r0;
+        for (let i = 0; i < w; i++, o++) { const a = i >> 1, b = i & 1 ? a + 1 : a; F[o] = (K[r0 + a] + K[r0 + b] + K[r1 + a] + K[r1 + b]) * .25; }
       }
       // ripples: a ring that runs out from each pop and bends the contour lines it passes through
       this.rip = this.rip.filter(r => now - r.t0 < 2600);
@@ -1543,9 +1578,11 @@ function thumb(id) {
   let b = '';
   switch (id) {
     case 'bubble':
+      // big droplets of mixed sizes in loose rows, each a few rings stretched and tilted its own way
       for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) {
-        const x = 7 + i * 13 + (j % 2) * 3, y = 7 + j * 12, big = r() > .25;
-        b += `<ellipse cx="${x}" cy="${y}" rx="5.4" ry="4.2"/>` + (big ? `<ellipse cx="${x}" cy="${y}" rx="3" ry="2.4"/><circle cx="${x}" cy="${y}" r=".9" fill="#dfe3e0"/>` : '');
+        const R = r() < .15 ? 2.5 + r() * 1.5 : 4.5 + r() * 3.5, e = .8 + r() * .45, a = (r() * 180).toFixed(0);
+        const x = (i * 16 + (j % 2) * 7 + (r() - .5) * 5).toFixed(1), y = (2 + j * 15 + (r() - .5) * 5).toFixed(1);
+        for (let k = 0, n = R > 6 ? 3 : 2; k < n; k++) b += `<ellipse cx="${x}" cy="${y}" rx="${(R * e * (1 - k * .3)).toFixed(1)}" ry="${(R / e * (1 - k * .3)).toFixed(1)}" transform="rotate(${a} ${x} ${y})"/>`;
       }
       return svg('#69bca9', `<g fill="none" stroke="#dfe3e0" stroke-width=".7">${b}</g>`);
     case 'slime':
