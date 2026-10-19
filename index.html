@@ -385,7 +385,7 @@ const SOUNDS = {
       tone('sine', 880 * j, t + 0.06, { f2: 1240 * j, ft: 0.08, a: 0.02, d: 0.07, g: 0.035 });
     },
     up(k, t, j) { hiss(t, { type: 'lowpass', f: 1300 * j, f2: 380, ft: 0.35, q: 1.5, a: 0.06, d: 0.34, g: 0.9 }); } },
-  slime: { name: 'Crunchy Slime', desc: 'Squish and crumple a soft grid', scene: 'cloth',
+  slime: { name: 'Crunchy Slime', desc: 'Crumble a grid of stitches', scene: 'cloth',
     // foam beads bursting inside glossy slime: a wet press and a fizz of tiny crackles
     down(k, t, j) {
       hiss(t, { f: 380 * j, f2: 700, ft: 0.1, q: 6, a: 0.025, d: 0.14, g: 1, wet: 0.08 });
@@ -895,66 +895,74 @@ const SCENES = {
     }
   },
 
-  /* 05 Crunchy Slime: a sheet of + stitches that behaves like fabric. Gliding drags the cloth along,
-     each crunch pinches it into a crumple where the stitches shrink and tilt, then it slowly smooths out. */
+  /* 05 Crunchy Slime: a sheet of + stitches. The cursor crumbles the stitches it passes: each + snaps into
+     loose arms that scatter, tilt and sag, then they slowly drift home and click back together. */
   cloth: {
     init() {
       const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 24), 18, 34), m = s2 * 1.4;
       const cols = this.cols = Math.floor((SW - m * 2) / s2) + 1, rows = this.rows = Math.floor((ZB - ZT - m * 1.6) / s2) + 1;
       const x0 = (SW - (cols - 1) * s2) / 2, y0 = ZT + (ZB - ZT - (rows - 1) * s2) / 2, n = cols * rows;
-      this.hx = new Float32Array(n); this.hy = new Float32Array(n); this.ox = new Float32Array(n); this.oy = new Float32Array(n);
-      this.vx = new Float32Array(n); this.vy = new Float32Array(n); this.ax = new Float32Array(n); this.ay = new Float32Array(n);
+      this.hx = new Float32Array(n); this.hy = new Float32Array(n);
+      for (const key of ['ox', 'oy', 'vx', 'vy', 'rot', 'vr', 'brk']) this[key] = new Float32Array(n);
+      this.seed = Float32Array.from({ length: n * 4 }, () => Math.random() * 2 - 1);
       for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { const q = j * cols + i; this.hx[q] = x0 + i * s2; this.hy[q] = y0 + j * s2; }
       paper(dc, '#e6e6e6', .05);
       dc.fillStyle = '#1a1a1a'; dc.font = mono(11);
-      dc.fillText('DRAG TO PULL  ·  CRUNCH TO CRUMPLE', 24, ZB - 12);
+      dc.fillText('CRUNCH  ·  CRUMBLE  ·  RESET', 24, ZB - 12);
     },
     near(x, y, R, fn) {
       const s2 = this.s, cols = this.cols, rows = this.rows, x0 = this.hx[0], y0 = this.hy[0];
-      const i0 = clamp(Math.floor((x - R - x0) / s2) - 2, 0, cols - 1), i1 = clamp(Math.ceil((x + R - x0) / s2) + 2, 0, cols - 1);
-      const j0 = clamp(Math.floor((y - R - y0) / s2) - 2, 0, rows - 1), j1 = clamp(Math.ceil((y + R - y0) / s2) + 2, 0, rows - 1);
+      const i0 = clamp(Math.floor((x - R - x0) / s2), 0, cols - 1), i1 = clamp(Math.ceil((x + R - x0) / s2), 0, cols - 1);
+      const j0 = clamp(Math.floor((y - R - y0) / s2), 0, rows - 1), j1 = clamp(Math.ceil((y + R - y0) / s2), 0, rows - 1);
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-        const q = j * cols + i, dx = this.hx[q] + this.ox[q] - x, dy = this.hy[q] + this.oy[q] - y, d = Math.hypot(dx, dy);
+        const q = j * cols + i, dx = this.hx[q] - x, dy = this.hy[q] - y, d = Math.hypot(dx, dy);
         if (d < R) fn(q, dx, dy, d, 1 - d / R);
       }
     },
-    move(x, y, dx, dy) {
-      const sp = Math.hypot(dx, dy); if (!sp) return;
-      const f = Math.min(1, 6 / sp) * .2;
-      this.near(x, y, this.s * 5.5, (q, ex, ey, d, w) => { this.vx[q] += dx * f * w * w; this.vy[q] += dy * f * w * w; });
+    crumble(x, y, R, power) {
+      this.near(x, y, R, (q, dx, dy, d, w) => {
+        const b = w * power; if (b < .15) return;
+        this.brk[q] = Math.min(1, Math.max(this.brk[q], b));
+        this.vx[q] += (dx / (d || 1)) * b * 1.6 + (Math.random() - .5) * b * 2;
+        this.vy[q] += (dy / (d || 1)) * b * 1.2 + (Math.random() - .5) * b * 2 - b * .4;
+        this.vr[q] += (Math.random() - .5) * b * .12;
+      });
     },
-    hit(x, y) {
-      this.near(x, y, this.s * 3.6, (q, ex, ey, d, w) => { const k2 = -(3.5 + Math.random() * 2) * w / (d || 1); this.vx[q] += ex * k2 * .55 + (Math.random() - .5) * w * 2.4; this.vy[q] += ey * k2 * .55 + (Math.random() - .5) * w * 2.4; });
-    },
+    move(x, y, dx, dy) { if (dx || dy) this.crumble(x, y, this.s * 1.8, Math.min(.85, Math.hypot(dx, dy) * .04)); },
+    hit(x, y) { this.crumble(x, y, this.s * 2.6, 1); },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const cols = this.cols, rows = this.rows, n = cols * rows, s2 = this.s, f = dt / 16, damp = Math.pow(.9, f);
-      const { ox, oy, vx, vy, ax, ay, hx, hy } = this;
-      for (let step = 0; step < 2; step++) {
-        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-          const q = j * cols + i; let sx = 0, sy = 0, c = 0;
-          if (i > 0) { sx += ox[q - 1]; sy += oy[q - 1]; c++; } if (i < cols - 1) { sx += ox[q + 1]; sy += oy[q + 1]; c++; }
-          if (j > 0) { sx += ox[q - cols]; sy += oy[q - cols]; c++; } if (j < rows - 1) { sx += ox[q + cols]; sy += oy[q + cols]; c++; }
-          ax[q] = -ox[q] * .0014 + (sx / c - ox[q]) * .12; ay[q] = -oy[q] * .0014 + (sy / c - oy[q]) * .12;
+      const n = this.cols * this.rows, s2 = this.s, f = dt / 16, damp = Math.pow(.9, f), heal = Math.pow(.5, dt / 900);
+      const { ox, oy, vx, vy, rot, vr, brk, hx, hy, seed } = this;
+      const whole = new Path2D(), bits = new Path2D(), arm = s2 * .23;
+      for (let q = 0; q < n; q++) {
+        if (brk[q] > .002 || ox[q] || oy[q]) {
+          const b = brk[q], pull = b > .35 ? .0015 : .02;   // broken pieces hang loose; nearly healed ones snap home
+          vx[q] = (vx[q] - ox[q] * pull * f) * damp; vy[q] = (vy[q] - oy[q] * pull * f + b * .03 * f) * damp;
+          vr[q] = (vr[q] - rot[q] * pull * f) * damp;
+          ox[q] += vx[q] * f; oy[q] += vy[q] * f; rot[q] += vr[q] * f;
+          brk[q] *= heal;
+          if (brk[q] < .002 && Math.abs(ox[q]) + Math.abs(oy[q]) < .05) { brk[q] = ox[q] = oy[q] = vx[q] = vy[q] = rot[q] = vr[q] = 0; }
         }
-        for (let q = 0; q < n; q++) { vx[q] = (vx[q] + ax[q] * f / 2) * Math.sqrt(damp); vy[q] = (vy[q] + ay[q] * f / 2) * Math.sqrt(damp); ox[q] += vx[q] * f / 2; oy[q] += vy[q] * f / 2; }
+        const x = hx[q] + ox[q], y = hy[q] + oy[q], b = brk[q];
+        if (b < .05) {
+          const c = Math.cos(rot[q]) * arm, sn = Math.sin(rot[q]) * arm;
+          whole.moveTo(x - c, y - sn); whole.lineTo(x + c, y + sn); whole.moveTo(x + sn, y - c); whole.lineTo(x - sn, y + c);
+          continue;
+        }
+        // four loose arms, each pushed out along its own direction with its own twist; some crumble to specks
+        for (let k = 0; k < 4; k++) {
+          const r0 = seed[q * 4 + k], a = rot[q] + k * Math.PI / 2 + r0 * b * .9, ca = Math.cos(a), sa = Math.sin(a);
+          const out = arm * (.55 + b * (1.1 + r0 * .6)), len = arm * (1 - b * (.45 + Math.abs(r0) * .35));
+          const cx = x + ca * out + r0 * b * 3, cy = y + sa * out + Math.abs(r0) * b * 6;
+          if (r0 > .55 && b > .5) { bits.moveTo(cx + 1.2, cy); bits.arc(cx, cy, 1.2, 0, 6.283); continue; }
+          const t = a + r0 * b * 1.2, tx = Math.cos(t) * len * .5, ty = Math.sin(t) * len * .5;
+          bits.moveTo(cx - tx, cy - ty); bits.lineTo(cx + tx, cy + ty);
+        }
       }
-      // each stitch takes the stretch and twist of the cloth around it: squeezed stitches shrink and break up
       sc.strokeStyle = '#1a1a1a'; sc.lineCap = 'butt';
-      const thick = new Path2D(), thin = new Path2D(), arm = s2 * .23;
-      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-        const q = j * cols + i, r = i < cols - 1 ? q + 1 : q - 1, dn = j < rows - 1 ? q + cols : q - cols, sg = i < cols - 1 ? 1 : -1, sd = j < rows - 1 ? 1 : -1;
-        const x = hx[q] + ox[q], y = hy[q] + oy[q];
-        const rx = (hx[r] + ox[r] - x) * sg, ry = (hy[r] + oy[r] - y) * sg, dx2 = (hx[dn] + ox[dn] - x) * sd, dy2 = (hy[dn] + oy[dn] - y) * sd;
-        const lr = Math.hypot(rx, ry) || 1, ld = Math.hypot(dx2, dy2) || 1, sq = Math.min(lr, ld) / s2;
-        const a1 = arm * clamp(lr / s2, .25, 1.25), a2 = arm * clamp(ld / s2, .25, 1.25), ux = rx / lr, uy = ry / lr, wx = dx2 / ld, wy = dy2 / ld;
-        const P = sq < .72 ? thin : thick;
-        if (sq < .55 && (i * 7 + j * 3) % 3 === 0) { P.moveTo(x - wx * a2 * .5, y - wy * a2 * .5); P.lineTo(x + wx * a2 * .5, y + wy * a2 * .5); continue; }
-        P.moveTo(x - ux * a1, y - uy * a1); P.lineTo(x + ux * a1, y + uy * a1);
-        P.moveTo(x - wx * a2, y - wy * a2); P.lineTo(x + wx * a2, y + wy * a2);
-      }
-      sc.lineWidth = Math.max(1.4, s2 * .075); sc.stroke(thick);
-      sc.lineWidth = Math.max(1, s2 * .05); sc.stroke(thin);
+      sc.lineWidth = Math.max(1.4, s2 * .075); sc.stroke(whole);
+      sc.lineWidth = Math.max(1.1, s2 * .06); sc.stroke(bits);
     }
   },
 
