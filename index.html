@@ -24,9 +24,9 @@
 }
 body[data-scene="pebble"] { --bg: #ffffff; --ink: #1b4f96; --ink-soft: #6b86ad; --line: rgba(27,79,150,.15); --panel: rgba(255,255,255,.88); --acc: #1b55a0; --cursor: #1b55a0; color-scheme: light; }
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
-body[data-scene="blob"]   { --bg: #fbfbfa; --ink: #1e1e1e; --ink-soft: #666666; --line: rgba(30,30,30,.13); --panel: rgba(255,255,255,.86); --acc: #1e1e1e; --cursor: #1e1e1e; color-scheme: light; }
+body[data-scene="blob"]   { --bg: #d9d9d7; --ink: #2a2a2a; --ink-soft: #6d6d6b; --line: rgba(42,42,42,.13); --panel: rgba(250,250,249,.88); --acc: #2a2a2a; --cursor: #2a2a2a; color-scheme: light; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="sand"]   { --bg: #fbfaf7; --ink: #111111; --ink-soft: #6a6a66; --line: rgba(17,17,17,.13); --panel: rgba(255,255,255,.88); --acc: #111111; --cursor: #111111; color-scheme: light; }
+body[data-scene="sand"]   { --bg: #ebebeb; --ink: #e8383d; --ink-soft: #c06a6c; --line: rgba(232,56,61,.15); --panel: rgba(246,246,246,.88); --acc: #e8383d; --cursor: #e8383d; color-scheme: light; }
 body[data-scene="vortex"] { --bg: #ebe6dc; --ink: #1a1a1a; --ink-soft: #6c665c; --line: rgba(26,26,26,.13); --panel: rgba(246,243,237,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="type"]   { --bg: #f3eee6; --ink: #1c1a17; --ink-soft: #6a6352; --line: rgba(28,26,23,.14); --panel: rgba(248,244,236,.9); --acc: #1c1a17; --cursor: #1c1a17; color-scheme: light; }
 
@@ -339,7 +339,7 @@ const SOUNDS = {
       tone('sine', f0, t, { f2: f0 * 2.4, ft: 0.05, a: 0.002, d: 0.07, g: 0.5, wet: 0.2 });
       crinkle(t + 0.015, 4, 0.12, { lo: 3500, hi: 7000, g: 0.16 });
     } },
-  squishy: { name: 'Squishy', desc: 'Squeeze soft ink blobs', scene: 'blob',
+  squishy: { name: 'Squishy', desc: 'Squeeze a wall of puffy tiles', scene: 'blob',
     // a stress ball: a wet, rubbery squeeze in, then foam slowly breathing back out
     down(k, t, j) {
       hiss(t, { type: 'lowpass', f: 260 * j, f2: 900 * j, ft: 0.18, q: 3, a: 0.03, d: 0.2, g: 1.5 });
@@ -358,7 +358,7 @@ const SOUNDS = {
       if (Math.random() < 0.5) tone('sine', rand(1800, 2600), t + rand(0.02, 0.1), { a: 0.002, d: 0.02, g: 0.04, wet: 0.3 });
     },
     up(k, t, j) { hiss(t, { f: 700 * j, f2: 1500, ft: 0.08, q: 8, a: 0.01, d: 0.08, g: 0.4 }); crinkle(t, 4, 0.06, { g: 0.2 }); } },
-  sand: { name: 'Kinetic Sand', desc: 'Pour letters into a pile', scene: 'sand',
+  sand: { name: 'Kinetic Sand', desc: 'Comb red lines like sand', scene: 'sand',
     // only fine grains trickling: an airy hiss that fades in slowly, never a burst
     down(k, t, j) {
       hiss(t, { f: 3400 * j, q: 0.8, a: 0.07, d: 0.2, g: 0.2 });
@@ -739,58 +739,63 @@ const SCENES = {
     }
   },
 
-  /* 03 Squishy: soft ink blobs on white with a grainy photocopy edge. Blobs squash under the cursor and wobble
-     back, and the cursor drags a little blob of its own that melts into whatever it passes. */
+  /* 03 Squishy: a wall of soft white silicone tiles. Pairs of puffy balls joined by a pinched neck, laid in a
+     basket weave so the pairs interlock. Each step squashes the ball under it, which wobbles back up and nudges
+     its partner, and the cursor presses a soft dent as it glides. Shaded per pixel from a height map. */
   blob: {
     init() {
       const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
       this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
       this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
-      this.field = new Float32Array(w * h); this.noise = Float32Array.from({ length: w * h }, () => Math.random());
-      const m = Math.min(SW, ZB - ZT); this.bl = [];
-      for (let tries = 0; this.bl.length < 11 && tries < 400; tries++) {
-        const r = m * rand(.1, .17), x = rand(-.05, 1.05) * SW, y = rand(0, 1) * SH;
-        if (this.bl.some(b => Math.hypot(b.x - x, b.y - y) < (b.r + r) * 1.15)) continue;
-        this.bl.push({ x, y, r, ox: 0, oy: 0, vx: 0, vy: 0, sx: 1, sy: 1, vsx: 0, vsy: 0, ph: Math.random() * 6.283 });
-      }
-      this.cur = { x: -999, y: -999, t: 0, r: m * .05 };
+      this.H = new Float32Array(w * h); this.D = new Float32Array(w * h);
+      const d = this.d = clamp(Math.round(Math.min(SW, ZB - ZT) / 7), 56, 120) / G;
+      this.cols = Math.ceil(w / d) + 2; this.rows = Math.ceil(h / d) + 2;
+      this.ox = (w - (this.cols - 1) * d) / 2; this.oy = (h - (this.rows - 1) * d) / 2;
+      const n = this.cols * this.rows; this.amp = new Float32Array(n).fill(1); this.vel = new Float32Array(n);
+      this.cur = { x: -999, y: -999, t: 0, a: 0 };
+      // grey levels 0..255 with a faint cool tint, ABGR
+      this.pal = Uint32Array.from({ length: 256 }, (_, i) => 0xff000000 | Math.min(255, i + 3) << 16 | i << 8 | Math.max(0, i - 2));
     },
-    push(x, y, f, dx, dy) {
-      for (const b of this.bl) {
-        const ex = b.x + b.ox - x, ey = b.y + b.oy - y, d = Math.hypot(ex, ey) || 1, R = b.r * 1.6;
-        if (d > R) continue;
-        const w = (1 - d / R) * f, horiz = Math.abs(dx) >= Math.abs(dy);
-        b.vsx += (horiz ? -1 : 1) * w * .025; b.vsy += (horiz ? 1 : -1) * w * .025;
-        b.vx += ex / d * w * .5; b.vy += ey / d * w * .5;
-      }
-    },
-    move(x, y, dx, dy) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); this.push(x, y, Math.min(1.4, Math.hypot(dx, dy) * .05), dx, dy); },
-    hit(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); this.push(x, y, 2.6, 1, 0); },
-    splat(F, x, y, r, sx, sy) {
-      const G = this.G, w = this.w, h = this.h, R = r * 1.9, cx = x / G, cy = y / G, rx = R * sx / G, ry = R * sy / G;
-      const x0 = Math.max(0, Math.floor(cx - rx)), x1 = Math.min(w - 1, Math.ceil(cx + rx)), y0 = Math.max(0, Math.floor(cy - ry)), y1 = Math.min(h - 1, Math.ceil(cy + ry));
-      for (let j = y0; j <= y1; j++) {
-        const v = (j - cy) / ry, v2 = v * v; if (v2 >= 1) continue;
-        for (let i = x0, o = j * w + x0; i <= x1; i++, o++) { const u = (i - cx) / rx, q = u * u + v2; if (q < 1) { const a = 1 - q; F[o] += a * a; } }
-      }
+    // basket weave: 2x2 blocks of balls alternate between two horizontal pairs and two vertical pairs
+    mate(i, j) { return ((i >> 1) + (j >> 1)) % 2 === 0 ? [i ^ 1, j] : [i, j ^ 1]; },
+    ball(x, y) { const G = this.G; return [Math.round((x / G - this.ox) / this.d), Math.round((y / G - this.oy) / this.d)]; },
+    poke(i, j, v) { if (i >= 0 && j >= 0 && i < this.cols && j < this.rows) this.vel[j * this.cols + i] += v; },
+    move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
+    hit(x, y) {
+      const [i, j] = this.ball(x, y), [mi, mj] = this.mate(i, j);
+      this.poke(i, j, -.075); this.poke(mi, mj, .03); // squeeze one end and the other end puffs up
+      this.cur.x = x; this.cur.y = y; this.cur.t = performance.now();
     },
     draw(now, dt) {
-      const k = .0026, f = Math.pow(.88, dt / 16), F = this.field;
-      F.fill(0);
-      for (const b of this.bl) {
-        b.vsx += (1 - b.sx) * k * dt; b.vsy += (1 - b.sy) * k * dt; b.vsx *= f; b.vsy *= f;
-        b.sx = clamp(b.sx + b.vsx, .55, 1.6); b.sy = clamp(b.sy + b.vsy, .55, 1.6);
-        b.vx += -b.ox * k * .6 * dt; b.vy += -b.oy * k * .6 * dt; b.vx *= f; b.vy *= f; b.ox += b.vx * dt / 16; b.oy += b.vy * dt / 16;
-        const drift = Math.sin(now / 2600 + b.ph) * b.r * .06;
-        this.splat(F, b.x + b.ox + drift, b.y + b.oy + Math.cos(now / 3100 + b.ph) * b.r * .05, b.r, b.sx, b.sy);
+      const { G, w, h, H, D, d, cols, rows, amp, vel } = this;
+      const k = .0016 * dt, f = Math.pow(.93, dt / 16);
+      for (let q = 0; q < amp.length; q++) { vel[q] += (1 - amp[q]) * k; vel[q] *= f; amp[q] = clamp(amp[q] + vel[q] * dt / 16, .35, 1.3); }
+      const c = this.cur; c.a += (clamp(1 - (now - c.t - 250) / 700, 0, 1) - c.a) * Math.min(1, dt * .012);
+      // each pair is a two-ball metaball: their fields add up into a pinched neck, and the surface is a smooth dome above the threshold
+      const S2 = (d * .83) * (d * .83), T = .48, R = d * .44, cx = c.x / G, cy = c.y / G, cr = d * .55, ca = c.a * d * .16;
+      const ampAt = (i, j) => i >= 0 && j >= 0 && i < cols && j < rows ? amp[j * cols + i] : 1;
+      for (let y = 0, o = 0; y < h; y++) {
+        const j = Math.round((y - this.oy) / d);
+        for (let x = 0; x < w; x++, o++) {
+          const i = Math.round((x - this.ox) / d), [mi, mj] = this.mate(i, j);
+          const ea = ((x - this.ox - i * d) ** 2 + (y - this.oy - j * d) ** 2) / S2, eb = ((x - this.ox - mi * d) ** 2 + (y - this.oy - mj * d) ** 2) / S2;
+          const fa = ea < 1 ? (1 - ea) * (1 - ea) : 0, fb = eb < 1 ? (1 - eb) * (1 - eb) : 0, F = fa + fb;
+          D[o] = F;
+          let z = 0;
+          if (F > T) z = R * Math.sqrt(Math.min(1, (F - T) / (1 - T))) * (ampAt(i, j) * fa + ampAt(mi, mj) * fb) / F;
+          if (ca > .01) { const e = Math.hypot(x - cx, y - cy); if (e < cr) { const s3 = 1 - e / cr; z -= ca * s3 * s3 * (z > 0 ? 1 : 0); } }
+          H[o] = z;
+        }
       }
-      const ca = clamp(1 - (now - this.cur.t - 400) / 700, 0, 1);
-      if (ca > 0) this.splat(F, this.cur.x, this.cur.y, this.cur.r * (.6 + ca * .4), 1, 1);
-      // stipple: each pixel goes dark when the blob density beats its own fixed grain value, like toner on a photocopy
-      const P = this.px, N = this.noise, DARK = 0xff262626, LIGHT = 0xfffafbfb;
-      for (let o = 0; o < F.length; o++) {
-        const p = (F[o] - .14) * 2.7;
-        P[o] = p > N[o] || N[o] < .0025 ? DARK : LIGHT;
+      // light from the upper left: soft diffuse, a gentle sheen, and grooves that sink into shadow
+      const P = this.px, pal = this.pal, lx = -.45, ly = -.55, lz = .7;
+      for (let y = 1; y < h - 1; y++) for (let x = 1, o = y * w + 1; x < w - 1; x++, o++) {
+        const z = H[o];
+        if (z <= 0) { const g = .84 - .3 * D[o] / T; P[o] = pal[(g * 232) | 0]; continue; } // the gap between tiles darkens toward their rims
+        const nx = (H[o - 1] - H[o + 1]) * .5, ny = (H[o - w] - H[o + w]) * .5, nl = 1 / Math.sqrt(nx * nx + ny * ny + 1);
+        const dif = Math.max(0, (nx * lx + ny * ly + lz) * nl), hz = (nx * (lx) + ny * (ly) + (lz + 1)) * nl / Math.sqrt(lx * lx + ly * ly + (lz + 1) * (lz + 1));
+        const spec = Math.pow(Math.max(0, hz), 40) * .22, rim = z < 1.2 ? .35 * (1 - z / 1.2) : 0;
+        P[o] = pal[Math.min(255, ((.5 + .48 * dif + spec - rim) * 248) | 0)];
       }
       this.oc.putImageData(this.img, 0, 0);
       sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
@@ -857,48 +862,61 @@ const SCENES = {
     }
   },
 
-  /* 05 Kinetic Sand: letters pour out of the cursor and settle into a dune of words. */
+  /* 05 Kinetic Sand: fine coral lines on grey, raked like a sand garden. A vertical set crosses a slanted set, and
+     where they overlap they shimmer into moiré and glow warmer. The cursor drags through the lines like a finger
+     through sand; each step leaves a groove that slowly smooths out, and the slanted set turns a little toward the cursor. */
   sand: {
     init() {
-      this.col = 5; this.h = new Float32Array(Math.ceil(SW / this.col) + 1); this.gr = []; this.i = 0;
-      this.pile = this.pile || document.createElement('canvas'); this.pile.width = SW * SDPR; this.pile.height = SH * SDPR;
-      this.pc = this.pile.getContext('2d'); this.pc.setTransform(SDPR, 0, 0, SDPR, 0, 0);
-      this.base = ZB - 6;
-      paper(dc, '#fbfaf7', .04);
-      dc.fillStyle = '#1a1a1a'; dc.font = '13px "Figtree", sans-serif';
-      const w = Math.min(340, SW * .36);
-      wrapText(dc, 'Kinetic sand is about 98% sand and 2% polydimethylsiloxane, a silicone oil that lets the grains stick to each other and never to you. Press it and it holds the shape. Slice it and it crumbles in slow motion. Pour it and it piles up like wet beach sand, then slumps. Nobody needs a reason to play with it. That is the point.', SW * .05, ZT + 30, w, 18);
-      dc.textAlign = 'right'; wrapText(dc, 'pour  ·  slice  ·  press  ·  slump', SW * .95, ZT + 30, w, 18); dc.textAlign = 'left';
-      this.word = 'slice pour press crumble sand ';
+      this.comb = []; this.cur = { x: -999, y: -999, t: 0, a: 0 }; this.tilt = 0; this.tiltT = 0;
+      const sp = this.sp = clamp(Math.round(Math.min(SW, SH) / 95), 6, 10);
+      this.vx0 = SW * .06; this.vx1 = SW * .48;
     },
-    spawn(x, y, n) {
-      for (let i = 0; i < n && this.gr.length < 1400; i++) {
-        this.gr.push({ x: x + (Math.random() - .5) * 8, y, vx: (Math.random() - .5) * .05, vy: Math.random() * .08, ch: this.word[this.i++ % this.word.length], sz: 9 + Math.random() * 6, rot: (Math.random() - .5) * 1.4 });
+    move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); this.tiltT = (x / SW - .5) * .16; },
+    hit(x, y, k, now) { this.comb.push({ x, y, t0: now, A: this.sp * rand(1.6, 2.6) }); if (this.comb.length > 60) this.comb.shift(); },
+    // every point on a line is pushed away from the grooves and from the finger, so the lines part around them
+    warp(x, y, now) {
+      let dx = 0, dy = 0;
+      const R = this.sp * 9, R2 = R * R;
+      for (const c of this.comb) {
+        const ex = x - c.x, ey = y - c.y, e2 = ex * ex + ey * ey; if (e2 > R2 * 2.2) continue;
+        const life = 1 - (now - c.t0) / 6000, e = Math.sqrt(e2) || 1, g = Math.exp(-e2 / R2) * c.A * life * life;
+        dx += ex / e * g; dy += ey / e * g;
       }
-    },
-    move(x, y, dx, dy) { if (y > ZT && y < ZB) this.spawn(x, y, Math.min(4, 1 + Math.hypot(dx, dy) / 12 | 0)); },
-    hit(x, y) { this.spawn(x, y, 5); },
-    settle(g) {
-      let ci = clamp(Math.round(g.x / this.col), 0, this.h.length - 1);
-      for (let n = 0; n < 6; n++) {
-        const l = ci > 0 ? this.h[ci - 1] : 1e9, r = ci < this.h.length - 1 ? this.h[ci + 1] : 1e9;
-        if (this.h[ci] - Math.min(l, r) > 5) ci += l < r ? -1 : 1; else break;
+      const c = this.cur; if (c.a > .01) {
+        const ex = x - c.x, ey = y - c.y, e2 = ex * ex + ey * ey, R3 = R2 * 1.6;
+        if (e2 < R3 * 3) { const e = Math.sqrt(e2) || 1, g = Math.exp(-e2 / R3) * this.sp * 2.4 * c.a; dx += ex / e * g; dy += ey / e * g; }
       }
-      const pc = this.pc; pc.save(); pc.translate(ci * this.col, this.base - this.h[ci]); pc.rotate(g.rot); pc.fillStyle = '#141414'; pc.font = `${g.sz}px "Figtree", sans-serif`; pc.textAlign = 'center'; pc.fillText(g.ch, 0, 0); pc.restore();
-      this.h[ci] += 2.4; if (ci > 0) this.h[ci - 1] += .5; if (ci < this.h.length - 1) this.h[ci + 1] += .5;
-      if (this.h[ci] > (ZB - ZT) * .5) { this.pc.clearRect(0, 0, SW, SH); this.h.fill(0); }
+      return [x + dx, y + dy];
     },
     draw(now, dt) {
-      sc.drawImage(deco, 0, 0, SW, SH);
-      sc.drawImage(this.pile, 0, 0, SW, SH);
-      sc.fillStyle = '#141414';
-      for (const g of this.gr) {
-        g.vy += .0014 * dt; g.x += g.vx * dt; g.y += g.vy * dt;
-        const ci = clamp(Math.round(g.x / this.col), 0, this.h.length - 1);
-        if (g.y >= this.base - this.h[ci]) { this.settle(g); g.done = true; continue; }
-        sc.save(); sc.translate(g.x, g.y); sc.rotate(g.rot); sc.font = `${g.sz}px "Figtree", sans-serif`; sc.fillText(g.ch, 0, 0); sc.restore();
+      sc.fillStyle = '#ebebeb'; sc.fillRect(0, 0, SW, SH);
+      this.comb = this.comb.filter(c => now - c.t0 < 6000);
+      const c = this.cur; c.a += (clamp(1 - (now - c.t - 300) / 900, 0, 1) - c.a) * Math.min(1, dt * .01);
+      this.tilt += (this.tiltT - this.tilt) * Math.min(1, dt * .002);
+      const sp = this.sp, th = -.6 + this.tilt + Math.sin(now / 5200) * .015, ux = Math.cos(th), uy = Math.sin(th), nx = -uy, ny = ux;
+      // a warm glow where the two sets cross, drifting toward the finger
+      const gx = lerp(SW * .3, c.x > 0 ? c.x : SW * .3, .35 * c.a), gy = lerp(SH * .62, c.y > 0 ? c.y : SH * .62, .35 * c.a);
+      const glow = sc.createRadialGradient(gx, gy, 0, gx, gy, Math.min(SW, SH) * .55);
+      glow.addColorStop(0, 'rgba(255,70,72,.32)'); glow.addColorStop(1, 'rgba(255,70,72,0)');
+      sc.fillStyle = glow; sc.fillRect(0, 0, SW, SH);
+      sc.lineWidth = 1.15; sc.lineCap = 'round';
+      const step = 12;
+      // the vertical set, on the left, running the full height
+      sc.strokeStyle = 'rgba(226,40,46,.85)';
+      sc.beginPath();
+      for (let x = this.vx0; x <= this.vx1; x += sp * 1.25) {
+        for (let y = -10, f = 1; y <= SH + 10; y += step, f = 0) { const [px, py] = this.warp(x, y, now); f ? sc.moveTo(px, py) : sc.lineTo(px, py); }
       }
-      this.gr = this.gr.filter(g => !g.done);
+      sc.stroke();
+      // the slanted set: a wide band rising to the right, each line starting at a staggered edge
+      sc.strokeStyle = 'rgba(240,58,62,.7)';
+      sc.beginPath();
+      const ox = SW * .55, oy = SH * .62, L = Math.hypot(SW, SH);
+      for (let k2 = -Math.round(SH * .32 / sp); k2 <= Math.round(SH * .3 / sp); k2++) {
+        const bx = ox + nx * k2 * sp, by = oy + ny * k2 * sp, t0 = -SW * .62 - Math.abs(Math.sin(k2 * 1.7)) * sp * 6 + k2 * sp * .5, t1 = L * .6;
+        for (let t = t0, f = 1; t <= t1; t += step, f = 0) { const [px, py] = this.warp(bx + ux * t, by + uy * t, now); f ? sc.moveTo(px, py) : sc.lineTo(px, py); }
+      }
+      sc.stroke();
     }
   },
 
@@ -1102,9 +1120,9 @@ function thumb(id) {
       }
       return svg('#eae8dc', `<g fill="none" stroke="${C.cobalt}" stroke-width=".7">${b}</g>`);
     case 'squishy':
-      b = '<defs><filter id="tsq" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4"/></filter></defs><g fill="#262626" filter="url(#tsq)">';
-      [[14, 10, 11], [62, 6, 10], [28, 31, 9], [44, 31, 10], [18, 52, 10], [60, 50, 11]].forEach(([x, y, r]) => b += `<circle cx="${x}" cy="${y}" r="${r}"/>`);
-      return svg('#fafbfb', b + '</g>');
+      b = '<defs><radialGradient id="tsq" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".65" stop-color="#ececea"/><stop offset="1" stop-color="#b9b9b6"/></radialGradient></defs><g fill="url(#tsq)">';
+      [[10, 8, 22, 8], [34, 2, 34, 14], [46, 8, 58, 8], [70, 2, 70, 14], [10, 26, 10, 38], [22, 26, 22, 38], [34, 26, 46, 26], [58, 26, 70, 26], [34, 38, 46, 38], [58, 38, 70, 38], [10, 50, 22, 50], [46, 50, 58, 50]].forEach(([x1, y1, x2, y2]) => b += `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="#e4e4e2" stroke-width="7"/><circle cx="${x1}" cy="${y1}" r="5.6"/><circle cx="${x2}" cy="${y2}" r="5.6"/>`);
+      return svg('#cfcfcd', b + '</g>');
     case 'slime':
       for (let j = 0; j < 7; j++) for (let i = 0; i < 12; i++) {
         const x = 8 + i * 6 + (j > 3 ? (j - 3) * (i < 5 ? 1.2 : .2) : 0), y = 6 + j * 6.2 - (i > 4 && i < 9 ? 1.2 : 0), a = j > 3 && i < 5 ? .25 : 0, l = j > 3 && i < 5 ? 1.2 : 1.7;
@@ -1112,9 +1130,9 @@ function thumb(id) {
       }
       return svg('#e6e6e6', b);
     case 'sand':
-      b = `<path d="M40 10 Q41 30 40 38" stroke="#141414" stroke-width="1.4" stroke-dasharray=".8 1.2" fill="none"/><path d="M22 46 Q40 30 58 46Z" fill="#141414"/>`;
-      'sand'.split('').forEach((c, i) => b += `<text x="${34 + i * 4}" y="${8 + i * 6}" font-family="Figtree, sans-serif" font-size="5" fill="#141414">${c}</text>`);
-      return svg('#fbfaf7', b);
+      for (let x = 6; x < 36; x += 2.2) b += `<path d="M${x} 0V50" stroke="#e2282e" stroke-width=".45"/>`;
+      for (let k = -9; k < 12; k++) b += `<path d="M${-10} ${46 + k * 2.4}L90 ${-10 + k * 2.4}" stroke="#f03a3e" stroke-opacity=".7" stroke-width=".45"/>`;
+      return svg('#ebebeb', '<defs><radialGradient id="tsd"><stop offset="0" stop-color="#ff4648" stop-opacity=".35"/><stop offset="1" stop-color="#ff4648" stop-opacity="0"/></radialGradient></defs><circle cx="26" cy="32" r="26" fill="url(#tsd)"/>' + b);
     case 'typewriter':
       b = `<text x="40" y="22" text-anchor="middle" font-family="Courier Prime, monospace" font-weight="700" font-size="13" fill="#1c1a17">CLACK</text><text x="40" y="38" text-anchor="middle" font-family="Courier Prime, monospace" font-weight="700" font-size="13" fill="#1c1a17" opacity=".3" clip-path="inset(40% 0 0 0)">CLACK</text>`;
       return svg(C.paper, b);

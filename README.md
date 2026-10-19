@@ -8,9 +8,9 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 |---|-------|---------|
 | 01 | Wax Ball | Cobalt pebbles printed like a cyanotype: solid cores over pale, grainy, off-register halos; steps crack big pebbles in two and pop the small ones |
 | 02 | Bubble Wrap | The sheet as a blue contour map on cream paper: each bubble is a hill of rings, and a pop flattens it and sends a ripple through its neighbours before it slowly refills |
-| 03 | Squishy | Grainy black ink blobs with a photocopy texture that squash and wobble back. |
+| 03 | Squishy | A wall of puffy white silicone tiles (pairs of balls joined by a pinched neck, in a basket weave); steps squash a ball, which wobbles back and puffs up its partner. The page always opens here |
 | 04 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
-| 05 | Kinetic Sand | Letters that pour down into a pile |
+| 05 | Kinetic Sand | Fine coral lines on grey, a vertical set crossing a slanted one into a glowing moiré; the cursor rakes through them like a finger in sand |
 | 06 | Typewriter | Stamped type that wears off and drifts down the page |
 | 07 | Pearl | Fine dotted lines on cream paper spiralling into a sinking pearl that follows the cursor; steps spin the vortex and play glassy pentatonic pings |
 
@@ -18,7 +18,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 - **Custom cursor**: 9 shapes, any color, adjustable size and trail.
 - Your real keyboard plays too (letters, digits, space, enter), and the left and right arrows switch sounds. Settings and your clack count are saved in the browser.
 
-All sounds are synthesized live with the Web Audio API, so there are no audio files. They are tuned for ASMR: soft attacks, rounded filters, small crisp details and a little reverb. The palette comes from one moodboard: cobalt, periwinkle, grey and warm paper, and ink. Squishy is the exception: black toner on white, like a photocopy.
+All sounds are synthesized live with the Web Audio API, so there are no audio files. They are tuned for ASMR: soft attacks, rounded filters, small crisp details and a little reverb. The palette comes from one moodboard: cobalt, periwinkle, grey and warm paper, and ink.
 
 ## Run locally
 
