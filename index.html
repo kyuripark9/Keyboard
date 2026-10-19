@@ -872,6 +872,14 @@ function sceneLoop() {
   sc.setTransform(SDPR, 0, 0, SDPR, FX * SDPR, FY * SDPR);
   sc.save(); sc.beginPath(); sc.rect(0, 0, SW, SH); sc.clip();
   scene.draw(now, dt);
+  // feather the frame: the picture fades into the page over a soft band instead of stopping at a hard cut
+  const F = clamp(Math.min(SW, SH) * .08, 24, 70);
+  sc.globalCompositeOperation = 'destination-out';
+  for (const [x0, y0, x1, y1, rx, ry, rw, rh] of [[0, 0, F, 0, 0, 0, F, SH], [SW, 0, SW - F, 0, SW - F, 0, F, SH], [0, 0, 0, F, 0, 0, SW, F], [0, SH, 0, SH - F, 0, SH - F, SW, F]]) {
+    const g = sc.createLinearGradient(x0, y0, x1, y1);
+    g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(.35, 'rgba(0,0,0,.6)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    sc.fillStyle = g; sc.fillRect(rx, ry, rw, rh);
+  }
   sc.restore();
 }
 requestAnimationFrame(sceneLoop);
