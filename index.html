@@ -26,9 +26,9 @@ body[data-scene="pebble"] { --bg: #ffffff; --ink: #1b4f96; --ink-soft: #6b86ad; 
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 body[data-scene="blob"]   { --bg: #d9d9d7; --ink: #2a2a2a; --ink-soft: #6d6d6b; --line: rgba(42,42,42,.13); --panel: rgba(250,250,249,.88); --acc: #2a2a2a; --cursor: #2a2a2a; color-scheme: light; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="sand"]   { --bg: #ebebeb; --ink: #e8383d; --ink-soft: #c06a6c; --line: rgba(232,56,61,.15); --panel: rgba(246,246,246,.88); --acc: #e8383d; --cursor: #e8383d; color-scheme: light; }
+body[data-scene="sand"]   { --bg: #4d7c66; --ink: #f4f6ef; --ink-soft: #c5d6cb; --line: rgba(244,246,239,.2); --panel: rgba(62,104,85,.9); --acc: #f4f6ef; --cursor: #f4f6ef; color-scheme: dark; }
 body[data-scene="vortex"] { --bg: #ebe6dc; --ink: #1a1a1a; --ink-soft: #6c665c; --line: rgba(26,26,26,.13); --panel: rgba(246,243,237,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="type"]   { --bg: #f3eee6; --ink: #1c1a17; --ink-soft: #6a6352; --line: rgba(28,26,23,.14); --panel: rgba(248,244,236,.9); --acc: #1c1a17; --cursor: #1c1a17; color-scheme: light; }
+body[data-scene="type"]   { --bg: #ebebeb; --ink: #e8383d; --ink-soft: #c06a6c; --line: rgba(232,56,61,.15); --panel: rgba(246,246,246,.88); --acc: #e8383d; --cursor: #e8383d; color-scheme: light; }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -358,13 +358,13 @@ const SOUNDS = {
       if (Math.random() < 0.5) tone('sine', rand(1800, 2600), t + rand(0.02, 0.1), { a: 0.002, d: 0.02, g: 0.04, wet: 0.3 });
     },
     up(k, t, j) { hiss(t, { f: 700 * j, f2: 1500, ft: 0.08, q: 8, a: 0.01, d: 0.08, g: 0.4 }); crinkle(t, 4, 0.06, { g: 0.2 }); } },
-  sand: { name: 'Kinetic Sand', desc: 'Comb red lines like sand', scene: 'sand',
+  sand: { name: 'Kinetic Sand', desc: 'Send ripples through the sand', scene: 'sand',
     // only fine grains trickling: an airy hiss that fades in slowly, never a burst
     down(k, t, j) {
       hiss(t, { f: 3400 * j, q: 0.8, a: 0.07, d: 0.2, g: 0.2 });
       crinkle(t + 0.02, 16, 0.26, { lo: 2600, hi: 6200, g: 0.2, q: 1.6 });
     } },
-  typewriter: { name: 'Typewriter', desc: 'Stamp type that slowly wears off', scene: 'type',
+  typewriter: { name: 'Typewriter', desc: 'Rake red lines into moiré', scene: 'type',
     // creamy, thocky keys with a soft upstroke, and a little bell on Enter
     down(k, t, j) {
       if (k.code === 'Space') { hiss(t, { type: 'lowpass', f: 700, d: 0.06, g: 1 }); tone('sine', 90, t, { f2: 60, ft: 0.06, d: 0.08, g: 0.45 }); return; }
@@ -862,10 +862,53 @@ const SCENES = {
     }
   },
 
-  /* 05 Kinetic Sand: fine coral lines on grey, raked like a sand garden. A vertical set crosses a slanted set, and
+  /* 05 Kinetic Sand: white tick marks on grainy green, laid out on rows like a sand garden. Rings spread out from a
+     bright band on the right, packed tight near it and wide apart far away, and drift slowly outward like ripples.
+     Each step sends a brighter pulse rolling out, and the band follows the cursor up and down. */
+  sand: {
+    init() {
+      this.cy = (ZT + ZB) / 2; this.ty = this.cy; this.ph = 0; this.boost = 0; this.pulses = [];
+      this.row = clamp(Math.round(Math.min(SW, SH) / 70), 9, 14);
+      paper(dc, '#4d7c66', .16);
+    },
+    move(x, y) { this.ty = clamp(y, ZT + 40, ZB - 40); },
+    hit(x, y, k, now) { this.boost = Math.min(3, this.boost + .25); this.pulses.push({ t0: now }); if (this.pulses.length > 10) this.pulses.shift(); },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      this.cy += (this.ty - this.cy) * Math.min(1, dt * .002);
+      this.boost *= Math.pow(.9985, dt);
+      this.ph = (this.ph + dt * .00012 * (1 + this.boost * 3)) % 1;
+      this.pulses = this.pulses.filter(p => now - p.t0 < 3000);
+      const left = SW * .05, right = SW * .93, cx = SW * .72, cy = this.cy, Rmax = cx - left * 1.6, N = 34, row = this.row, th = row * .45;
+      const top = ZT + row, bot = ZB - row * 2;
+      sc.fillStyle = '#f4f6ef';
+      // the frame: two dashed rules at the edges
+      for (let y = top; y < bot; y += row) { sc.globalAlpha = .7; sc.fillRect(left, y, 1.4, th); sc.fillRect(right, y, 1.4, th); }
+      for (let k = 0; k < N; k++) {
+        // radii bunch up near the band: equal steps in a power curve, sliding outward with the phase
+        const u = (k + this.ph) / N, r = Rmax * Math.pow(u, 1.7);
+        if (r < 2) continue;
+        let br = .55 + .35 * (1 - u);
+        for (const p of this.pulses) { const a2 = (now - p.t0) / 3000, z = (u - a2) * 9; br += Math.exp(-z * z) * .5 * (1 - a2); }
+        sc.globalAlpha = Math.min(1, br);
+        for (let y = top; y < bot; y += row) {
+          const dy = y + th / 2 - cy; if (Math.abs(dy) >= r) continue;
+          const dx = Math.sqrt(r * r - dy * dy);
+          sc.fillRect(cx - dx, y, 1.4, th);
+          if (cx + dx < right - 4) sc.fillRect(cx + dx, y, 1.4, th);
+        }
+      }
+      // the bright band: rows of short dashes stacked tight where every ring begins
+      sc.globalAlpha = .95;
+      for (let y = top; y < bot; y += row) { const fall = 1 - Math.min(1, Math.abs(y - cy) / (SH * .55)); for (let i = -3; i <= 3; i++) if (Math.abs(i) < 1 + fall * 3.2) sc.fillRect(cx + i * 3 - .7, y, 2.2, th); }
+      sc.globalAlpha = 1;
+    }
+  },
+
+  /* 06 Typewriter: fine coral lines on grey, raked like a sand garden; every keystroke leaves a groove. A vertical set crosses a slanted set, and
      where they overlap they shimmer into moiré and glow warmer. The cursor drags through the lines like a finger
      through sand; each step leaves a groove that slowly smooths out, and the slanted set turns a little toward the cursor. */
-  sand: {
+  type: {
     init() {
       this.comb = []; this.cur = { x: -999, y: -999, t: 0, a: 0 }; this.tilt = 0; this.tiltT = 0;
       const sp = this.sp = clamp(Math.round(Math.min(SW, SH) / 95), 6, 10);
@@ -917,44 +960,6 @@ const SCENES = {
         for (let t = t0, f = 1; t <= t1; t += step, f = 0) { const [px, py] = this.warp(bx + ux * t, by + uy * t, now); f ? sc.moveTo(px, py) : sc.lineTo(px, py); }
       }
       sc.stroke();
-    }
-  },
-
-  /* 06 Typewriter: type stamps onto a grid, then wears away and drifts down the page. */
-  type: {
-    init() {
-      const cw = this.cw = clamp(Math.round(Math.min(SW, ZB - ZT) / 26), 14, 34); this.chh = Math.round(cw * 1.45);
-      this.st = new Map(); this.i = 0;
-      paper(dc, C.paper, .09);
-      dc.fillStyle = 'rgba(28,26,23,.9)'; dc.font = `700 ${cw * .8}px "Courier Prime", monospace`;
-      'CLACK CLACK CLACK CLACK '.split('').slice(0, Math.floor(SW / cw / 1.6)).forEach((ch, i) => dc.fillText(ch, cw + i * cw * 1.6, ZT + this.chh));
-      dc.font = `700 ${Math.max(12, cw * .55)}px "Courier Prime", monospace`;
-      dc.fillText('A TOY ABOUT DOING NOTHING', cw, ZB - 14);
-      dc.textAlign = 'right'; dc.fillText('BY YOU', SW - cw, ZB - 14); dc.textAlign = 'left';
-    },
-    hit(x, y, k, now) {
-      const ci = Math.floor(x / this.cw), cj = Math.floor((y - ZT) / this.chh), ph = 'CLACK ';
-      let ch = k.code !== 'Cell' && k.label.length === 1 ? k.label : ph[this.i++ % ph.length];
-      if (ch === ' ') ch = ph[this.i++ % ph.length];
-      const id = ci + ',' + cj, prev = this.st.get(id);
-      this.st.set(id, { ci, cj, ch, t0: now, over: prev && now - prev.t0 < 2000 ? prev.ch : '', jx: (Math.random() - .5) * 2, ink: .75 + Math.random() * .25 });
-    },
-    draw(now) {
-      sc.drawImage(deco, 0, 0, SW, SH);
-      const cw = this.cw, chh = this.chh;
-      sc.font = `700 ${cw * .8}px "Courier Prime", monospace`; sc.textAlign = 'center'; sc.fillStyle = '#1c1a17';
-      for (const [id, s2] of this.st) {
-        const age = now - s2.t0, p = clamp((age - 2600) / 7000, 0, 1);
-        if (p >= 1) { this.st.delete(id); continue; }
-        const x = s2.ci * cw + cw / 2 + s2.jx, y = ZT + s2.cj * chh + chh * .75 + p * p * chh * 4;
-        sc.globalAlpha = s2.ink * (1 - p * .7) * Math.min(1, age / 40 + .4);
-        sc.save();
-        if (p > 0) { sc.beginPath(); sc.rect(x - cw, y - chh * .75 + chh * .7 * p, cw * 2, chh); sc.clip(); }
-        sc.fillText(s2.ch, x, y);
-        if (s2.over) sc.fillText(s2.over, x + 1.5, y + 1);
-        sc.restore();
-      }
-      sc.globalAlpha = 1; sc.textAlign = 'left';
     }
   },
 
@@ -1130,12 +1135,13 @@ function thumb(id) {
       }
       return svg('#e6e6e6', b);
     case 'sand':
+      for (let k = 1; k < 12; k++) { const r2 = 46 * Math.pow(k / 12, 1.7); for (let y = 4; y < 47; y += 3.4) { const dy = y + .8 - 25; if (Math.abs(dy) < r2) { const dx = Math.sqrt(r2 * r2 - dy * dy); b += `<rect x="${(58 - dx).toFixed(1)}" y="${y}" width=".5" height="1.6"/>`; if (58 + dx < 74) b += `<rect x="${(58 + dx).toFixed(1)}" y="${y}" width=".5" height="1.6"/>`; } } }
+      for (let y = 4; y < 47; y += 3.4) b += `<rect x="56.5" y="${y}" width="3" height="1.6"/><rect x="5" y="${y}" width=".5" height="1.6"/><rect x="75" y="${y}" width=".5" height="1.6"/>`;
+      return svg('#4d7c66', `<g fill="#f4f6ef">${b}</g>`);
+    case 'typewriter':
       for (let x = 6; x < 36; x += 2.2) b += `<path d="M${x} 0V50" stroke="#e2282e" stroke-width=".45"/>`;
       for (let k = -9; k < 12; k++) b += `<path d="M${-10} ${46 + k * 2.4}L90 ${-10 + k * 2.4}" stroke="#f03a3e" stroke-opacity=".7" stroke-width=".45"/>`;
       return svg('#ebebeb', '<defs><radialGradient id="tsd"><stop offset="0" stop-color="#ff4648" stop-opacity=".35"/><stop offset="1" stop-color="#ff4648" stop-opacity="0"/></radialGradient></defs><circle cx="26" cy="32" r="26" fill="url(#tsd)"/>' + b);
-    case 'typewriter':
-      b = `<text x="40" y="22" text-anchor="middle" font-family="Courier Prime, monospace" font-weight="700" font-size="13" fill="#1c1a17">CLACK</text><text x="40" y="38" text-anchor="middle" font-family="Courier Prime, monospace" font-weight="700" font-size="13" fill="#1c1a17" opacity=".3" clip-path="inset(40% 0 0 0)">CLACK</text>`;
-      return svg(C.paper, b);
     case 'pearl':
       for (let i = 0; i < 36; i++) {
         const a0 = i / 36 * 6.2832; let d = '';

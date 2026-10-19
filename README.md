@@ -10,8 +10,8 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 | 02 | Bubble Wrap | The sheet as a blue contour map on cream paper: each bubble is a hill of rings, and a pop flattens it and sends a ripple through its neighbours before it slowly refills |
 | 03 | Squishy | A wall of puffy white silicone tiles (pairs of balls joined by a pinched neck, in a basket weave); steps squash a ball, which wobbles back and puffs up its partner. The page always opens here |
 | 04 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
-| 05 | Kinetic Sand | Fine coral lines on grey, a vertical set crossing a slanted one into a glowing moiré; the cursor rakes through them like a finger in sand |
-| 06 | Typewriter | Stamped type that wears off and drifts down the page |
+| 05 | Kinetic Sand | White tick marks on grainy green: rings ripple out from a bright band that follows the cursor, and every step sends a brighter pulse |
+| 06 | Typewriter | Fine coral lines on grey, a vertical set crossing a slanted one into a glowing moiré; the cursor rakes through them and each key leaves a groove |
 | 07 | Pearl | Fine dotted lines on cream paper spiralling into a sinking pearl that follows the cursor; steps spin the vortex and play glassy pentatonic pings |
 
 - **Just move**: sounds play as your cursor moves. On touch screens, drag a finger. The page always opens on 03 Squishy.
