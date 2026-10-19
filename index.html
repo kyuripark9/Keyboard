@@ -26,7 +26,7 @@ body[data-scene="wrap"]   { --bg: #69bca9; --ink: #164a3f; --ink-soft: #2a6156; 
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --panel: rgba(40,70,150,.9); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="wax"]    { --bg: #181818; --ink: #f4f4f0; --ink-soft: #a5a5a0; --line: rgba(244,244,240,.2); --panel: rgba(30,30,30,.9); --acc: #f4f4f0; --cursor: #ffffff; color-scheme: dark; }
-body[data-scene="tiles"]  { --bg: #2148b8; --ink: #f2e9d4; --ink-soft: #c3cbe6; --line: rgba(242,233,212,.25); --panel: rgba(29,62,163,.92); --acc: #f2e9d4; --cursor: #1a3a9e; color-scheme: dark; }
+body[data-scene="laser"]  { --bg: #d3d5d7; --ink: #27313d; --ink-soft: #66717f; --line: rgba(39,49,61,.14); --panel: rgba(232,234,236,.88); --acc: #27313d; --cursor: #46576b; color-scheme: light; }
 body[data-scene="glass"]  { --bg: #5c80ea; --ink: #ffffff; --ink-soft: #dbe3fb; --line: rgba(255,255,255,.26); --panel: rgba(74,110,222,.92); --acc: #ffffff; --cursor: #1b2a6b; color-scheme: dark; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --panel: rgba(244,231,205,.9); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
 body[data-scene="soap"]   { --bg: #f3eee6; --ink: #1c1c1c; --ink-soft: #6d685f; --line: rgba(28,28,28,.13); --panel: rgba(249,246,241,.9); --acc: #1c1c1c; --cursor: #1c1c1c; color-scheme: light; }
@@ -339,7 +339,7 @@ const SOUNDS = {
       crinkle(t + 0.004, 16 + Math.floor(Math.random() * 8), 0.11, { lo: 1000, hi: 4800, g: 0.75, q: 1.4 });
       hiss(t + 0.03, { f: 340 * j, f2: 230, ft: 0.12, q: 4, a: 0.03, d: 0.12, g: 0.45, wet: 0.06 });
     } },
-  thock: { name: 'Thocky Keys', desc: 'Flip blue tiles to ivory', scene: 'tiles', noTrail: true,
+  thock: { name: 'Thocky Keys', desc: 'Laser glowing holes into grey', scene: 'laser', noTrail: true,
     // a lubed, foam-filled custom board: a padded tap, the hollow of the case and a low thud; the spacebar sits deeper
     down(k, t, j) {
       const sp = k.code === 'Space', f0 = (sp ? 120 : 165 + k.seed * 40) * j;
@@ -907,172 +907,85 @@ const SCENES = {
     }
   },
 
-  /* 05 Thocky Keys: a wall of glazed cobalt tiles. The cursor turns the tiles around its path ivory: plain ivory where
-     it passed, then a ragged band of two-tone patterned tiles, cream motifs on blue and blue motifs on cream, that fades
-     out into the rippled blue glaze. Each tile flips with a springy press, like a key bottoming out; a few keep their
-     pattern inside the ivory, and the wall slowly turns back to blue. */
-  tiles: {
+  /* 05 Thocky Keys: light through a perforated sheet, after a photo. Pale grey steel that shades to steel blue at the
+     bottom, cut with a grid of round holes scattered like braille. A hole shows only once light comes through it: a
+     strip on the left always glows, and the cursor shoots a laser along its path that lights the holes near it, each
+     one igniting in a bright flash that settles into a soft white glow. A few seconds after the cursor passes they go
+     out again, the outer ones first. */
+  laser: {
     frame: 'full',
     init() {
-      const BLUE = '#2148b8', IVORY = '#f2e9d4';
-      const s = this.s = clamp(Math.round(Math.min(SW, SH) / 11), 50, 92), g = this.g = Math.max(1.5, s * .024), f = this.f = s - g;
+      const s = this.s = clamp(Math.round(Math.min(SW, SH) / 12), 40, 76), r = s * .39, now = performance.now();
       const cols = this.cols = Math.ceil(SW / s) + 1, rows = this.rows = Math.ceil(SH / s) + 1, n = cols * rows;
-      const x0 = this.x0 = (SW - cols * s) / 2, y0 = this.y0 = (SH - rows * s) / 2;
-      this.grout = '#d6cfbf'; this.blueGrout = '#6a82cc'; this.mk = ''; this.mt = 0;
-      this.E = new Float32Array(n); this.T = new Float64Array(n); this.st = new Int8Array(n); this.pv = new Int8Array(n);
-      this.a0 = new Float64Array(n).fill(-1e4); this.nx = new Float64Array(n); this.lock = new Uint8Array(n);
-      // the motifs, drawn in a unit square from squares, diamonds and triangles
-      const poly = (x, ...p) => { x.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) x.lineTo(p[i], p[i + 1]); x.closePath(); };
-      const dia = (x, cx, cy, r, rev) => rev ? poly(x, cx, cy - r, cx - r, cy, cx, cy + r, cx + r, cy) : poly(x, cx, cy - r, cx + r, cy, cx, cy + r, cx - r, cy);
-      const spin = (x, fn) => { for (let k = 0; k < 4; k++) { x.save(); x.translate(.5, .5); x.rotate(k * Math.PI / 2); x.translate(-.5, -.5); fn(); x.restore(); } };
-      const quarters = [[.25, .25], [.75, .25], [.25, .75], [.75, .75]];
-      const MOTIFS = [
-        // rows of short dashes
-        x => { for (let j = 0; j < 4; j++) for (let cx = j & 1 ? .05 : .2; cx < 1; cx += .3) x.rect(cx - .08, .165 + j * .2, .16, .07); },
-        // a quincunx of diamonds
-        x => { dia(x, .5, .5, .13); for (const [a, b] of quarters) dia(x, a, b, .08); for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) dia(x, a, b, .13); },
-        // a plus of four bars
-        x => { x.rect(.465, .06, .07, .36); x.rect(.465, .58, .07, .36); x.rect(.06, .465, .36, .07); x.rect(.58, .465, .36, .07); },
-        // chevrons pointing in from every side, so their stripes run along both diagonals as an X
-        x => spin(x, () => { for (const [a, b] of [[.05, .14], [.21, .3], [.37, .45]]) poly(x, a, 0, .5, .5 - a, 1 - a, 0, 1 - b, 0, .5, .5 - b, b, 0); }),
-        // a sawtooth of half-square triangles
-        x => { for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) poly(x, i * .25 + .02, j * .25 + .23, i * .25 + .23, j * .25 + .23, i * .25 + .23, j * .25 + .02); },
-        // a lattice of big diamonds that runs on into the next tile, with a dot in each gap
-        x => { for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) dia(x, i * .5, j * .5, .2); for (const [a, b] of quarters) x.rect(a - .04, b - .04, .08, .08); },
-        // a ring of small squares around a square
-        x => { for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) if (Math.abs(i) + Math.abs(j) === 3) x.rect(.465 + i * .1, .465 + j * .1, .07, .07); x.rect(.44, .44, .12, .12); },
-        // a pinwheel
-        x => spin(x, () => poly(x, .06, .06, .46, .06, .46, .46)),
-        // four kites pointing in along the diagonals
-        x => { spin(x, () => poly(x, .1, .1, .3, .19, .38, .38, .19, .3)); x.rect(.46, .46, .08, .08); },
-        // an X of squares on a 5 x 5 grid, with one more at the middle of each side
-        x => { for (let j = 0; j < 5; j++) for (let i = 0; i < 5; i++) if (i === j || i + j === 4 || (i + j) % 4 === 2 && (i % 4 === 0 || j % 4 === 0)) x.rect(i * .2 + .03, j * .2 + .03, .14, .14); },
-        // a ring of teeth pointing in, around a diamond
-        x => { spin(x, () => { for (let k = 0; k < 4; k++) poly(x, k * .25 + .02, 0, k * .25 + .23, 0, k * .25 + .125, .13); }); dia(x, .5, .5, .17); },
-        // a diamond outline around a square one, with a dot in the middle
-        x => { dia(x, .5, .5, .46); dia(x, .5, .5, .39, true); x.rect(.31, .31, .38, .05); x.rect(.31, .64, .38, .05); x.rect(.31, .36, .05, .28); x.rect(.64, .36, .05, .28); dia(x, .5, .5, .08); },
-        // a diamond of half-square triangles, all pointing in toward the middle
-        x => { for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) { const X = i * .25, Y = j * .25, cx = i < 2 ? X + .23 : X + .02, cy = j < 2 ? Y + .23 : Y + .02; poly(x, cx, cy, i < 2 ? X + .02 : X + .23, cy, cx, j < 2 ? Y + .02 : Y + .23); } },
-        // a grid of small dots
-        x => { for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) x.rect(i * .25 + .09, j * .25 + .09, .07, .07); },
-        // four arrowheads pointing in, with a square in each corner
-        x => spin(x, () => { poly(x, .38, .1, .62, .1, .5, .3); x.rect(.11, .11, .1, .1); }),
-        // a plus of small squares with a diamond in each corner
-        x => { for (let k = -3; k <= 3; k++) if (k) { x.rect(.46 + k * .12, .46, .08, .08); x.rect(.46, .46 + k * .12, .08, .08); } x.rect(.44, .44, .12, .12); for (const [a, b] of [[.18, .18], [.82, .18], [.18, .82], [.82, .82]]) dia(x, a, b, .08); },
-      ];
-      this.th = new Float32Array(n * 3); this.A = new Uint8Array(n); this.B = new Uint8Array(n); this.rot = new Uint8Array(n);
-      for (let q = 0; q < n; q++) {
-        // every tile flips at its own levels, so the band between blue and cream comes out ragged; a few keep their
-        // pattern even where the cursor ran right over them
-        const keep = Math.random();
-        this.th.set([rand(.08, .2), keep < .04 ? 9 : rand(.32, .52), keep < .1 ? 9 : rand(.72, 1)], q * 3);
-        this.A[q] = Math.random() * MOTIFS.length; this.B[q] = Math.random() * MOTIFS.length; this.rot[q] = Math.random() * 4;
-      }
-      // every face is drawn once into a sprite: cream motifs on matte blue, blue motifs on cream, and both plain
-      const d = Math.ceil(f * SDPR), gr = grainFill(120, 120, .06);
-      const sprite = (bg, fg, m) => {
-        const c = document.createElement('canvas'); c.width = c.height = d;
-        const x = c.getContext('2d');
-        x.fillStyle = bg; x.fillRect(0, 0, d, d);
-        if (m) { x.save(); x.scale(d, d); x.fillStyle = fg; x.beginPath(); m(x); x.fill(); x.restore(); }
-        x.fillStyle = x.createPattern(gr, 'repeat'); x.fillRect(0, 0, d, d);
-        x.strokeStyle = 'rgba(20,24,60,.08)'; x.lineWidth = Math.max(1, d * .025); x.strokeRect(0, 0, d, d);
+      this.x0 = (SW - cols * s + s) / 2; this.y0 = (SH - rows * s + s) / 2;
+      this.E = new Float32Array(n); this.T = new Float64Array(n); this.on = new Uint8Array(n); this.a0 = new Float64Array(n).fill(-1e4);
+      this.fl = new Float32Array(n); this.nx = new Float64Array(n); this.base = new Uint8Array(n);
+      // only about three grid points in five are cut through, and each hole lets the light in at its own level, so the
+      // lit band comes out ragged at its edges
+      this.th = Float32Array.from({ length: n }, () => Math.random() < .6 ? rand(.35, 1.15) : 99);
+      // the strip on the left, as in the photo; it lights up from the top down when the scene opens
+      const b0 = Math.max(0, Math.round(cols * .06)), bw = clamp(Math.round(cols * .22), 2, 4);
+      for (let j = 0; j < rows; j++) for (let i = b0; i < b0 + bw; i++) { const q = j * cols + i; this.base[q] = 1; this.E[q] = 9; this.nx[q] = now + 150 + j * 45 + rand(0, 90); }
+      // a lit hole is a white disc with a soft edge and a halo that tails off into the sheet; the flash is a wider bloom
+      const sprite = (R, tint, stops) => {
+        const d = Math.ceil(R * 2 * SDPR), c = document.createElement('canvas'); c.width = c.height = d;
+        const x = c.getContext('2d'), g = x.createRadialGradient(d / 2, d / 2, 0, d / 2, d / 2, d / 2);
+        for (const [t, a] of stops) g.addColorStop(t * r / R, `rgba(${tint},${a})`);
+        x.fillStyle = g; x.fillRect(0, 0, d, d);
         return c;
       };
-      this.spr = [MOTIFS.map(m => sprite(BLUE, IVORY, m)), MOTIFS.map(m => sprite(IVORY, BLUE, m))];
-      this.flat = sprite(BLUE); this.plain = sprite(IVORY);
-      // the wall: every tile is glazed on its own, cobalt that pooled into soft ripples and catches the light, glossier
-      // on some tiles than on others, with its edges rounding down into the grout
-      const Lt = Float32Array.from({ length: 4096 }, Math.random);
-      const vn = (x, y) => {
-        const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-        const a = xi & 63, b = (xi + 1) & 63, c = (yi & 63) * 64, e = ((yi + 1) & 63) * 64;
-        return lerp(lerp(Lt[c + a], Lt[c + b], sx), lerp(Lt[e + a], Lt[e + b], sx), sy);
-      };
-      const gl = new Float32Array(n), tv = new Float32Array(n), ofs = new Float32Array(n);
-      for (let q = 0; q < n; q++) { gl[q] = clamp(vn(q % cols * .37 + 7, Math.floor(q / cols) * .37 + 3) * 1.6 - .45 + rand(-.25, .25), .1, 1); tv[q] = rand(-.05, .04); ofs[q] = rand(0, 64); }
-      const G = SW * SH > 1.6e6 ? 2 : 1, w = Math.ceil(SW / G), h = Math.ceil(SH / G), H = new Float32Array(w * h), Q = new Int32Array(w * h);
-      for (let j = 0, o = 0; j < h; j++) {
-        const Y = j * G, tj = Math.floor((Y - y0) / s), ly = Y - y0 - tj * s - g / 2;
-        for (let i = 0; i < w; i++, o++) {
-          const X = i * G, ti = Math.floor((X - x0) / s), lx = X - x0 - ti * s - g / 2, q = Q[o] = tj * cols + ti, u = ofs[q];
-          const de = clamp(Math.min(lx, ly, f - lx, f - ly) / (s * .06), 0, 1);
-          H[o] = de * de * (3 - 2 * de) * (.22 + gl[q] * (.85 * vn(X / (s * .2) + u, Y / (s * .32) + u * .7) + .15 * vn(X / (s * .08) + u * 1.3, Y / (s * .1))));
-        }
-      }
-      const img = new ImageData(w, h), P = new Uint32Array(img.data.buffer), K = s * .045 / G;
-      for (let j = 1; j < h - 1; j++) for (let i = 1, o = j * w + 1; i < w - 1; i++, o++) {
-        // lit from the top left: slopes that face the light brighten, the far ones darken, and a tight highlight glints
-        const q = Q[o], gx = (H[o + 1] - H[o - 1]) * K, gy = (H[o + w] - H[o - w]) * K, il = 1 / Math.sqrt(gx * gx + gy * gy + 1);
-        const sh = (1 + ((.45 * gx + .6 * gy + .66) * il - .66) * 1.1) * (1 + tv[q]);
-        const sp = Math.min(1, Math.pow(Math.max(0, (.247 * gx + .329 * gy + .911) * il), 40) * (.5 + gl[q]));
-        const r = 33 * sh, gg = 72 * sh, b = 184 * sh;
-        P[o] = 255 << 24 | clamp(b + (248 - b) * sp, 0, 255) << 16 | clamp(gg + (212 - gg) * sp, 0, 255) << 8 | clamp(r + (190 - r) * sp, 0, 255);
-      }
-      const off = document.createElement('canvas'); off.width = w; off.height = h; off.getContext('2d').putImageData(img, 0, 0);
-      dc.fillStyle = BLUE; dc.fillRect(0, 0, SW, SH); dc.drawImage(off, 0, 0, w * G, h * G);
-      dc.fillStyle = this.blueGrout;
-      for (let i = 0; i <= cols; i++) dc.fillRect(x0 + i * s - g / 2, 0, g, SH);
-      for (let j = 0; j <= rows; j++) dc.fillRect(0, y0 + j * s - g / 2, SW, g);
-      dc.fillStyle = dc.createPattern(gr, 'repeat'); dc.fillRect(0, 0, SW, SH);
+      this.HR = r * 1.9; this.BR = r * 3.2;
+      this.dot = sprite(this.HR, '255,255,255', [[0, 1], [.955, 1], [1, .82], [1.05, .55], [1.12, .38], [1.2, .26], [1.3, .19], [1.45, .15], [1.6, .08], [1.75, .03], [1.9, 0]]);
+      this.bloom = sprite(this.BR, '244,248,255', [[0, 1], [.5, .9], [1, .62], [1.7, .26], [2.4, .08], [3.2, 0]]);
+      // the sheet: cool pale grey, with the light falling off into steel blue toward the bottom, most at the bottom left
+      dc.fillStyle = '#d3d5d7'; dc.fillRect(0, 0, SW, SH);
+      let g = dc.createLinearGradient(0, SH * .6, 0, SH);
+      g.addColorStop(0, 'rgba(84,101,119,0)'); g.addColorStop(.55, 'rgba(84,101,119,.3)'); g.addColorStop(1, 'rgba(84,101,119,.72)');
+      dc.fillStyle = g; dc.fillRect(0, 0, SW, SH);
+      g = dc.createRadialGradient(0, SH, 0, 0, SH, Math.max(SW, SH) * .55);
+      g.addColorStop(0, 'rgba(70,88,108,.55)'); g.addColorStop(.5, 'rgba(70,88,108,.18)'); g.addColorStop(1, 'rgba(70,88,108,0)');
+      dc.fillStyle = g; dc.fillRect(0, 0, SW, SH);
+      dc.save(); dc.fillStyle = dc.createPattern(grainFill(160, 160, .08), 'repeat'); dc.fillRect(0, 0, SW, SH); dc.restore();
     },
-    // the logo and the tally sit on tiles that stay blue, so the ivory never runs under their cream text
-    ui() {
-      const rs = [...document.querySelectorAll('.brand, .tally')].map(e => e.getBoundingClientRect()).filter(r => r.width);
-      const key = rs.map(r => [r.left, r.top, r.right, r.bottom].map(Math.round).join()).join('|');
-      if (key === this.mk) return;
-      this.mk = key; this.lock.fill(0);
-      const s = this.s, cols = this.cols;
-      for (const r of rs) {
-        const i0 = Math.max(0, Math.floor((r.left - FX - 4 - this.x0) / s)), i1 = Math.min(cols - 1, Math.floor((r.right - FX + 4 - this.x0) / s));
-        const j0 = Math.max(0, Math.floor((r.top - FY - 4 - this.y0) / s)), j1 = Math.min(this.rows - 1, Math.floor((r.bottom - FY + 4 - this.y0) / s));
-        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { this.lock[j * cols + i] = 1; this.E[j * cols + i] = 0; }
-      }
-    },
-    // the cursor turns the tiles near it toward ivory, the nearer the further, so its path leaves an ivory core edged
-    // with patterned tiles; passing again only renews them
+    // the laser lights the holes near it, the nearer the brighter, so its path leaves a core of lit holes with a ragged
+    // fringe; a hole it crosses right over flares up again
     paint(x, y, P, now) {
-      const s = this.s, cols = this.cols, L = s * .9, reach = L * Math.log(P / .05);
-      const i0 = Math.max(0, Math.floor((x - reach - this.x0) / s)), i1 = Math.min(cols - 1, Math.floor((x + reach - this.x0) / s));
-      const j0 = Math.max(0, Math.floor((y - reach - this.y0) / s)), j1 = Math.min(this.rows - 1, Math.floor((y + reach - this.y0) / s));
+      const { s, cols, E, T, th, on, a0 } = this, L = s * 1.15, reach = L * Math.log(P / .3);
+      const i0 = Math.max(0, Math.floor((x - reach - this.x0) / s)), i1 = Math.min(cols - 1, Math.ceil((x + reach - this.x0) / s));
+      const j0 = Math.max(0, Math.floor((y - reach - this.y0) / s)), j1 = Math.min(this.rows - 1, Math.ceil((y + reach - this.y0) / s));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-        const q = j * cols + i, v = P * Math.exp(-Math.hypot(this.x0 + (i + .5) * s - x, this.y0 + (j + .5) * s - y) / L);
-        if (!this.lock[q] && v >= this.E[q]) { this.E[q] = v; this.T[q] = now; }
+        const q = j * cols + i, d = Math.hypot(this.x0 + i * s - x, this.y0 + j * s - y), v = P * Math.exp(-d / L);
+        if (th[q] > 9) continue;
+        if (v >= E[q]) { E[q] = v; T[q] = now; }
+        if (on[q] && d < s * .5 && now - a0[q] > 900) { a0[q] = now; this.fl[q] = .5; }
       }
     },
     move(x, y) { this.paint(x, y, 2.4, performance.now()); },
     hit(x, y, k, now) { this.paint(x, y, k.code === 'Cell' ? 2.4 : 2.7, now); },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      if (now > this.mt) { this.mt = now + 500; this.ui(); }
-      const { s, g, f, cols, E, T, st, pv, a0, nx, th } = this, fade = Math.exp(-dt / 6000);
+      const { s, cols, E, T, th, on, a0, fl, nx, base, HR, BR } = this, fade = Math.exp(-dt / 3500);
       for (let j = 0, q = 0; j < this.rows; j++) for (let i = 0; i < cols; i++, q++) {
-        // a tile holds for a moment after the cursor leaves, then sinks back toward blue one flip at a time
-        if (E[q] && now - T[q] > 2500) { E[q] *= fade; if (E[q] < .005) E[q] = 0; }
-        const e = E[q], tg = e > th[q * 3 + 2] ? 3 : e > th[q * 3 + 1] ? 2 : e > th[q * 3] ? 1 : 0;
-        if (tg !== st[q] && now >= nx[q]) { pv[q] = st[q]; st[q] += tg > st[q] ? 1 : -1; a0[q] = now; nx[q] = now + 90; }
-        const age = now - a0[q], anim = age < 520;
-        if (!st[q] && !anim && !e) continue;
-        const x = this.x0 + i * s + g / 2, y = this.y0 + j * s + g / 2;
-        let z = 1, face = st[q];
-        if (anim) {
-          // the flip: the tile sinks into the wall, turns over at the bottom and springs back up a touch past flush
-          const pk = age < 60 ? age / 60 : Math.exp(-(age - 60) / 120) * Math.cos((age - 60) / 50);
-          z = 1 - .08 * pk; if (age < 60) face = pv[q];
-        }
-        // pale grout around the ivory and patterned tiles, blue grout behind a glazed one as it flips
-        if (face || anim) { sc.fillStyle = face ? this.grout : this.blueGrout; sc.fillRect(x - g / 2, y - g / 2, s, s); }
-        const d = f * z, X = x + (f - d) / 2, Y = y + (f - d) / 2;
-        if (!face) {
-          if (anim) sc.drawImage(deco, x * SDPR, y * SDPR, f * SDPR, f * SDPR, X, Y, d, d);
-          // the glaze goes matte as the ivory comes near
-          if (e) { sc.globalAlpha = Math.min(1, e / th[q * 3]) * .85; sc.drawImage(this.flat, X, Y, d, d); sc.globalAlpha = 1; }
-          continue;
-        }
-        const im = face === 3 ? this.plain : this.spr[face - 1][face === 1 ? this.A[q] : this.B[q]], r = this.rot[q];
-        if (face === 3 || !r) { sc.drawImage(im, X, Y, d, d); continue; }
-        sc.save(); sc.translate(X + d / 2, Y + d / 2); sc.rotate(r * Math.PI / 2); sc.drawImage(im, -d / 2, -d / 2, d, d); sc.restore();
+        if (th[q] > 9) continue;
+        // a hole holds its light for a moment after the cursor leaves, then dims out once its level drops below its own
+        if (E[q] && !base[q] && now - T[q] > 2500) { E[q] *= fade; if (E[q] < .05) E[q] = 0; }
+        const lit = E[q] > th[q] && now >= nx[q] ? 1 : 0;
+        if (lit !== on[q]) { on[q] = lit; a0[q] = now; fl[q] = 1; }
+        const age = now - a0[q];
+        if (!lit && age > 450) continue;
+        let k = 1, al = 1, b = 0;
+        if (!lit) { const u = age / 450; al = Math.pow(1 - u, 1.5); k = 1 - .15 * u; }
+        else if (fl[q] === 1) {
+          // the hole burns open: a hot point swells past full size in a flash, then settles with a little give
+          const u = age / 80;
+          k = u < 1 ? .2 + .9 * (1 - Math.pow(1 - u, 3)) : 1 + .1 * Math.exp(-(age - 80) / 90) * Math.cos((age - 80) / 55);
+          b = age < 30 ? age / 30 : Math.exp(-(age - 30) / 170);
+        } else { k = 1 + .07 * Math.exp(-age / 110); b = fl[q] * Math.exp(-age / 170); }
+        const x = this.x0 + i * s, y = this.y0 + j * s;
+        if (b > .01) { sc.globalAlpha = b; sc.drawImage(this.bloom, x - BR, y - BR, BR * 2, BR * 2); }
+        sc.globalAlpha = al; sc.drawImage(this.dot, x - HR * k, y - HR * k, HR * k * 2, HR * k * 2);
       }
+      sc.globalAlpha = 1;
     }
   },
 
@@ -1656,20 +1569,14 @@ function thumb(id) {
       return svg('#181818', `<g fill="#f4f4f0">${b}</g>`);
     }
     case 'thock': {
-      // a corner of the tile wall: glazed blue, a ragged band of two-tone patterned tiles, then plain ivory
-      const mot = (x, y) => [
-        `M${x + 4.7} ${y + 1.6}l3.1 3.1l-3.1 3.1l-3.1-3.1z`,
-        `M${x + 4.3} ${y + 1.4}h.8v6.6h-.8zM${x + 1.4} ${y + 4.3}h6.6v.8h-6.6z`,
-        [2, 4.2, 6.4].map(a => [2, 4.2, 6.4].map(c => `M${x + a} ${y + c}h1v1h-1z`).join('')).join(''),
-        `M${x + 1.2} ${y + 8.2}L${x + 8.2} ${y + 1.2}V${y + 8.2}z`,
-      ][Math.floor(r() * 4)];
-      for (let j = 0; j < 5; j++) for (let i = 0; i < 8; i++) {
-        const x = i * 10 + .3, y = j * 10 + .3, v = i * .9 + j * .6 - 4.4 + r() * 1.4;
-        b += `<rect x="${x}" y="${y}" width="9.4" height="9.4" fill="${v < 1 ? '#2148b8' : '#f2e9d4'}"/>`;
-        if (v < 0) b += `<ellipse cx="${(x + 2.5 + r() * 4).toFixed(1)}" cy="${(y + 2.5 + r() * 4).toFixed(1)}" rx="1.3" ry="2.1" fill="#5577d8" opacity=".4"/>`;
-        else if (v < 2) b += `<path d="${mot(x, y)}" fill="${v < 1 ? '#f2e9d4' : '#2148b8'}"/>`;
+      // the perforated sheet: a strip of holes glowing white on grey that shades to steel blue at the bottom, and a
+      // swipe of the laser lighting more of them
+      for (let j = 0; j < 7; j++) for (let i = 0; i < 11; i++) {
+        const x = (4 + i * 7.4).toFixed(1), y = (4 + j * 7.4).toFixed(1), sw = Math.abs(j - 5.6 + i * .45);
+        if (r() < .4 || !(i >= 1 && i <= 3 || i > 4 && sw < 1 + r() * .7)) continue;
+        b += `<circle cx="${x}" cy="${y}" r="2.9"/>`;
       }
-      return svg('#cfcabd', b);
+      return svg('#d3d5d7', `<defs><linearGradient id="laserShade" x1="0" y1="0" x2="0" y2="1"><stop offset=".45" stop-color="#546577" stop-opacity="0"/><stop offset=".75" stop-color="#546577" stop-opacity=".32"/><stop offset="1" stop-color="#546577" stop-opacity=".75"/></linearGradient><filter id="laserGlow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".8"/></filter></defs><rect width="80" height="50" fill="url(#laserShade)"/><g fill="#fff"><g filter="url(#laserGlow)" opacity=".7">${b}</g>${b}</g>`);
     }
     case 'tanghulu': {
       // two stars of straight, kinked fractures with a crack running between them
