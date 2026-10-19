@@ -25,7 +25,7 @@
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --panel: rgba(40,70,150,.9); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="wax"]    { --bg: #c5d2f8; --ink: #1b3a9e; --ink-soft: #4d64b0; --line: rgba(27,58,158,.16); --panel: rgba(214,224,251,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="wax"]    { --bg: #f8f3d6; --ink: #3f5abb; --ink-soft: #7486c2; --line: rgba(74,102,198,.18); --panel: rgba(250,247,230,.9); --acc: #4a66c6; --cursor: #4a66c6; color-scheme: light; }
 body[data-scene="keys"]   { --bg: #1c1c1c; --ink: #f3eee6; --ink-soft: #9d988e; --line: rgba(243,238,230,.16); --panel: rgba(38,38,38,.92); --acc: #5c80ea; --cursor: #5c80ea; color-scheme: dark; }
 body[data-scene="glass"]  { --bg: #5c80ea; --ink: #ffffff; --ink-soft: #dbe3fb; --line: rgba(255,255,255,.26); --panel: rgba(74,110,222,.92); --acc: #ffffff; --cursor: #1b2a6b; color-scheme: dark; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --panel: rgba(244,231,205,.9); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
@@ -544,16 +544,6 @@ function wrapText(ctx, txt, x, y, w, lh) {
 }
 const hexRGB = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 function mix(a, b, t) { const p = hexRGB(a), q = hexRGB(b); return `rgb(${p.map((v, i) => Math.round(v + (q[i] - v) * t)).join(',')})`; }
-// cut polygon P down to the side of the line through (mx, my) that its normal (nx, ny) points away from
-function clipHalf(P, mx, my, nx, ny) {
-  const out = [], side = p => (p[0] - mx) * nx + (p[1] - my) * ny;
-  for (let i = 0; i < P.length; i++) {
-    const a = P[i], b = P[(i + 1) % P.length], sa = side(a), sb = side(b);
-    if (sa <= 0) out.push(a);
-    if ((sa <= 0) !== (sb <= 0)) { const t = sa / (sa - sb); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
-  }
-  return out;
-}
 // a closed polygon with rounded corners, added to path p
 function roundPoly(p, P, r) {
   const L = P.length;
@@ -736,7 +726,7 @@ const SCENES = {
      open in noise-shaped patches along its path, swell into solid white where it passes again, and soon sink back into the blue; little glints
      twinkle in its wake. */
   cyano: {
-    frame: 'feather',
+    frame: 'full',
     init() {
       const p = this.p = 12;
       this.cols = Math.ceil(SW / p) + 2; this.rows = Math.ceil(SH / (p / 2)) + 2;
@@ -812,71 +802,120 @@ const SCENES = {
     }
   },
 
-  /* 04 Wax Ball: a sheet of hard periwinkle wax poured over soft cobalt clay, like the shell of a 왁뿌볼 squishy. Every
-     step cracks the shell into polygon flakes that split apart outward from the step, nearest first; the flakes lift
-     and tilt so the clay shows through the cracks, the cursor squeezes the clay up between them, and the wax slowly
-     sets smooth again. */
+  /* 04 Wax Ball: the 왁뿌볼's wax shell drawn like a line-screen print: rows of rounded cobalt dashes on butter-cream
+     paper, whose breaks line up here and there into narrow channels. The shell is set in blocks a few rows tall, like
+     the floors of a building. Every step cracks the blocks around it, nearest first: they split apart and slide
+     outward so their rows fall out of line with their neighbours', white clay shows in the cracks, the cursor
+     squeezes it up between them, and the wax slowly sets back into place. */
   wax: {
+    frame: 'feather',
     init() {
-      // the flakes are cells of a jittered Voronoi diagram: each starts as a square cut down by its neighbours' bisectors
-      const s = this.s = clamp(Math.round(Math.min(SW, SH) / 15), 26, 46), cols = Math.ceil(SW / s) + 2, rows = Math.ceil(SH / s) + 2, px = [], py = [];
-      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { px.push((i - 1 + rand(.2, .8)) * s); py.push((j - 1 + rand(.2, .8)) * s); }
-      this.f = [];
-      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-        const x = px[j * cols + i], y = py[j * cols + i];
-        let P = [[x - s * 2, y - s * 2], [x + s * 2, y - s * 2], [x + s * 2, y + s * 2], [x - s * 2, y + s * 2]];
-        for (let jj = Math.max(0, j - 2); jj <= Math.min(rows - 1, j + 2); jj++) for (let ii = Math.max(0, i - 2); ii <= Math.min(cols - 1, i + 2); ii++) {
-          const o = jj * cols + ii;
-          if (ii !== i || jj !== j) P = clipHalf(P, (x + px[o]) / 2, (y + py[o]) / 2, px[o] - x, py[o] - y);
+      const p = this.p = clamp(Math.round(Math.min(SW, SH) / 46), 12, 18), t = this.t = p * .46, s = this.s = clamp(Math.round(Math.min(SW, SH) / 14), 30, 60);
+      const rows = Math.ceil(SH / p) + 1, Y0 = this.Y0 = (SH - (rows - 1) * p) / 2;
+      // columns of uneven width; some of their edges pull the dashes' breaks onto them, so faint channels run down the sheet
+      const xs = [-s * rand(.2, .9)], chan = [0];
+      while (xs[xs.length - 1] < SW) { xs.push(xs[xs.length - 1] + s * rand(.8, 2.1)); chan.push(Math.random() < .45 ? rand(.5, .85) : rand(0, .15)); }
+      // each column is stacked with blocks 2 to 6 rows tall that start at their own row, so the cracks between floors
+      // never line up across columns; some blocks split once more down the middle, and a few carry a vertical bar
+      this.b = []; this.rb = Array.from({ length: rows }, () => []);
+      for (let i = 0; i + 1 < xs.length; i++) for (let r = -Math.floor(rand(0, 5)), n; r < rows; r += n) {
+        n = Math.floor(rand(2, 7));
+        const r0 = Math.max(0, r), r1 = Math.min(rows, r + n);
+        if (r1 <= r0) continue;
+        const w = xs[i + 1] - xs[i], cut = w > s * 1.3 && Math.random() < .35 ? [xs[i], xs[i] + w * rand(.35, .65), xs[i + 1]] : [xs[i], xs[i + 1]];
+        for (let q = 0; q + 1 < cut.length; q++) {
+          const B = { x0: cut[q], x1: cut[q + 1], r0, r1, y0: Y0 + (r0 - .5) * p, y1: Y0 + (r1 - .5) * p, bar: r1 - r0 > 2 && Math.random() < .05 ? (Math.random() < .5 ? -1 : 1) : 0,
+            c: 0, amt: 0, at: 0, end: 0, dx: 0, dy: 0, tone: 0, ox: 0, oy: 0, m: 0, k: 2 };
+          this.b.push(B);
+          for (let j = r0; j < r1; j++) this.rb[j].push(B);
         }
-        this.f.push({ x, y, P: P.map(p => [p[0] - x, p[1] - y]), c: 0, amt: 0, at: 0, end: 0, dx: 0, dy: 0, rot: 0, tone: 0 });
       }
-      this.grain = sc.createPattern(grainFill(160, 160, .08), 'repeat');
+      // the dashes in each row: mostly a few rows' pitch long, with dots and long runs mixed in, and each a touch thicker
+      // or thinner, higher or lower and rounder or squarer at its ends than the next, as if traced from a print
+      this.d = [];
+      for (let r = 0; r < rows; r++) {
+        let D = [];
+        for (let x = -rand(0, p * 4); x < SW + p;) {
+          const u = Math.random(), L = p * (u < .16 ? rand(.5, 1.1) : u < .82 ? rand(1.6, 4.6) : rand(5, 9));
+          D.push([x, x + L]);
+          x += L + p * (Math.random() < .12 ? rand(1.1, 2.2) : rand(.38, .9));
+        }
+        for (let i = 1; i < xs.length; i++) if (Math.random() < chan[i]) {
+          const a = xs[i] - p * rand(.2, .4), b = xs[i] + p * rand(.2, .4);
+          D = D.flatMap(([u, v]) => v <= a || u >= b ? [[u, v]] : [[u, a], [b, v]].filter(([e, f]) => f - e > t * .5));
+        }
+        this.d.push(D.map(([a, b]) => ({ a, b, w: t * rand(.88, 1.1), oy: rand(-.5, .5), ra: rand(.6, 1), rb: rand(.6, 1) })));
+      }
+      this.grain = sc.createPattern(grainFill(160, 160, .05), 'repeat');
       this.cur = { x: -999, y: -999, t: 0 };
-      paper(dc, '#c5d2f8', .07);
+      paper(dc, '#f8f3d6', .05);
     },
     move(x, y) { this.cur = { x, y, t: performance.now() }; },
     hit(x, y, k, now) {
-      // the crack runs out from the step through a rough disc of flakes, and splits them less toward its rim
-      const R = this.s * rand(1.7, 2.6);
-      for (const f of this.f) {
-        const dx = f.x - x, dy = f.y - y, d = Math.hypot(dx, dy);
+      // the crack runs out from the step through a rough disc of blocks, nearest first, and splits them less toward its rim
+      const R = this.s * rand(1.5, 2.3);
+      for (const B of this.b) {
+        const d = Math.hypot(Math.max(B.x0 - x, 0, x - B.x1), Math.max(B.y0 - y, 0, y - B.y1));
         if (d > R) continue;
         const w = .4 + .6 * (1 - d / R), at = now + d * 1.3;
-        if (f.end < now) { const a = d > 4 ? Math.atan2(dy, dx) : rand(0, 6.283); f.amt = 0; f.at = at; f.dx = Math.cos(a); f.dy = Math.sin(a); f.rot = rand(-.14, .14); f.tone = rand(-1, 1); }
-        f.amt = Math.min(1.4, f.amt ? f.amt + w * .4 : w);
-        f.end = Math.max(f.end, at + rand(5000, 8000));
+        if (B.end < now) {
+          const ex = (B.x0 + B.x1) / 2 - x, ey = (B.y0 + B.y1) / 2 - y, a = Math.hypot(ex, ey) > 4 ? Math.atan2(ey, ex) : rand(0, 6.283);
+          B.amt = 0; B.at = at; B.dx = Math.cos(a); B.dy = Math.sin(a); B.tone = rand(-1, 1);
+        }
+        B.amt = Math.min(1.4, B.amt ? B.amt + w * .4 : w);
+        B.end = Math.max(B.end, at + rand(5000, 8000));
       }
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const s = this.s, cu = this.cur, sq = Math.exp(-Math.max(0, now - cu.t) / 500), Rs = s * 2.2;
-      const clay = new Path2D(), drop = new Path2D(), all = new Path2D(), shade = [0, 1, 2, 3, 4].map(() => new Path2D());
+      const p = this.p, t = this.t, h = t / 2, bw = t * 1.4, s = this.s, cu = this.cur, sq = Math.exp(-Math.max(0, now - cu.t) / 500), Rs = s * 2.2;
+      const clay = new Path2D(), drop = new Path2D(), back = new Path2D(), ink = [0, 1, 2, 3, 4].map(() => new Path2D());
       let any = false;
-      for (const f of this.f) {
-        const tg = now >= f.at && now < f.end ? f.amt : 0;
-        f.c += (tg - f.c) * Math.min(1, dt * (tg > f.c ? .05 : .0009));
-        if (f.c < .01) continue;
-        any = true;
-        // each flake drifts away from where the crack started; near the cursor the clay squeezes up and pushes flakes apart
-        let ox = f.dx * f.c * s * .1, oy = f.dy * f.c * s * .1;
-        const ex = f.x - cu.x, ey = f.y - cu.y, ed = Math.hypot(ex, ey);
-        if (sq > .01 && ed < Rs) { const p = (1 - ed / Rs) ** 2 * s * .25 * sq * Math.min(1, f.c) / (ed || 1); ox += ex * p; oy += ey * p; }
-        // flakes shrink as they split; a nearly healed one overlaps its hole a hair so no seam of clay is left showing
-        const k = 1.02 - Math.min(.32, f.c * .18), r = f.rot * f.c, cs = Math.cos(r) * k, sn = Math.sin(r) * k;
-        const sh = shade[clamp(Math.round((f.tone * Math.min(1, f.c) + 1) * 2), 0, 4)];
-        f.P.forEach(([px, py], i) => {
-          const X = f.x + ox + px * cs - py * sn, Y = f.y + oy + px * sn + py * cs, m = i ? 'lineTo' : 'moveTo';
-          clay[m](f.x + px, f.y + py); sh[m](X, Y); all[m](X, Y); drop[m](X + 1.5, Y + 2.5);
-        });
-        clay.closePath(); sh.closePath(); all.closePath(); drop.closePath();
+      for (const B of this.b) {
+        const tg = now >= B.at && now < B.end ? B.amt : 0;
+        B.c += (tg - B.c) * Math.min(1, dt * (tg > B.c ? .05 : .0009));
+        if (B.c < .01) B.c = 0;
+        const c1 = Math.min(1, B.c);
+        B.ox = B.oy = B.m = 0; B.k = 2;
+        if (c1) {
+          any = true;
+          // a cracked block drifts away from where the crack started and pulls in from its edges; near the cursor the
+          // clay squeezes up and pushes the blocks further apart
+          let ox = B.dx * B.c * s * .1, oy = B.dy * B.c * s * .1;
+          const ex = (B.x0 + B.x1) / 2 - cu.x, ey = (B.y0 + B.y1) / 2 - cu.y, ed = Math.hypot(ex, ey);
+          if (sq > .01 && ed < Rs) { const q = (1 - ed / Rs) ** 2 * s * .25 * sq * c1 / (ed || 1); ox += ex * q; oy += ey * q; }
+          const m = c1 * p * .3, mv = c1 * (p - t) * .3, x = B.x0 + m + ox, y = B.y0 + mv + oy, w = B.x1 - B.x0 - m * 2, bh = B.y1 - B.y0 - mv * 2;
+          B.ox = ox; B.oy = oy; B.m = m; B.k = clamp(Math.round((B.tone * c1 + 1) * 2), 0, 4);
+          clay.rect(B.x0, B.y0, B.x1 - B.x0, B.y1 - B.y0); back.rect(x, y, w, bh); drop.rect(x + 1.5, y + 2.5, w, bh);
+        }
+        if (B.bar) { const bx = B.bar < 0 ? B.x0 + B.m + bw * .2 : B.x1 - B.m - bw * 1.2; ink[B.k].roundRect(bx + B.ox, this.Y0 + B.r0 * p - h + B.oy, bw, (B.r1 - B.r0 - 1) * p + t, bw / 2); }
       }
-      if (!any) return;
-      // clay shows where flakes have split off, with each flake's shadow falling into the crack beside it
-      sc.fillStyle = '#2c62fb'; sc.fill(clay);
-      sc.save(); sc.clip(clay); sc.fillStyle = 'rgba(16,36,128,.55)'; sc.fill(drop); sc.restore();
-      ['#a9bbf0', '#b8c8f5', '#c5d2f8', '#d2ddfa', '#e0e8fc'].forEach((c, i) => { sc.fillStyle = c; sc.fill(shade[i]); });
-      sc.fillStyle = this.grain; sc.fill(all);
+      // the rows, block by block: a dash keeps its own ends, but where a block edge cuts it the end stays square while
+      // the sheet is whole, so the pieces join seamlessly, and rounds off as the crack beside it opens. A block's
+      // vertical bar stands in a channel of its own, so the dashes stop short of it with round ends
+      for (let r = 0; r < this.rb.length; r++) {
+        const Bs = this.rb[r], D = this.d[r], y = this.Y0 + r * p, gap = bw * 1.2 + p * .35;
+        for (let i = 0, j = 0; i < Bs.length; i++) {
+          const B = Bs[i], x0 = B.x0 + B.m + (B.bar < 0 ? gap : 0), x1 = B.x1 - B.m - (B.bar > 0 ? gap : 0);
+          const rl = B.bar < 0 ? h : h * Math.min(1, 3 * Math.max(B.c, i ? Bs[i - 1].c : 0)), rr = B.bar > 0 ? h : h * Math.min(1, 3 * Math.max(B.c, i + 1 < Bs.length ? Bs[i + 1].c : 0));
+          for (let q = j; q < D.length && D[q].a < B.x1; q++) {
+            const e = D[q];
+            if (e.b <= B.x0) { j = q + 1; continue; }
+            const a = Math.max(e.a, x0), b = Math.min(e.b, x1);
+            if (b - a < .5) continue;
+            const ea = e.a < x0 ? rl : h * e.ra, eb = e.b > x1 ? rr : h * e.rb;
+            ink[B.k].roundRect(a + B.ox, y + e.oy - e.w / 2 + B.oy, b - a, e.w, [ea, eb, eb, ea]);
+          }
+        }
+      }
+      if (any) {
+        // white clay shows where blocks have split off, with each block's grey-blue shadow falling into the crack beside it
+        sc.fillStyle = '#fff'; sc.fill(clay);
+        sc.save(); sc.clip(clay); sc.fillStyle = '#dce1ee'; sc.fill(drop); sc.restore();
+        sc.fillStyle = '#f8f3d6'; sc.fill(back); sc.fillStyle = this.grain; sc.fill(back);
+      }
+      // lifted blocks print paler, sunken ones deeper, like the faded rows at the foot of the print
+      ['#a3b3e6', '#7890d9', '#4a66c6', '#3f5abb', '#3550ae'].forEach((c, i) => { sc.fillStyle = c; sc.fill(ink[i]); });
     }
   },
 
@@ -1385,18 +1424,28 @@ function thumb(id) {
       }
       return svg('#3557b0', `<g fill="#eef2ff">${b}</g>`);
     case 'wax': {
-      // a patch of split flakes around one crack in an otherwise smooth sheet, cut the same way as the scene's
-      const pts = [], f1 = v => v.toFixed(1);
-      let clay = '';
-      for (let j = -1; j < 8; j++) for (let i = -1; i < 12; i++) pts.push([(i + .2 + r() * .6) * 7.5, (j + .2 + r() * .6) * 7.5]);
-      for (const [x, y] of pts) {
-        if (Math.hypot((x - 40) / 1.35, y - 25) > 17) continue;
-        let P = [[x - 15, y - 15], [x + 15, y - 15], [x + 15, y + 15], [x - 15, y + 15]];
-        for (const [ox, oy] of pts) if (ox !== x || oy !== y) P = clipHalf(P, (x + ox) / 2, (y + oy) / 2, ox - x, oy - y);
-        clay += `<polygon points="${P.map(p => f1(p[0]) + ',' + f1(p[1])).join(' ')}"/>`;
-        b += `<polygon fill="${['#b8c8f5', '#d2ddfa', '#e0e8fc'][Math.floor(r() * 3)]}" points="${P.map(p => f1(x + (p[0] - x) * .76) + ',' + f1(y + (p[1] - y) * .76)).join(' ')}"/>`;
+      // rows of dashes with one cracked patch: its blocks slide apart over white clay and their rows fall out of line
+      const f1 = v => v.toFixed(1), dash = (a, c, y) => c - a > .8 ? `<rect x="${f1(a)}" y="${f1(y - .9)}" width="${f1(c - a)}" height="1.8" rx=".9"/>` : '';
+      const blocks = [[21, 35, 3, 6, -1.4, -1], [35, 47, 2, 5, .4, -1.6], [35, 47, 5, 8, .8, 1.2], [47, 61, 3, 6, 1.6, .6], [21, 35, 6, 9, -1, 1.4]];
+      let hole = '', back = '';
+      for (const [x0, x1, r0, r1, dx, dy] of blocks) {
+        hole += `<rect x="${x0}" y="${1 + r0 * 4}" width="${x1 - x0}" height="${(r1 - r0) * 4}"/>`;
+        back += `<rect x="${f1(x0 + .8 + dx)}" y="${f1(1.6 + r0 * 4 + dy)}" width="${f1(x1 - x0 - 1.6)}" height="${f1((r1 - r0) * 4 - 1.2)}"/>`;
       }
-      return svg('#c5d2f8', `<g fill="${C.cobalt}">${clay}</g>${b}`);
+      for (let j = 0; j < 12; j++) {
+        const y = 3 + j * 4, cut = blocks.filter(B => j >= B[2] && j < B[3]);
+        for (let x = -r() * 10; x < 80;) {
+          const L = r() < .18 ? 2 + r() * 2 : 5 + r() * 13;
+          let segs = [[x, x + L]];
+          for (const [x0, x1, , , dx, dy] of cut) {
+            b += dash(Math.max(x, x0 + .8) + dx, Math.min(x + L, x1 - .8) + dx, y + dy);
+            segs = segs.flatMap(([a, c]) => [[a, Math.min(c, x0)], [Math.max(a, x1), c]]);
+          }
+          for (const [a, c] of segs) b += dash(a, c, y);
+          x += L + 1.4 + r() * 2.2;
+        }
+      }
+      return svg('#f8f3d6', `<g fill="#fff">${hole}</g><g fill="#f8f3d6">${back}</g><g fill="#4a66c6">${b}</g>`);
     }
     case 'thock':
       [1, 1.5, 1.75, 2.25, 1.25].forEach((w0, j) => {
