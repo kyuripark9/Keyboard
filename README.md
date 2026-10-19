@@ -2,7 +2,7 @@
 
 A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, and each sound draws its own picture to play with.
 
-## The 6 sounds
+## The 7 sounds
 
 | # | Sound | Picture |
 |---|-------|---------|
@@ -12,6 +12,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 | 04 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
 | 05 | Kinetic Sand | Letters that pour down into a pile |
 | 06 | Typewriter | Stamped type that wears off and drifts down the page |
+| 07 | Pearl | Fine dotted lines on cream paper spiralling into a sinking pearl that follows the cursor; steps spin the vortex and play glassy pentatonic pings |
 
 - **Just move**: sounds play as your cursor moves. On touch screens, drag a finger. The page always opens on 03 Squishy.
 - **Custom cursor**: 9 shapes, any color, adjustable size and trail.

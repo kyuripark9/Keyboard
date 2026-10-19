@@ -27,6 +27,7 @@ body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; 
 body[data-scene="blob"]   { --bg: #fbfbfa; --ink: #1e1e1e; --ink-soft: #666666; --line: rgba(30,30,30,.13); --panel: rgba(255,255,255,.86); --acc: #1e1e1e; --cursor: #1e1e1e; color-scheme: light; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="sand"]   { --bg: #fbfaf7; --ink: #111111; --ink-soft: #6a6a66; --line: rgba(17,17,17,.13); --panel: rgba(255,255,255,.88); --acc: #111111; --cursor: #111111; color-scheme: light; }
+body[data-scene="vortex"] { --bg: #ebe6dc; --ink: #1a1a1a; --ink-soft: #6c665c; --line: rgba(26,26,26,.13); --panel: rgba(246,243,237,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="type"]   { --bg: #f3eee6; --ink: #1c1a17; --ink-soft: #6a6352; --line: rgba(28,26,23,.14); --panel: rgba(248,244,236,.9); --acc: #1c1a17; --cursor: #1c1a17; color-scheme: light; }
 
 * { box-sizing: border-box; }
@@ -176,7 +177,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
-      <h1>clack<sup>06</sup></h1>
+      <h1>clack<sup>07</sup></h1>
       <p id="hint">Move your cursor. Each sound draws its own picture</p>
     </div>
     <div class="tally" aria-live="off">
@@ -207,7 +208,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
     </nav>
 
     <section class="panel" id="panel-sound" hidden aria-label="Choose a sound">
-      <h2>6 SOUNDS, 6 PICTURES</h2>
+      <h2>7 SOUNDS, 7 PICTURES</h2>
       <div class="grid" id="soundGrid"></div>
     </section>
 
@@ -244,7 +245,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 const $ = id => document.getElementById(id);
 
 /* ---------- settings ---------- */
-const SOUND_IDS = ['wax', 'bubble', 'squishy', 'slime', 'sand', 'typewriter'];
+const SOUND_IDS = ['wax', 'bubble', 'squishy', 'slime', 'sand', 'typewriter', 'pearl'];
 const OLD = { waxxl: 'wax', mix: 'wax', mochi: 'squishy', optical: 'typewriter', gameclicky: 'typewriter', chip: 'typewriter',
   popit: 'bubble', marimba: 'bubble', gamered: 'typewriter', voice: 'typewriter', blue: 'typewriter', brown: 'typewriter', thock: 'typewriter', woodblock: 'typewriter' };
 const DEF = { mode: 'hover', sound: 'squishy', cur: 'ring', curColor: 'auto', curSize: 30, trail: true, volume: 0.7, muted: false, count: 0 };
@@ -373,6 +374,16 @@ const SOUNDS = {
       if (k.code === 'Enter') { tone('sine', 2093, t + 0.02, { d: 1.6, g: 0.16, wet: 0.45 }); tone('sine', 4186, t + 0.02, { d: 0.5, g: 0.03, wet: 0.3 }); }
     },
     up(k, t, j) { hiss(t, { type: 'lowpass', f: 2400 * j, q: 2, d: 0.012, g: 0.4 }); } },
+  pearl: { name: 'Pearl', desc: 'Swirl the dots around a sinking pearl', scene: 'vortex',
+    // glassy music-box pings on a pentatonic scale (left to right climbs the scale), with a dusting of sparkle
+    down(k, t, j) {
+      const P = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21], n = P[Math.min(9, Math.floor(k.x / 15 * 10))] - (k.row > 3 ? 12 : 0);
+      const f = 880 * Math.pow(2, n / 12) * (0.997 + 0.006 * j - 0.003);
+      tone('sine', f, t, { a: 0.004, d: 0.9, g: 0.09, wet: 0.4 });
+      tone('sine', f * 2.76, t, { a: 0.002, d: 0.16, g: 0.018, wet: 0.45 });
+      tone('triangle', f / 2, t, { a: 0.01, d: 0.3, g: 0.025, wet: 0.25 });
+      crinkle(t + 0.01, 3, 0.1, { lo: 6000, hi: 9000, g: 0.05, q: 3 });
+    } },
 };
 
 function playKey(k, phase) {
@@ -929,6 +940,58 @@ const SCENES = {
     }
   },
 
+  /* 07 Pearl: fine dotted lines on cream paper, spiralling into a pearl that sits sunk in the dot field like a
+     drain. Dots stream along the lines toward it, the pearl drifts after the cursor, and a step spins the
+     vortex tighter and sends a ring rolling out through the lines. */
+  vortex: {
+    init() {
+      const m = this.m = Math.min(SW, ZB - ZT);
+      this.r0 = m * .085; this.p = { x: SW * .42, y: (ZT + ZB) / 2, tx: SW * .42, ty: (ZT + ZB) / 2 };
+      this.spin = 0; this.flow = 0; this.rot = 0; this.rings = [];
+      this.rays = clamp(Math.round(Math.hypot(SW, SH) / 9), 120, 220);
+      paper(dc, '#ebe6dc', .05);
+    },
+    move(x, y) { this.p.tx = x; this.p.ty = y; },
+    hit(x, y, k, now) { this.spin = Math.min(1.2, this.spin + .07); this.rings.push({ t0: now }); if (this.rings.length > 8) this.rings.shift(); },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const p = this.p, r0 = this.r0, f = Math.min(1, dt * .0018);
+      p.x += (p.tx - p.x) * f; p.y += (p.ty - p.y) * f;
+      this.spin *= Math.pow(.9993, dt);
+      this.flow = (this.flow + dt * (.0004 + this.spin * .0011)) % 1;
+      this.rot += dt * (.00004 + this.spin * .00028);
+      this.rings = this.rings.filter(r => now - r.t0 < 2200);
+      const T = 1.7 + this.spin * .6, Rmax = Math.hypot(SW, SH), tilt = .6, N = this.rays, gap = 6.5;
+      sc.fillStyle = '#1a1a1a';
+      for (let i = 0; i < N; i++) {
+        const a0 = i / N * 6.2832 + this.rot, ph = (i * .618) % 1; // stagger each line's dots so they never line up into rings
+        // dots march toward the pearl; the lines wind tight near it and straighten far away
+        for (let k2 = 0; ; k2++) {
+          let r = r0 * .92 + (k2 + 1 + ph - this.flow) * gap * (1 + k2 * .006);
+          if (r > Rmax) break;
+          for (const rg of this.rings) { const age = (now - rg.t0) / 1000, front = r0 + age * this.m * .55, z = (r - front) / (r0 * .9); r += Math.exp(-z * z) * Math.sin(z * 2.4) * r0 * .18 * (1 - age / 2.2); }
+          const q = r0 / r, a = a0 + T * Math.pow(q, .75), x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r * tilt;
+          if (x < -4 || x > SW + 4 || y < -4 || y > SH + 4) { if (r > Rmax * .2 && (x < -SW || x > 2 * SW || y < -SH || y > 2 * SH)) break; continue; }
+          // the field dips into a funnel: dots near the pearl shrink and darken as they slide over the rim
+          const sz = 1.6 + .5 * Math.min(1, q * 1.6);
+          sc.globalAlpha = Math.min(1, .78 + q);
+          sc.fillRect(x - sz / 2, y - sz / 2, sz, sz);
+        }
+      }
+      sc.globalAlpha = 1;
+      // the pearl: paper-coloured, sunk a little, with a soft contact shadow along its lower rim
+      const R = r0, cx = p.x, cy = p.y - R * .45;
+      const sh = sc.createRadialGradient(cx, p.y + R * .05, R * .2, cx, p.y + R * .05, R * 1.25);
+      sh.addColorStop(0, 'rgba(20,18,15,.55)'); sh.addColorStop(1, 'rgba(20,18,15,0)');
+      sc.save(); sc.translate(cx, p.y + R * .05); sc.scale(1, tilt); sc.fillStyle = sh; sc.beginPath(); sc.arc(0, 0, R * 1.2, 0, 6.2832); sc.fill(); sc.restore();
+      const g = sc.createRadialGradient(cx - R * .35, cy - R * .4, R * .1, cx, cy, R * 1.05);
+      g.addColorStop(0, '#f6f2ea'); g.addColorStop(.7, '#e8e2d6'); g.addColorStop(1, '#d3cbbd');
+      sc.fillStyle = g; sc.beginPath(); sc.arc(cx, cy, R, 0, 6.2832); sc.fill();
+      // where it sinks in: the dot field's rim cuts straight across the lower part of the pearl
+      sc.strokeStyle = 'rgba(26,26,26,.35)'; sc.lineWidth = 1; sc.beginPath(); sc.ellipse(cx, p.y + R * .1, R * .98, R * .98 * tilt * .35, 0, 0, 3.1416); sc.stroke();
+    }
+  },
+
 };
 
 function sceneHit(k) {
@@ -1055,6 +1118,13 @@ function thumb(id) {
     case 'typewriter':
       b = `<text x="40" y="22" text-anchor="middle" font-family="Courier Prime, monospace" font-weight="700" font-size="13" fill="#1c1a17">CLACK</text><text x="40" y="38" text-anchor="middle" font-family="Courier Prime, monospace" font-weight="700" font-size="13" fill="#1c1a17" opacity=".3" clip-path="inset(40% 0 0 0)">CLACK</text>`;
       return svg(C.paper, b);
+    case 'pearl':
+      for (let i = 0; i < 36; i++) {
+        const a0 = i / 36 * 6.2832; let d = '';
+        for (let r2 = 7; r2 < 60; r2 += 2.2) { const a = a0 + 2.2 * Math.pow(7 / r2, .75); d += `<circle cx="${(34 + Math.cos(a) * r2).toFixed(1)}" cy="${(25 + Math.sin(a) * r2 * .6).toFixed(1)}" r=".35"/>`; }
+        b += d;
+      }
+      return svg('#ebe6dc', `<g fill="#1a1a1a">${b}</g><ellipse cx="34" cy="26" rx="8" ry="3" fill="rgba(20,18,15,.35)"/><circle cx="34" cy="21.5" r="6.5" fill="#efe9de"/>`);
   }
   return svg('#eee', '');
 }
