@@ -10,7 +10,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 | 02 | Pop It | Black spinner sculptures on threads; beads splay into rings and the strands sway, each pop a tuned water-drop note |
 | 03 | Bubble Wrap | A sheet of bubbles that pop flat and slowly refill |
 | 04 | Squishy | Soft blue blobs that squash and slowly rise back |
-| 05 | Crunchy Slime | A grid of + stitches that crumble where the cursor passes: arms snap apart, scatter and sag, then click back together |
+| 05 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
 | 06 | Kinetic Sand | Letters that pour down into a pile |
 | 07 | Typewriter | Stamped type that wears off and drifts down the page |
 | 08 | Gaming | A segmented level meter with a live APM counter, to a marbly linear-switch clack |
