@@ -528,7 +528,7 @@ const SCENES = {
       this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
       this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
       this.F = new Float32Array(w * h);
-      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 7.5), 56, 110);
+      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 11), 40, 80);
       // bubbles sit on a square lattice; each keeps its own height so the inner rings vary from bubble to bubble
       this.cols = Math.ceil(SW / s2) + 3; this.rows = Math.ceil(SH / s2) + 3;
       this.amp = new Float32Array(this.cols * this.rows); this.base = new Float32Array(this.amp.length); this.back = new Float64Array(this.amp.length);
