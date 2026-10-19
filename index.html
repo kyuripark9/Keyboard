@@ -302,12 +302,16 @@ function crinkle(t, n, spread, o = {}) {
 }
 const SOUNDS = {
   bubble: { name: 'Bubble Wrap', desc: 'Pop rings of blue ink', scene: 'wrap', noTrail: true,
-    // a gentle, muffled pop with a whisper of plastic crinkle after it
+    // a gentle, muffled pop that sounds like a drop of water: its note swoops up as the bubble bursts (the bloop), and
+    // now and then a smaller droplet plinks after it
     down(k, t, j) {
       const f0 = (210 + k.seed * 120) * j;
-      hiss(t, { type: 'lowpass', f: 1400, q: 0.7, a: 0.003, d: 0.014, g: 0.55 });
-      tone('sine', f0, t, { f2: f0 * 1.6, ft: 0.06, a: 0.006, d: 0.08, g: 0.28, wet: 0.07 });
-      crinkle(t + 0.015, 3, 0.1, { lo: 3000, hi: 5500, g: 0.08 });
+      hiss(t, { type: 'lowpass', f: 1200, q: 0.7, a: 0.003, d: 0.012, g: 0.45 });
+      tone('sine', f0, t, { f2: f0 * 2.2, ft: 0.045, a: 0.005, d: 0.09, g: 0.3, wet: 0.08 });
+      if (Math.random() < 0.4) {
+        const f1 = f0 * rand(2, 2.6);
+        tone('sine', f1, t + rand(0.05, 0.1), { f2: f1 * 1.7, ft: 0.025, a: 0.003, d: 0.035, g: 0.06, wet: 0.1 });
+      }
     } },
   slime: { name: 'Crunchy Slime', desc: 'Crumple a sheet of stitches', scene: 'cloth', noTrail: true,
     // foam beads bursting inside glossy slime: a wet press and a fizz of tiny crackles
