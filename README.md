@@ -7,7 +7,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 | # | Sound | Picture |
 |---|-------|---------|
 | 01 | Wax Ball | Cobalt pebbles printed like a cyanotype: solid cores over pale, grainy, off-register halos; steps crack big pebbles in two and pop the small ones |
-| 02 | Bubble Wrap | A sheet of bubbles that pop flat and slowly refill |
+| 02 | Bubble Wrap | The sheet as a blue contour map on cream paper: each bubble is a hill of rings, and a pop flattens it and sends a ripple through its neighbours before it slowly refills |
 | 03 | Squishy | Grainy black ink blobs with a photocopy texture that squash and wobble back. |
 | 04 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
 | 05 | Kinetic Sand | Letters that pour down into a pile |

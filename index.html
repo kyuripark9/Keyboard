@@ -23,7 +23,7 @@
   color-scheme: light;
 }
 body[data-scene="pebble"] { --bg: #ffffff; --ink: #1b4f96; --ink-soft: #6b86ad; --line: rgba(27,79,150,.15); --panel: rgba(255,255,255,.88); --acc: #1b55a0; --cursor: #1b55a0; color-scheme: light; }
-body[data-scene="wrap"]   { --bg: #e6e6e3; --ink: #1c1c1c; --ink-soft: #616d78; --line: rgba(28,28,28,.14); --panel: rgba(244,244,241,.88); --acc: #2c62fb; --cursor: #1c1c1c; color-scheme: light; }
+body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 body[data-scene="blob"]   { --bg: #fbfbfa; --ink: #1e1e1e; --ink-soft: #666666; --line: rgba(30,30,30,.13); --panel: rgba(255,255,255,.86); --acc: #1e1e1e; --cursor: #1e1e1e; color-scheme: light; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="sand"]   { --bg: #fbfaf7; --ink: #111111; --ink-soft: #6a6a66; --line: rgba(17,17,17,.13); --panel: rgba(255,255,255,.88); --acc: #111111; --cursor: #111111; color-scheme: light; }
@@ -330,7 +330,7 @@ const SOUNDS = {
       tone('sine', 140 * j, t + 0.05, { f2: 210 * j, ft: 0.12, a: 0.03, d: 0.14, g: 0.1 });
     },
     up(k, t, j) { hiss(t, { f: 900 * j, f2: 420, ft: 0.1, q: 10, a: 0.012, d: 0.1, g: 0.6 }); } },
-  bubble: { name: 'Bubble Wrap', desc: 'A sheet of bubbles to pop', scene: 'wrap',
+  bubble: { name: 'Bubble Wrap', desc: 'Pop rings of blue ink', scene: 'wrap',
     // a soft round pop with a whisper of plastic crinkle after it
     down(k, t, j) {
       const f0 = (220 + k.seed * 160) * j;
@@ -641,57 +641,90 @@ const SCENES = {
     }
   },
 
-  /* 02 Bubble Wrap: a sheet of air bubbles on grey paper. Each one pops flat and crinkled, and the sheet slowly refills. */
+  /* 02 Bubble Wrap: the sheet drawn as a contour map in blue ink on cream paper. Every bubble is a hill of rings,
+     the sheet sways gently, and a pop flattens its hill and sends a ripple through the neighbours' rings. */
   wrap: {
     init() {
-      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 11), 34, 76);
-      this.b = []; this.pops = [];
-      const top = ZT + s2 * .9, rows = Math.floor((ZB - top - s2 * .6) / (s2 * .87));
-      for (let j = 0; j < rows; j++) for (let x = s2 * .5 + (j % 2) * s2 / 2; x < SW - s2 * .3; x += s2) {
-        const jit = []; for (let i = 0; i < 11; i++) jit.push(.72 + Math.random() * .3);
-        this.b.push({ x, y: top + j * s2 * .87 + s2 / 2, st: 0, t0: 0, back: 0, jit, rot: Math.random() * 6 });
-      }
-      paper(dc, C.greyPaper, .08);
-      dc.strokeStyle = 'rgba(28,28,28,.45)'; dc.setLineDash([6, 6]); dc.beginPath(); dc.moveTo(0, top - s2 * .25); dc.lineTo(SW, top - s2 * .25); dc.stroke(); dc.setLineDash([]);
-      dc.fillStyle = C.ink; dc.font = mono(11, 600);
-      dc.fillText('✂  TEAR HERE', 24, top - s2 * .25 - 8);
-      dc.textAlign = 'right'; dc.fillText('AIR CUSHION  /  10 MM', SW - 24, top - s2 * .25 - 8); dc.textAlign = 'left';
+      const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
+      this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
+      this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
+      this.F = new Float32Array(w * h);
+      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 7.5), 56, 110);
+      // bubbles sit on a square lattice; each keeps its own height so the inner rings vary from bubble to bubble
+      this.cols = Math.ceil(SW / s2) + 3; this.rows = Math.ceil(SH / s2) + 3;
+      this.amp = new Float32Array(this.cols * this.rows); this.base = new Float32Array(this.amp.length); this.back = new Float64Array(this.amp.length);
+      for (let i = 0; i < this.amp.length; i++) this.amp[i] = this.base[i] = rand(.8, 1);
+      this.x0 = (SW % s2) / 2; this.y0 = ((ZT + ZB) / 2) % s2;
+      this.cosT = Float32Array.from({ length: 1024 }, (_, i) => .5 + .5 * Math.cos(i / 1024 * 6.2832));
+      this.rip = []; this.popped = 0; this.cur = { x: -999, y: -999, a: 0, t: 0 };
+      paper(dc, '#eae8dc', .07);
     },
+    move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
     hit(x, y, k, now) {
-      let best = null, bd = this.s * .62;
-      for (const b of this.b) { const d = Math.hypot(b.x - x, b.y - y); if (d < bd && b.st === 0) { bd = d; best = b; } }
-      if (!best) return;
-      best.st = 1; best.t0 = now; best.back = now + 9000 + Math.random() * 6000;
-      this.pops.push({ x: best.x, y: best.y, t0: now });
+      const s2 = this.s, i = Math.round((x - this.x0) / s2) + 1, j = Math.round((y - this.y0) / s2) + 1;
+      if (i < 0 || j < 0 || i >= this.cols || j >= this.rows) return;
+      const q = j * this.cols + i;
+      if (this.back[q]) return;
+      this.back[q] = now + 9000 + Math.random() * 6000;
+      this.rip.push({ x: this.x0 + (i - 1) * s2, y: this.y0 + (j - 1) * s2, t0: now });
+      if (this.rip.length > 24) this.rip.shift();
     },
-    draw(now) {
+    draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const r = this.s * .4;
+      const G = this.G, w = this.w, h = this.h, F = this.F, s2 = this.s, cols = this.cols, amp = this.amp, cosT = this.cosT;
+      // popped hills sink fast, refilled ones swell back slowly
       let popped = 0;
-      for (const b of this.b) {
-        if (b.st === 1 && now > b.back) { b.st = 0; b.t0 = now; }
-        if (b.st === 1) {
-          popped++;
-          const sq = Math.min(1, (now - b.t0) / 90);
-          sc.strokeStyle = 'rgba(28,28,28,.5)'; sc.lineWidth = 1; sc.beginPath();
-          b.jit.forEach((j, i) => { const a = b.rot + i / b.jit.length * 6.283, rr = r * lerp(1, j, sq); i ? sc.lineTo(b.x + Math.cos(a) * rr, b.y + Math.sin(a) * rr * .9) : sc.moveTo(b.x + Math.cos(a) * rr, b.y + Math.sin(a) * rr * .9); });
-          sc.closePath(); sc.stroke();
-          sc.beginPath(); sc.moveTo(b.x - r * .35, b.y - r * .1); sc.lineTo(b.x + r * .1, b.y + r * .05); sc.lineTo(b.x + r * .3, b.y - r * .25); sc.stroke();
-        } else {
-          const g = b.t0 ? Math.min(1, (now - b.t0) / 500) : 1, rr = r * (g < 1 ? .6 + .4 * g + Math.sin(g * Math.PI) * .08 : 1);
-          sc.fillStyle = 'rgba(190,205,249,.55)'; sc.strokeStyle = C.ink; sc.lineWidth = 1.2;
-          sc.beginPath(); sc.arc(b.x, b.y, rr, 0, 7); sc.fill(); sc.stroke();
-          sc.strokeStyle = 'rgba(255,255,255,.95)'; sc.lineWidth = 2; sc.beginPath(); sc.arc(b.x, b.y, rr * .62, 3.5, 4.6); sc.stroke();
+      for (let q = 0; q < amp.length; q++) {
+        if (this.back[q] && now > this.back[q]) this.back[q] = 0;
+        const target = this.back[q] ? .2 : this.base[q]; if (this.back[q]) popped++;
+        amp[q] += (target - amp[q]) * Math.min(1, dt * (this.back[q] ? .02 : .0025));
+      }
+      // the sheet sways: rows slide sideways and columns bob, so the lattice stretches into soft, uneven loops
+      const t = now / 1000, ox = new Float32Array(h), oy = new Float32Array(w);
+      for (let j = 0; j < h; j++) ox[j] = s2 * (.2 * Math.sin(j * G / s2 * 1.9 + t * .35) + .08 * Math.sin(j * G / s2 * .53 - t * .2));
+      for (let i = 0; i < w; i++) oy[i] = s2 * (.12 * Math.sin(i * G / s2 * 1.3 - t * .3) + .06 * Math.sin(i * G / s2 * .41 + t * .25));
+      // and the hills stretch wider toward the sides, as if the sheet were pulled from the middle
+      const x0 = this.x0 - s2, y0 = this.y0 - s2, inv = 1 / s2, mid = SW / 2, xs = new Float32Array(w);
+      for (let i = 0; i < w; i++) { const dx = i * G - mid; xs[i] = mid + dx * (1 - .28 * Math.abs(dx) / SW); }
+      for (let j = 0, o = 0; j < h; j++) {
+        const y = j * G;
+        for (let i = 0; i < w; i++, o++) {
+          const u = (xs[i] + ox[j] - x0) * inv, v = (y + oy[i] - y0) * inv, ci = Math.round(u), cj = Math.round(v);
+          // blend heights between neighbouring bubbles so a popped hill never leaves a hard seam in the ridge
+          const uf = Math.floor(u), tt = u - uf, sm = tt * tt * (3 - 2 * tt), row = cj * cols;
+          const a = uf >= 0 && cj >= 0 && uf + 1 < cols && cj < this.rows ? amp[row + uf] + (amp[row + uf + 1] - amp[row + uf]) * sm : 1;
+          // each row is a ridge and each bubble a hill on it, so the outer rings join their neighbours and pinch between them
+          F[o] = a * cosT[((v - cj + 1) * 1024 | 0) & 1023] * (.36 + .64 * cosT[((u - ci + 1) * 1024 | 0) & 1023]);
         }
       }
-      this.pops = this.pops.filter(p => now - p.t0 < 320);
-      sc.strokeStyle = C.cobalt; sc.lineWidth = 1.5;
-      for (const p of this.pops) {
-        const a = (now - p.t0) / 320; sc.globalAlpha = 1 - a;
-        for (let i = 0; i < 8; i++) { const ang = i / 8 * 6.283; sc.beginPath(); sc.moveTo(p.x + Math.cos(ang) * r * (1 + a * .5), p.y + Math.sin(ang) * r * (1 + a * .5)); sc.lineTo(p.x + Math.cos(ang) * r * (1.25 + a), p.y + Math.sin(ang) * r * (1.25 + a)); sc.stroke(); }
+      // ripples: a ring that runs out from each pop and bends the contour lines it passes through
+      this.rip = this.rip.filter(r => now - r.t0 < 2600);
+      const bump = (cx, cy, R, fn) => {
+        const i0 = Math.max(1, Math.floor((cx - R) / G)), i1 = Math.min(w - 2, Math.ceil((cx + R) / G)), j0 = Math.max(1, Math.floor((cy - R) / G)), j1 = Math.min(h - 2, Math.ceil((cy + R) / G));
+        for (let j = j0; j <= j1; j++) for (let i = i0, o = j * w + i0; i <= i1; i++, o++) { const d = Math.hypot(i * G - cx, j * G - cy); if (d < R) F[o] += fn(d); }
+      };
+      for (const r of this.rip) {
+        const age = (now - r.t0) / 1000, front = age * s2 * 2.4, A = .3 * Math.pow(1 - age / 2.6, 2), W = s2 * .55;
+        bump(r.x, r.y, front + W * 2, d => { const z = (d - front) / W; return A * Math.exp(-z * z) * Math.sin(z * 3.2); });
       }
-      sc.globalAlpha = 1;
-      sc.fillStyle = C.ink; sc.font = mono(11, 600); sc.fillText(`POPPED ${String(popped).padStart(3, '0')} / ${this.b.length}`, 24, ZB - 14);
+      // the cursor presses a soft dent into the sheet, and it lifts once the cursor rests
+      const c = this.cur, ca = clamp(1 - (now - c.t - 300) / 800, 0, 1);
+      c.a += (ca - c.a) * Math.min(1, dt * .01);
+      if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * Math.pow(1 - d / R, 2)); }
+      // contour lines: four levels, each drawn at a steady width by dividing by the slope
+      const P = this.px, L = 4, LW = .3;
+      P.fill(0);
+      for (let j = 1; j < h - 1; j++) for (let i = 1, o = j * w + 1; i < w - 1; i++, o++) {
+        const f = F[o]; if (f < .04) continue;
+        const gx = F[o + 1] - F[o - 1], gy = F[o + w] - F[o - w], g = Math.sqrt(gx * gx + gy * gy) * .5 + 1e-4;
+        const vv = f * L - .5, d = Math.abs(vv - Math.round(vv)) / (L * g);
+        if (d > LW + .6 || vv < -.5) continue;
+        const al = d < LW ? 255 : ((1 - (d - LW) / .6) * 255) | 0;
+        P[o] = al << 24 | 0xfb622c;
+      }
+      this.oc.putImageData(this.img, 0, 0);
+      sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
+      sc.fillStyle = C.cobalt; sc.font = mono(11, 600); sc.fillText(`POPPED ${String(popped).padStart(3, '0')}`, 24, ZB - 14);
     }
   },
 
@@ -1000,8 +1033,11 @@ function thumb(id) {
       [[16, 14, 11], [44, 12, 9], [64, 30, 12], [30, 36, 10], [52, 44, 8]].forEach(([x, y, rr]) => b += `<ellipse cx="${x}" cy="${y}" rx="${rr}" ry="${rr * .88}" fill="#1b55a0"/>`);
       return svg('#fff', b);
     case 'bubble':
-      for (let j = 0; j < 4; j++) for (let x = 6 + (j % 2) * 5; x < 80; x += 10) b += r() < .3 ? `<circle cx="${x}" cy="${10 + j * 9}" r="3" fill="none" stroke="${C.ink}" stroke-width=".5" stroke-dasharray="1 1"/>` : `<circle cx="${x}" cy="${10 + j * 9}" r="4" fill="${C.peri}" stroke="${C.ink}" stroke-width=".7"/>`;
-      return svg(C.greyPaper, b);
+      for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) {
+        const x = 7 + i * 13 + (j % 2) * 3, y = 7 + j * 12, big = r() > .25;
+        b += `<ellipse cx="${x}" cy="${y}" rx="5.4" ry="4.2"/>` + (big ? `<ellipse cx="${x}" cy="${y}" rx="3" ry="2.4"/><circle cx="${x}" cy="${y}" r=".9" fill="${C.cobalt}"/>` : '');
+      }
+      return svg('#eae8dc', `<g fill="none" stroke="${C.cobalt}" stroke-width=".7">${b}</g>`);
     case 'squishy':
       b = '<defs><filter id="tsq" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4"/></filter></defs><g fill="#262626" filter="url(#tsq)">';
       [[14, 10, 11], [62, 6, 10], [28, 31, 9], [44, 31, 10], [18, 52, 10], [60, 50, 11]].forEach(([x, y, r]) => b += `<circle cx="${x}" cy="${y}" r="${r}"/>`);
