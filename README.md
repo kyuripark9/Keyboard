@@ -9,7 +9,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 | 01 | Bubble Wrap | The sheet as a blue contour map on cream paper: each bubble is a hill of rings, and a pop flattens it and sends a ripple through its neighbours before it slowly refills |
 | 02 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
 | 03 | Cyanotype | A cobalt print in camouflage patches: grainy solid blue next to a white halftone dot screen. The cursor exposes the paper as it passes: dots bloom open along its path, swell into solid white where it goes over the same spot again, twinkle with little glints, and quickly sink back into the blue; the sound is a soft, airy brush with a few faint grains |
-| 04 | Rain on Glass | Drops on a misty periwinkle window: steps tap new drops, the cursor merges them, and heavy drops slide down leaving clear trails; the sound is a few soft, muffled taps |
+| 04 | Cross Stitch | A dense textile sampler in blue, red, lime and white on a mustard ground: stitched lattices, rows of blue stars and sparse dots, split by zigzag borders. The cursor unpicks the stitches it passes, leaving scalloped patches of bare yellow that are slowly stitched back in; the sound is a soft rising brush of thread pulled through cloth |
 
 - **Just move**: sounds play as your cursor moves. On touch screens, drag a finger. The page always opens on 01 Bubble Wrap.
 - **Custom cursor**: 9 shapes, any color, adjustable size and trail.
