@@ -6,7 +6,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 
 | # | Sound | Picture |
 |---|-------|---------|
-| 01 | Bubble Wrap | The sheet as a blue contour map on cream paper: each bubble is a hill of rings, and a pop flattens it and sends a ripple through its neighbours before it slowly refills |
+| 01 | Bubble Wrap | The sheet as a contour map of pale grey rings on mint paper: each bubble is a hill of rings, and a pop flattens it and sends a ripple through its neighbours before it slowly refills |
 | 02 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
 | 03 | Cyanotype | A cobalt print in camouflage patches: grainy solid blue next to a white halftone dot screen. The cursor exposes the paper as it passes: dots bloom open along its path, swell into solid white where it goes over the same spot again, twinkle with little glints, and quickly sink back into the blue; the sound is soft, light foam: a gentle breath of air that swells in and out with a faint sizzle of tiny bubbles |
 | 04 | Wax Ball | The 왁뿌볼 (wax-crushing ball)'s shell drawn as tower facades at sunset: a sunlit gold tower with pale glass, a maroon one in shadow whose windows hold the blue sky, and a low block of mottled maroon stone in front, each set in blocks a few windows wide and a few floors tall. Each step cracks the blocks around it: they slide apart so their windows fall out of line, white clay shows in the cracks, the cursor squeezes it up between them, and the wax slowly sets back into place. The sound is a dry snap, a rush of brittle crackles and a soft squish |
@@ -23,7 +23,7 @@ Sounds 04–09 follow the trend of Roblox ASMR tower obbies such as 왁뿌볼 �
 - **Matching cursor**: a ring cursor that takes on each picture's own color.
 - Your real keyboard plays too (letters, digits, space, enter), and the left and right arrows switch sounds. Settings and your clack count are saved in the browser.
 
-All sounds are synthesized live with the Web Audio API, so there are no audio files. They are tuned for ASMR: soft attacks, rounded filters, small crisp details and a little reverb. The palette comes from one moodboard: cobalt, periwinkle, grey and warm paper, and ink. 04 Wax Ball and 07 Pudding are the exceptions: each takes its colors from its own reference image (gold, maroon and sky blue from a photo of towers at sunset; green, red and cream).
+All sounds are synthesized live with the Web Audio API, so there are no audio files. They are tuned for ASMR: soft attacks, rounded filters, small crisp details and a little reverb. The palette comes from one moodboard: cobalt, periwinkle, grey and warm paper, and ink. 01 Bubble Wrap, 04 Wax Ball and 07 Pudding are the exceptions: each takes its colors from its own reference image (mint and pale grey from a print of pixel squares; gold, maroon and sky blue from a photo of towers at sunset; green, red and cream).
 
 ## Run locally
 

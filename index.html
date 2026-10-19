@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 /* Layout: a full-screen canvas scene sits under a slim header and a floating dock.
-   Every sound has its own scene and its own palette, all drawn from one moodboard:
+   Every sound has its own scene and its own palette, most drawn from one moodboard:
    cobalt, periwinkle, grey paper, warm paper and ink. */
 :root {
   --cobalt: #2c62fb; --peri: #becdf9; --mid: #5c80ea; --paper: #f3eee6; --grey-paper: #e6e6e3; --ink-black: #1c1c1c;
@@ -22,7 +22,7 @@
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   color-scheme: light;
 }
-body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="wrap"]   { --bg: #69bca9; --ink: #164a3f; --ink-soft: #2a6156; --line: rgba(22,74,63,.16); --panel: rgba(236,242,239,.9); --acc: #eef2ef; --cursor: #164a3f; color-scheme: light; }
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --panel: rgba(40,70,150,.9); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="wax"]    { --bg: #5a211f; --ink: #f6d06a; --ink-soft: #d8a48a; --line: rgba(246,208,106,.2); --panel: rgba(76,27,25,.92); --acc: #f6d06a; --cursor: #5b82e6; color-scheme: dark; }
@@ -301,7 +301,7 @@ function crinkle(t, n, spread, o = {}) {
   for (let i = 0; i < n; i++) { const at = t + Math.pow(Math.random(), 1.6) * spread; hiss(at, { f: rand(lo, hi), q, a: 0.0015, d: rand(0.004, 0.012), g: rand(0.4, 1) * g * (1 - (at - t) / spread * 0.6) }); }
 }
 const SOUNDS = {
-  bubble: { name: 'Bubble Wrap', desc: 'Pop rings of blue ink', scene: 'wrap', noTrail: true,
+  bubble: { name: 'Bubble Wrap', desc: 'Pop pale rings on mint', scene: 'wrap', noTrail: true,
     // a gentle, muffled pop that sounds like a drop of water: its note swoops up as the bubble bursts (the bloop), and
     // now and then a smaller droplet plinks after it
     down(k, t, j) {
@@ -570,8 +570,9 @@ function roundPoly(p, P, r) {
 
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
-  /* 01 Bubble Wrap: the sheet drawn as a contour map in blue ink on cream paper. Every bubble is a hill of rings,
-     the sheet sways gently, and a pop flattens its hill and sends a ripple through the neighbours' rings. */
+  /* 01 Bubble Wrap: the sheet drawn as a contour map in pale grey on mint paper, after a photo. Every bubble is a
+     hill of rings, the sheet sways gently, and a pop flattens its hill and sends a ripple through the neighbours'
+     rings. */
   wrap: {
     frame: 'full',
     init() {
@@ -588,7 +589,7 @@ const SCENES = {
       this.cosT = Float32Array.from({ length: 1024 }, (_, i) => .5 + .5 * Math.cos(i / 1024 * 6.2832));
       this.rip = []; this.cur = { x: -999, y: -999, a: 0, t: 0 };
       this.M = new Float32Array(w * h); this.mk = ''; this.mt = 0;
-      paper(dc, '#eae8dc', .07);
+      paper(dc, '#69bca9', .07);
     },
     // the sheet flattens around the logo, the tally and the dock, so the rings close into rounded ends and part
     // around them instead of running under the text. Rebuilt whenever one of them moves or grows (the tally gains digits)
@@ -671,7 +672,7 @@ const SCENES = {
         const vv = f * L - .5, d = Math.abs(vv - Math.round(vv)) / (L * g);
         if (d > LW + .6 || vv < -.5) continue;
         const al = d < LW ? 255 : ((1 - (d - LW) / .6) * 255) | 0;
-        P[o] = al << 24 | 0xfb622c;
+        P[o] = al << 24 | 0xe0e3df;
       }
       this.oc.putImageData(this.img, 0, 0);
       sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
@@ -1662,9 +1663,9 @@ function thumb(id) {
     case 'bubble':
       for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) {
         const x = 7 + i * 13 + (j % 2) * 3, y = 7 + j * 12, big = r() > .25;
-        b += `<ellipse cx="${x}" cy="${y}" rx="5.4" ry="4.2"/>` + (big ? `<ellipse cx="${x}" cy="${y}" rx="3" ry="2.4"/><circle cx="${x}" cy="${y}" r=".9" fill="${C.cobalt}"/>` : '');
+        b += `<ellipse cx="${x}" cy="${y}" rx="5.4" ry="4.2"/>` + (big ? `<ellipse cx="${x}" cy="${y}" rx="3" ry="2.4"/><circle cx="${x}" cy="${y}" r=".9" fill="#dfe3e0"/>` : '');
       }
-      return svg('#eae8dc', `<g fill="none" stroke="${C.cobalt}" stroke-width=".7">${b}</g>`);
+      return svg('#69bca9', `<g fill="none" stroke="#dfe3e0" stroke-width=".7">${b}</g>`);
     case 'slime':
       for (let j = 0; j < 7; j++) for (let i = 0; i < 12; i++) {
         const x = 8 + i * 6 + (j > 3 ? (j - 3) * (i < 5 ? 1.2 : .2) : 0), y = 6 + j * 6.2 - (i > 4 && i < 9 ? 1.2 : 0), a = j > 3 && i < 5 ? .25 : 0, l = j > 3 && i < 5 ? 1.2 : 1.7;
