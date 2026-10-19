@@ -24,7 +24,7 @@
 }
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="sand"]   { --bg: #4d7c66; --ink: #f4f6ef; --ink-soft: #c5d6cb; --line: rgba(244,246,239,.2); --panel: rgba(62,104,85,.9); --acc: #f4f6ef; --cursor: #f4f6ef; color-scheme: dark; }
+body[data-scene="sand"]   { --bg: #fbfbf8; --ink: #1b1f66; --ink-soft: #6a6d99; --line: rgba(27,31,102,.14); --panel: rgba(255,255,255,.9); --acc: #1b1f66; --cursor: #1b1f66; color-scheme: light; }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -331,7 +331,7 @@ const SOUNDS = {
       if (Math.random() < 0.5) tone('sine', rand(1800, 2600), t + rand(0.02, 0.1), { a: 0.002, d: 0.02, g: 0.04, wet: 0.3 });
     },
     up(k, t, j) { hiss(t, { f: 700 * j, f2: 1500, ft: 0.08, q: 8, a: 0.01, d: 0.08, g: 0.4 }); crinkle(t, 4, 0.06, { g: 0.2 }); } },
-  sand: { name: 'Kinetic Sand', desc: 'Trickle grains through the ripples', scene: 'sand',
+  sand: { name: 'Kinetic Sand', desc: 'Scratch ink into a ballpoint scribble', scene: 'sand',
     // only fine grains trickling: an airy hiss that fades in slowly, never a burst
     down(k, t, j) {
       hiss(t, { f: 3400 * j, q: 0.8, a: 0.07, d: 0.2, g: 0.2 });
@@ -652,89 +652,72 @@ const SCENES = {
     }
   },
 
-  /* 03 Kinetic Sand: white tick marks on grainy green, laid out on rows like a raked sand garden, in rings packed
-     tight near the centre and wide apart far away. The ticks are grains: the cursor parts them like a finger dragged
-     through sand, and each step knocks the grains around it loose. They fall under gravity, pile up along the bottom
-     in a little dune, and the hole they left in the rings slowly fills back in. */
+  /* 03 Kinetic Sand: navy ballpoint on white paper. A dense scribbled mass on the left frays into lines of
+     scrawled handwriting on the right. The cursor writes its own loopy scrawl as it moves, and every step scratches
+     a tight knot of ink, so rubbing one spot builds it up dark and grainy, like sand piling. New ink slowly fades. */
   sand: {
     init() {
-      this.cy = (ZT + ZB) / 2; this.ty = this.cy; this.ph = 0; this.boost = 0; this.pulses = []; this.gr = []; this.holes = [];
-      this.pile = new Float32Array(Math.ceil(SW / 3) + 2);
-      this.cur = { x: -999, y: -999, t: 0, a: 0 };
-      this.row = clamp(Math.round(Math.min(SW, SH) / 70), 9, 14);
-      paper(dc, '#4d7c66', .16);
+      const W = SW * SDPR, H = SH * SDPR;
+      this.lv = this.lv || document.createElement('canvas'); this.lv.width = W; this.lv.height = H;
+      this.lc = this.lv.getContext('2d'); this.lc.setTransform(SDPR, 0, 0, SDPR, 0, 0); this.lc.lineCap = 'round'; this.lc.lineJoin = 'round';
+      this.pen = { x: -1, y: -1, ph: 0, r: 4 }; this.fadeT = 0;
+      paper(dc, '#fbfbf8', .05);
+      dc.lineCap = 'round'; dc.lineJoin = 'round';
+      const top = ZT + 18, bot = ZB - 24, left = SW * .04;
+      // the mass: row after row of big overlapping loops, laid down in a few passes so the ink goes dense but grainy
+      const edgeAt = y => SW * (.3 + .1 * Math.sin(y * .011) + .06 * Math.sin(y * .047));
+      for (let y = top; y < bot; y += 2) { const e = edgeAt(y) - rand(30, 90); dc.fillStyle = 'rgba(27,31,102,.5)'; dc.fillRect(left, y, e - left, 2); }
+      for (let pass = 0; pass < 3; pass++) for (let y = top; y < bot; y += 4) {
+        this.scrawl(dc, left + rand(-4, 4), y, edgeAt(y) + rand(-30, 25) - left, rand(5, 11), .3, .8);
+      }
+      // ballpoint grain: tiny gaps where the pen skipped
+      dc.fillStyle = 'rgba(251,251,248,.55)';
+      for (let i = 0, n = SW * SH / 90; i < n; i++) { const y = rand(top, bot), x = rand(left, edgeAt(y)); dc.fillRect(x, y, rand(.8, 2), rand(.8, 1.6)); }
+      // the frayed edge: lines of handwriting trailing out of the mass at uneven lengths
+      for (let y = top + 4; y < bot; y += rand(9, 16)) {
+        const edge = edgeAt(y);
+        if (Math.random() < .25) continue;
+        this.scrawl(dc, edge - rand(10, 40), y, SW * rand(.08, Math.random() < .3 ? .5 : .22), rand(2.4, 3.6), .75, 1);
+      }
     },
-    move(x, y) { this.ty = clamp(y, ZT + 40, ZB - 40); this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
-    hit(x, y, k, now) {
-      this.boost = Math.min(3, this.boost + .12); this.pulses.push({ t0: now }); if (this.pulses.length > 10) this.pulses.shift();
-      // knock a hole in the rings; the next frame turns every tick inside it into a falling grain
-      this.holes.push({ x, y, t0: now, R: this.row * rand(2.6, 3.6), fresh: true });
-      if (this.holes.length > 40) this.holes.shift();
+    // cursive scrawl: the pen moves right while circling, so it draws loops; it lifts now and then between words
+    scrawl(g, x0, y0, len, r, alpha, lw) {
+      g.strokeStyle = `rgba(27,31,102,${alpha})`; g.lineWidth = lw; g.beginPath();
+      let x = x0, t = Math.random() * 6.28, word = rand(14, 60), down = true, rr = r, ry = r, base = y0;
+      g.moveTo(x + Math.cos(t) * r, y0 + Math.sin(t) * r * .8);
+      while (x < x0 + len) {
+        // every turn of the loop is a new letter: its own width and height, now and then a tall stroke, and a drifting baseline
+        const w = rand(.4, .9); t += w; x += r * w * rand(.35, .9);
+        if (t % 6.28 < w) { rr = r * rand(.5, 1.3); ry = r * (Math.random() < .15 ? rand(1.8, 2.6) : rand(.5, 1.2)); base += rand(-.6, .6); base += (y0 - base) * .2; }
+        const py = base + Math.sin(t) * ry + rand(-.5, .5), px = x + Math.cos(t) * rr - (py - base) * .45; // slanted, like quick handwriting
+        word -= r * w;
+        if (word < 0) { word = rand(14, 60) + r * 4; down = !down || Math.random() < .5; if (!down) { x += r * rand(1, 2.5); g.moveTo(px, py); down = true; continue; } }
+        g.lineTo(px, py);
+      }
+      g.stroke();
     },
-    // a grain's place on a ring, nudged away from the finger and shivering while the finger is near
-    shift(x, y, now) {
-      const c = this.cur; if (c.a < .01) return x;
-      const dx = x - c.x, dy = y - c.y, e2 = dx * dx + dy * dy, R = this.row * 6; if (e2 > R * R) return x;
-      const e = Math.sqrt(e2), f = 1 - e / R, h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453 % 1;
-      return x + (dx >= 0 ? 1 : -1) * f * f * this.row * 1.6 * c.a + Math.sin(now / 45 + h * 40) * f * 1.6 * c.a;
+    move(x, y) {
+      const p = this.pen, g = this.lc;
+      if (p.x < 0) { p.x = x; p.y = y; return; }
+      const d = Math.hypot(x - p.x, y - p.y); if (d < .5) return;
+      // the pen circles as it travels, so a straight swipe comes out as a line of loops
+      g.strokeStyle = 'rgba(27,31,102,.75)'; g.lineWidth = 1; g.beginPath();
+      const n = Math.ceil(d / 2);
+      let lx = p.x + Math.cos(p.ph) * p.r, ly = p.y + Math.sin(p.ph) * p.r * .8; g.moveTo(lx, ly);
+      for (let i = 1; i <= n; i++) { p.ph += rand(.35, .8); p.r += (rand(1.5, 8) - p.r) * .25; g.lineTo(p.x + (x - p.x) * i / n + Math.cos(p.ph) * p.r, p.y + (y - p.y) * i / n + Math.sin(p.ph) * p.r * .8); }
+      g.stroke(); p.x = x; p.y = y;
+    },
+    hit(x, y) {
+      // a tight knot of scratches, grain by grain, like the sound's sixteen ticks
+      const g = this.lc;
+      for (let i = 0; i < 3; i++) this.scrawl(g, x - rand(8, 18), y + rand(-7, 7), rand(16, 34), rand(3, 7), .28, .9);
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      this.cy += (this.ty - this.cy) * Math.min(1, dt * .002);
-      this.boost *= Math.pow(.9985, dt);
-      this.ph = (this.ph + dt * .00012 * (1 + this.boost * 3)) % 1;
-      this.pulses = this.pulses.filter(p => now - p.t0 < 3000);
-      const c = this.cur; c.a += (clamp(1 - (now - c.t - 250) / 700, 0, 1) - c.a) * Math.min(1, dt * .01);
-      const left = SW * .05, right = SW * .95, cx = SW * .72, cy = this.cy, Rmax = cx - left * 1.6, N = 34, row = this.row, th = row * .45;
-      const top = ZT + row, bot = ZB - row * 2;
-      sc.fillStyle = '#f4f6ef';
-      // holes refill from the rim inward over a few seconds
-      this.holes = this.holes.filter(hl => now - hl.t0 < 5000);
-      const k2 = dt / 16, holes = this.holes;
-      const tick = (x, y) => {
-        for (const hl of holes) {
-          const dx = x - hl.x, dy = y - hl.y, rr = hl.R * (hl.fresh ? 1 : Math.min(1, 1.25 - (now - hl.t0) / 4000));
-          if (dx * dx + dy * dy < rr * rr) { if (hl.fresh && this.gr.length < 700) this.gr.push({ x, y, vx: rand(-.5, .5) + dx * .02, vy: rand(-1.4, -.2), t0: now + Math.random() * 180, land: 0 }); return; }
-        }
-        sc.fillRect(this.shift(x, y, now), y, 1.4, th);
-      };
-      for (let k = 0; k < N; k++) {
-        // radii bunch up near the band: equal steps in a power curve, sliding outward with the phase
-        const u = (k + this.ph) / N, r = Rmax * Math.pow(u, 1.7);
-        if (r < 2) continue;
-        let br = .55 + .35 * (1 - u);
-        for (const p of this.pulses) { const a2 = (now - p.t0) / 3000, z = (u - a2) * 9; br += Math.exp(-z * z) * .5 * (1 - a2); }
-        sc.globalAlpha = Math.min(1, br);
-        for (let y = top; y < bot; y += row) {
-          const dy = y + th / 2 - cy; if (Math.abs(dy) >= r) continue;
-          const dx = Math.sqrt(r * r - dy * dy);
-          tick(cx - dx, y);
-          if (cx + dx < right - 4) tick(cx + dx, y);
-        }
-      }
-      for (const hl of holes) hl.fresh = false;
-      // loose grains fall under gravity and heap up along the floor; a grain slides off any slope steeper than its
-      // neighbours, so the heap spreads into a dune. Grains sink away after a while and the dune shrinks with them.
-      const P = this.pile, floor = bot + th, gh = th * .6;
-      this.gr = this.gr.filter(g => {
-        if (!g.land || now - g.land < 7000) return true;
-        P[g.bin] = Math.max(0, P[g.bin] - gh); return false;
-      });
-      for (const g of this.gr) {
-        if (now < g.t0) continue;
-        if (!g.land) {
-          g.vy = Math.min(g.vy + .18 * k2, 9); g.vx *= Math.pow(.985, k2); g.x += g.vx * k2; g.y += g.vy * k2;
-          let bin = clamp(Math.round(g.x / 3), 1, P.length - 2);
-          if (g.y + th >= floor - P[bin]) {
-            for (let n = 0; n < 12; n++) { const l = P[bin - 1], r = P[bin + 1], m = P[bin]; if (l < m - gh * 1.5 && bin > 1 && (l <= r || bin >= P.length - 2)) bin--; else if (r < m - gh * 1.5 && bin < P.length - 2) bin++; else break; }
-            g.bin = bin; g.x = bin * 3 + rand(-.6, .6); g.y = floor - P[bin] - th; P[bin] += gh; g.land = now;
-          }
-        }
-        const fade = g.land ? clamp((7000 - (now - g.land)) / 1500, 0, 1) : 1;
-        sc.globalAlpha = .92 * fade;
-        sc.fillRect(g.x, g.y, 1.4, th);
-      }
-      sc.globalAlpha = 1;
+      // fresh ink fades out over a minute or so, so the page never clogs up
+      this.fadeT += dt;
+      if (this.fadeT > 120) { this.fadeT = 0; const g = this.lc; g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-out'; g.fillStyle = 'rgba(0,0,0,.012)'; g.fillRect(0, 0, this.lv.width, this.lv.height); g.restore(); }
+      sc.drawImage(this.lv, 0, 0, SW, SH);
     }
   },
 
@@ -850,9 +833,8 @@ function thumb(id) {
       }
       return svg('#e6e6e6', b);
     case 'sand':
-      for (let k = 1; k < 12; k++) { const r2 = 46 * Math.pow(k / 12, 1.7); for (let y = 4; y < 47; y += 3.4) { const dy = y + .8 - 25; if (Math.abs(dy) < r2) { const dx = Math.sqrt(r2 * r2 - dy * dy); b += `<rect x="${(58 - dx).toFixed(1)}" y="${y}" width=".5" height="1.6"/>`; if (58 + dx < 74) b += `<rect x="${(58 + dx).toFixed(1)}" y="${y}" width=".5" height="1.6"/>`; } } }
-      for (let y = 4; y < 47; y += 3.4) b += `<rect x="56.5" y="${y}" width="3" height="1.6"/><rect x="5" y="${y}" width=".5" height="1.6"/><rect x="75" y="${y}" width=".5" height="1.6"/>`;
-      return svg('#4d7c66', `<g fill="#f4f6ef">${b}</g>`);
+      for (let y = 4; y < 48; y += 1.6) { const e = 28 + Math.sin(y * .5) * 5 + r() * 6; b += `<path d="M3 ${y.toFixed(1)}H${e.toFixed(1)}" stroke="#1b1f66" stroke-opacity=".55" stroke-width="1.4" stroke-dasharray="${(1 + r() * 2).toFixed(1)} .4"/>`; if (r() < .45) b += `<path d="M${(e - 3).toFixed(1)} ${y.toFixed(1)}h${(8 + r() * 30).toFixed(1)}" stroke="#1b1f66" stroke-width=".35" stroke-dasharray="2 .7 1 .9"/>`; }
+      return svg('#fbfbf8', b);
   }
   return svg('#eee', '');
 }
