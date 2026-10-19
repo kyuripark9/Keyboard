@@ -394,10 +394,10 @@ const SOUNDS = {
     },
     up(k, t, j) { hiss(t, { f: 700 * j, f2: 1500, ft: 0.08, q: 8, a: 0.01, d: 0.08, g: 0.4 }); crinkle(t, 4, 0.06, { g: 0.2 }); } },
   sand: { name: 'Kinetic Sand', desc: 'Pour letters into a pile', scene: 'sand',
-    // a hushed slice through damp sand: soft hiss with a fine grain on top
+    // only fine grains trickling: an airy hiss that fades in slowly, never a burst
     down(k, t, j) {
-      hiss(t, { type: 'lowpass', f: 900 * j, f2: 1600 * j, ft: 0.16, a: 0.04, d: 0.18, g: 0.75 });
-      crinkle(t + 0.01, 22, 0.22, { lo: 1800, hi: 5200, g: 0.26, q: 1.4 });
+      hiss(t, { f: 3400 * j, q: 0.8, a: 0.07, d: 0.2, g: 0.2 });
+      crinkle(t + 0.02, 16, 0.26, { lo: 2600, hi: 6200, g: 0.2, q: 1.6 });
     } },
   typewriter: { name: 'Typewriter', desc: 'Stamp type that slowly wears off', scene: 'type',
     // creamy, thocky keys with a soft upstroke, and a little bell on Enter
