@@ -748,26 +748,22 @@ const SCENES = {
       nc.putImageData(id, 0, 0); this.grain = this.oc.createPattern(n, 'repeat');
       paper(dc, '#e45b5a', .08);
       const m = Math.min(SW, ZB - ZT);
-      for (let i = 0; i < 6; i++) this.add(rand(.2, .8) * SW, rand(ZT + m * .3, ZB), m * rand(.08, .2), -rand(0, 6000));
+      for (let i = 0; i < 4; i++) this.add(rand(.2, .8) * SW, rand(ZT + m * .4, ZB), m * rand(.16, .3), -rand(0, 6000));
     },
     add(x, y, r, now) {
       const m = Math.min(SW, ZB - ZT);
-      this.b.push({ x, y, r, ph: Math.random() * 6.283, vy: rand(.35, .7) * (1.2 - r / (m * .3)), t0: now, top: rand(ZT - r * .2, ZT + (ZB - ZT) * .3), rot: rand(-.5, .5) });
-      if (this.b.length > 26) this.b.shift();
+      this.b.push({ x, y, r, ph: Math.random() * 6.283, vy: rand(.3, .55) * Math.max(.35, 1.2 - r / (m * .4)), t0: now, top: rand(ZT - r * .2, ZT + (ZB - ZT) * .3), rot: rand(-.5, .5) });
+      if (this.b.length > 10) { const o = this.b.shift(); this.pops.push({ x: o.x, y: o.y, r: o.r, t0: now }); }
     },
-    move(x, y, dx, dy) { this.acc += Math.hypot(dx, dy); while (this.acc > 130) { this.acc -= 130; this.add(x + rand(-6, 6), y + rand(-6, 6), rand(12, 34), performance.now()); } },
-    hit(x, y, k, now) { const m = Math.min(SW, ZB - ZT); for (let i = 0, n = Math.random() < .35 ? 2 : 1; i < n; i++) this.add(x + rand(-40, 40), y + rand(-30, 30), m * rand(.05, .15), now); },
+    move(x, y, dx, dy) { this.acc += Math.hypot(dx, dy); const m = Math.min(SW, ZB - ZT); while (this.acc > 320) { this.acc -= 320; this.add(x + rand(-6, 6), y + rand(-6, 6), m * rand(.07, .13), performance.now()); } },
+    hit(x, y, k, now) { const m = Math.min(SW, ZB - ZT); this.add(x + rand(-30, 30), y + rand(-20, 20), m * rand(.12, .24), now); },
     bubble(g, b, now) {
-      const wob = Math.sin(now / 420 + b.ph) * .05, r = b.r;
+      const wob = Math.sin(now / 420 + b.ph) * .025, r = b.r;
       g.save(); g.translate(b.x, b.y); g.rotate(b.rot); g.scale(1 + wob, 1 - wob);
       // film and rim: nearly clear inside, brightening into a soft white edge
       const f = g.createRadialGradient(-r * .12, -r * .12, 0, 0, 0, r);
-      f.addColorStop(0, 'rgba(255,255,255,.03)'); f.addColorStop(.7, 'rgba(255,255,255,.08)'); f.addColorStop(.9, 'rgba(255,255,255,.42)'); f.addColorStop(.97, 'rgba(255,255,255,.85)'); f.addColorStop(1, 'rgba(255,255,255,0)');
+      f.addColorStop(0, 'rgba(255,255,255,.02)'); f.addColorStop(.75, 'rgba(255,255,255,.07)'); f.addColorStop(.92, 'rgba(255,255,255,.3)'); f.addColorStop(.975, 'rgba(255,255,255,.8)'); f.addColorStop(1, 'rgba(255,255,255,0)');
       g.fillStyle = f; g.beginPath(); g.arc(0, 0, r, 0, 6.283); g.fill();
-      // catch-lights: a broad crescent top left and a thin one bottom right
-      g.lineCap = 'round';
-      g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = Math.max(1.5, r * .07); g.beginPath(); g.arc(0, 0, r * .8, 3.5, 4.7); g.stroke();
-      g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = Math.max(1, r * .03); g.beginPath(); g.arc(0, 0, r * .84, .25, 1.25); g.stroke();
       g.restore();
     },
     draw(now, dt) {
@@ -778,6 +774,15 @@ const SCENES = {
       for (const b of this.b) {
         b.y -= b.vy * k * (1 + Math.max(0, now - b.t0) / 5000); b.x += Math.sin(now / 700 + b.ph) * .3 * k; b.r += .004 * k;
         this.bubble(g, b, now);
+      }
+      // where two bubbles overlap, the shared film and the rim crossing it glow strong white
+      for (let i = 0; i < this.b.length; i++) for (let j = 0; j < this.b.length; j++) {
+        const A = this.b[i], B = this.b[j];
+        if (i === j || Math.hypot(A.x - B.x, A.y - B.y) > A.r + B.r) continue;
+        g.save(); g.beginPath(); g.arc(A.x, A.y, A.r, 0, 6.283); g.clip();
+        if (i < j) { const f = g.createRadialGradient(B.x, B.y, 0, B.x, B.y, B.r); f.addColorStop(0, 'rgba(255,255,255,.05)'); f.addColorStop(.8, 'rgba(255,255,255,.1)'); f.addColorStop(1, 'rgba(255,255,255,.3)'); g.fillStyle = f; g.beginPath(); g.arc(B.x, B.y, B.r, 0, 6.283); g.fill(); }
+        g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineWidth = Math.max(2, B.r * .045); g.beginPath(); g.arc(B.x, B.y, B.r * .985, 0, 6.283); g.stroke();
+        g.restore();
       }
       // pops: the rim flicks outward and thins away
       this.pops = this.pops.filter(p => now - p.t0 < 420);
@@ -946,7 +951,7 @@ function thumb(id) {
       }
       return svg('#fff', `<g fill="#1f6b35">${b}</g>`);
     case 'fizz':
-      [[30, 18, 15], [50, 26, 13], [24, 36, 11], [44, 42, 9], [58, 10, 8]].forEach(([x, y, rr]) => b += `<circle cx="${x}" cy="${y}" r="${rr}" fill="url(#tfz)"/><path d="M${x - rr * .75} ${y - rr * .25}A${rr * .8} ${rr * .8} 0 0 1 ${x - rr * .1} ${y - rr * .8}" stroke="#fff" stroke-opacity=".6" stroke-width="1" fill="none"/>`);
+      [[28, 20, 19], [50, 30, 17], [36, 44, 13]].forEach(([x, y, rr]) => b += `<circle cx="${x}" cy="${y}" r="${rr}" fill="url(#tfz)"/>`);
       return svg('#e45b5a', '<defs><radialGradient id="tfz"><stop offset=".7" stop-color="#fff" stop-opacity=".08"/><stop offset=".95" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' + b);
     case 'rain':
       for (let i = 0; i < 46; i++) { const x = r() * 80, y = r() * 50, rr = .5 + Math.pow(r(), 2) * 2.6; b += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rr.toFixed(1)}" fill="#2c62fb" fill-opacity=".25" stroke="#1c2c6b" stroke-opacity=".4" stroke-width=".3"/><circle cx="${(x - rr * .3).toFixed(1)}" cy="${(y - rr * .35).toFixed(1)}" r="${(rr * .28).toFixed(2)}" fill="#fff"/>`; }
