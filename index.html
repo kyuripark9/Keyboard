@@ -1086,10 +1086,11 @@ const SCENES = {
     }
   },
 
-  /* 07 Pudding: a soft-focus field of green jelly rounds and red jelly squares on cream, every edge blurred as if seen
-     through frosted glass. Every step taps the jelly under it: it spreads flat, springs back and jiggles out of shape,
-     and the wobble ripples out through its neighbours a beat later, weaker the farther they sit. The jelly under a
-     resting cursor stays pressed in a little. */
+  /* 07 Pudding: a soft-focus field of green jelly rounds on cream, every edge blurred as if seen through frosted glass.
+     Every jelly the cursor passes over turns into a tilted red square for a few seconds, then hops back into a green
+     round. Every step taps the jelly under it: it spreads flat, springs back and jiggles out of shape, and the wobble
+     ripples out through its neighbours a beat later, weaker the farther they sit. The jelly under a resting cursor stays
+     pressed in a little. */
   jelly: {
     frame: 'full',
     init() {
@@ -1105,27 +1106,34 @@ const SCENES = {
       round.arc(0, 0, s / 2, 0, 6.283); roundPoly(box, [[-h, -h], [h, -h], [h, h], [-h, h]], s * .15);
       this.img = [sprite('#1fa204', round), sprite('#f31802', box)];
       // staggered rows with a little jitter fill the whole screen, centred on the stage and running off every edge; odd
-      // rows sit in the gaps. Each jelly keeps its kind (k: 0 round, 1 square), a turn (r), a size (g), a squash spring
-      // (sq) and a jiggle spring stored as a stretch (ex, ey)
+      // rows sit in the gaps. Each jelly keeps its kind (k: 0 round, 1 square), when a square turns back (red), its tilt
+      // as a square (r), a size (g), a squash spring (sq) and a jiggle spring stored as a stretch (ex, ey)
       this.p = [];
       const cx = SW / 2, cy = (ZT + ZB) / 2, nx = Math.ceil((cx + s * .7) / p), ny = Math.ceil((Math.max(cy, SH - cy) + s * .7) / ph);
       const cols = nx * 2 + 1, rows = ny * 2 + 1, x0 = cx - nx * p, y0 = cy - ny * ph;
-      for (let j = 0, prev = []; j < rows; j++) {
-        const row = [];
-        for (let i = 0; i < cols; i++) {
-          // squares and rounds mostly alternate: the more squares already sit beside and above, the likelier a round
-          const reds = [row[i - 1], ...(j & 1 ? [prev[i], prev[i + 1]] : [prev[i - 1], prev[i]])].filter(v => v === 1).length;
-          const k = Math.random() < [.8, .5, .2, .05][reds] ? 1 : 0;
-          row.push(k);
-          this.p.push({ x: x0 + (i + (j & 1) * .5) * p + rand(-.1, .1) * p, y: y0 + j * ph + rand(-.1, .1) * p, k, r: k ? rand(-.7, .7) : 0, g: rand(.96, 1.04),
-            sq: 0, sv: 0, ex: 0, evx: 0, ey: 0, evy: 0 });
-        }
-        prev = row;
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        this.p.push({ x: x0 + (i + (j & 1) * .5) * p + rand(-.1, .1) * p, y: y0 + j * ph + rand(-.1, .1) * p, k: 0, red: 0, r: rand(-.7, .7), g: rand(.96, 1.04),
+          sq: 0, sv: 0, ex: 0, evx: 0, ey: 0, evy: 0 });
       }
       this.q = []; this.dir = [1, 0]; this.cur = { x: -999, y: -999, t: 0 };
       dc.fillStyle = '#eed9b1'; dc.fillRect(0, 0, SW, SH);
     },
-    move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; this.cur = { x, y, t: performance.now() }; },
+    move(x, y, dx, dy) {
+      const l = Math.hypot(dx, dy), now = performance.now();
+      if (l > .5) this.dir = [dx / l, dy / l];
+      this.cur = { x, y, t: now };
+      // every jelly within reach of the path since the last move turns red, so a fast swipe leaves no gaps
+      const x0 = x - dx, y0 = y - dy, l2 = l * l, R = this.s * .55;
+      for (const P of this.p) {
+        const t = l2 ? clamp(((P.x - x0) * dx + (P.y - y0) * dy) / l2, 0, 1) : 1;
+        if (Math.hypot(P.x - x0 - dx * t, P.y - y0 - dy * t) < R) this.paint(P, now);
+      }
+    },
+    // a round pops into a square with a little squash; one that is already red stays red a while longer
+    paint(P, now) {
+      if (!P.k) { P.k = 1; P.sv += .012; }
+      P.red = now + rand(3000, 3600);
+    },
     hit(x, y, k, now) {
       // the jelly under the step gets the full tap, stretched along the stroke; the rest catch the wobble later and
       // weaker, stretched along the line from the step
@@ -1134,6 +1142,7 @@ const SCENES = {
         const dx = P.x - x, dy = P.y - y, d = Math.hypot(dx, dy);
         if (d > R) continue;
         const own = d < s * .5, a = own ? Math.atan2(this.dir[1], this.dir[0]) : Math.atan2(dy, dx);
+        if (own) this.paint(P, now);
         this.q.push({ P, t: now + (own ? 0 : d * 1.6), a: own ? 1 : .5 * (1 - d / R), c: Math.cos(2 * a), s: Math.sin(2 * a) });
       }
       if (this.q.length > 400) this.q.splice(0, this.q.length - 400);
@@ -1143,6 +1152,7 @@ const SCENES = {
       this.q = this.q.filter(e => { if (now < e.t) return true; e.P.sv += .022 * e.a; e.P.evx += .016 * e.a * e.c; e.P.evy += .016 * e.a * e.s; return false; });
       const s = this.s, cu = this.cur, rest = now - cu.t < 600;
       for (const P of this.p) {
+        if (P.k && now > P.red) { P.k = 0; P.sv += .01; }
         const tg = rest && Math.hypot(cu.x - P.x, cu.y - P.y) < s * .45 ? .14 : 0;
         for (let h = dt; h > 0; h -= 4) {
           const st = Math.min(4, h);
