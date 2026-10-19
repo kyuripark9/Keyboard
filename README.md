@@ -2,7 +2,7 @@
 
 A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, and each sound draws its own picture to play with.
 
-## The 9 sounds
+## The 10 sounds
 
 | # | Sound | Picture |
 |---|-------|---------|
@@ -15,6 +15,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 | 07 | Pudding | A soft-focus field of green jelly rounds and red jelly squares on cream, every edge blurred as if seen through frosted glass. Each step taps one: it spreads flat, springs back and jiggles out of shape, and the wobble ripples out through its neighbours a beat later. The sound is a soft wet slap and a low, shivering wobble |
 | 08 | Soap Cutting | A bar of soap packed with tiny cream beads over a core of periwinkle ones. Each step shaves a strip along the stroke: its beads tumble off and fall out of the frame, the core shows in the cut, and the beads pop back in one by one as the bar sets again. The sound is a crisp rising shave and the patter of falling beads |
 | 09 | Snow | A field of fresh snow with wind-packed drifts. Each stride crunches a boot print into it, left and right in turn along the cursor's path, with glitter twinkling around; new snow slowly fills the prints back in. The sound is a dull, dense crunch with a faint cold squeak |
+| 10 | Sugar Slime | Periwinkle slime packed with sugar, printed as a stipple of fine grains. The cursor drags three fingertips through it: each leaves a furrow with the slime it pushed aside heaped along its walls, cobalt grains crowd into the shaded walls and creases, white crystals catch the light on the lit ones, and the slime slowly settles flat again. The sound is a 서걱서걱 (seo-geok) crunch: a soft rasp as the fingers sink in, a dry, sandy grind of sugar grains and a muted squish underneath |
 
 Sounds 04–09 follow the trend of Roblox ASMR tower obbies such as 왁뿌볼 타워 and Keyboard ASMR Towers, where every step lands on a different satisfying material.
 

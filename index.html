@@ -6,7 +6,7 @@
 <!--artifact:start-->
 <title>Clack</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Move your cursor and every step clicks, pops or squishes. Nine stress-relief sounds, each with its own graphic to play with.">
+<meta name="description" content="Move your cursor and every step clicks, pops or squishes. Ten stress-relief sounds, each with its own graphic to play with.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -31,6 +31,7 @@ body[data-scene="glass"]  { --bg: #5c80ea; --ink: #ffffff; --ink-soft: #dbe3fb; 
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --panel: rgba(244,231,205,.9); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
 body[data-scene="soap"]   { --bg: #f3eee6; --ink: #1c1c1c; --ink-soft: #6d685f; --line: rgba(28,28,28,.13); --panel: rgba(249,246,241,.9); --acc: #1c1c1c; --cursor: #1c1c1c; color-scheme: light; }
 body[data-scene="snow"]   { --bg: #f6f8fd; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(246,248,253,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="grit"]   { --bg: #becdf9; --ink: #1d3fae; --ink-soft: #4f68b8; --line: rgba(29,63,174,.18); --panel: rgba(222,230,252,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -114,7 +115,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 .panel h2 + * { margin-bottom: 18px; }
 .panel > :last-child { margin-bottom: 0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
-#soundGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+#soundGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 #soundGrid .thumb { aspect-ratio: 2 / 1; }
 @media (max-width: 640px) { #soundGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .opt {
@@ -167,7 +168,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
-      <h1>clack<sup>09</sup></h1>
+      <h1>clack<sup>10</sup></h1>
     </div>
     <div class="tally" aria-live="off">
       <b id="count">0</b>
@@ -192,7 +193,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
     </nav>
 
     <section class="panel" id="panel-sound" hidden aria-label="Choose a sound">
-      <h2>9 SOUNDS, 9 PICTURES</h2>
+      <h2>10 SOUNDS, 10 PICTURES</h2>
       <div class="grid" id="soundGrid"></div>
     </section>
   </div>
@@ -205,7 +206,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
   <div class="intro-card">
     <small>A TOY ABOUT DOING NOTHING</small>
     <h2>clack</h2>
-    <p>Move your cursor and every step clicks, pops or squishes.<br>Nine sounds, nine pictures to crack, squish and crunch.</p>
+    <p>Move your cursor and every step clicks, pops or squishes.<br>Ten sounds, ten pictures to crack, squish and crunch.</p>
     <button class="go" id="go" type="button">Turn on sound &amp; start</button>
   </div>
 </div>
@@ -216,7 +217,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 const $ = id => document.getElementById(id);
 
 /* ---------- settings ---------- */
-const SOUND_IDS = ['bubble', 'slime', 'cyano', 'wax', 'thock', 'tanghulu', 'pudding', 'soap', 'snow'];
+const SOUND_IDS = ['bubble', 'slime', 'cyano', 'wax', 'thock', 'tanghulu', 'pudding', 'soap', 'snow', 'sugar'];
 const DEF = { mode: 'hover', sound: 'bubble', volume: 0.7, muted: false, count: 0 };
 let S = { ...DEF };
 try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
@@ -377,6 +378,15 @@ const SOUNDS = {
       hiss(t, { type: 'lowpass', f: 650 * j, q: 0.7, a: 0.012, d: 0.1, g: 0.7 });
       crinkle(t + 0.004, 20 + Math.floor(Math.random() * 8), 0.13, { lo: 450, hi: 2300, g: 0.55, q: 1.1 });
       crinkle(t + 0.02, 5, 0.08, { lo: 2600, hi: 4200, g: 0.12, q: 4 });
+    } },
+  sugar: { name: 'Sugar Slime', desc: 'Rake furrows through gritty slime', scene: 'grit',
+    // 서걱서걱: slime packed with sugar, kneaded close to the ear. A soft rasp as the fingers sink in (서), then a dry,
+    // sandy grind of grains rubbing past each other (걱), with a muted squish of the slime underneath
+    down(k, t, j) {
+      hiss(t, { f: (3000 + k.seed * 600) * j, f2: 2200, ft: 0.05, q: 1.1, a: 0.018, d: 0.045, g: 0.22 });
+      crinkle(t + 0.03, 20 + Math.floor(Math.random() * 8), 0.08, { lo: 1300, hi: 4200, g: 0.42, q: 1.5 });
+      hiss(t + 0.03, { type: 'lowpass', f: 900 * j, q: 0.8, a: 0.003, d: 0.03, g: 0.3 });
+      hiss(t + 0.02, { f: 420 * j, f2: 300, ft: 0.08, q: 3, a: 0.02, d: 0.08, g: 0.22, wet: 0.05 });
     } },
 };
 
@@ -1306,6 +1316,93 @@ const SCENES = {
       sc.globalAlpha = 1;
     }
   },
+
+  /* 10 Sugar Slime: periwinkle slime packed with sugar, printed as a stipple of fine grains. The cursor drags three
+     fingertips through it: each leaves a furrow with the slime it pushed aside heaped along its walls, cobalt grains
+     crowd into the creases and shaded walls, white crystals catch the light on the lit ones, and the slime slowly
+     settles flat again. */
+  grit: {
+    frame: 'full',
+    init() {
+      const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
+      this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
+      this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
+      // B is the slime at rest, softly lumpy, and H the surface now, both in px; T is a fixed threshold per grain so
+      // the stipple holds still instead of shimmering
+      this.B = new Float32Array(w * h); this.T = new Float32Array(w * h);
+      const p0 = rand(0, 6.283), p1 = rand(0, 6.283), p2 = rand(0, 6.283);
+      for (let j = 0, o = 0; j < h; j++) for (let i = 0; i < w; i++, o++) {
+        const x = i * G, y = j * G;
+        this.B[o] = 4 * Math.sin(x / 90 + p0 + 1.3 * Math.sin(y / 120 + p1)) + 2.5 * Math.sin(y / 55 - x / 80 + p2);
+        this.T[o] = Math.random();
+      }
+      this.H = Float32Array.from(this.B);
+      this.wg = clamp(CELL * .2, 5, 9); this.dir = [1, 0]; this.last = null; this.mt = 0; this.at = 0; this.still = false;
+    },
+    // three fingertips side by side drag a furrow each from (x0, y0) to (x1, y1) and heap the slime they push aside
+    // into ridges along the walls; a press without a drag sinks in three dimples, each with a ring around it
+    carve(x0, y0, x1, y1) {
+      const G = this.G, w = this.w, H = this.H, B = this.B, wg = this.wg, sp = wg * 2.9, D = wg * .9, Rm = wg * .4;
+      let ux = x1 - x0, uy = y1 - y0;
+      const L = Math.hypot(ux, uy), drag = L > .5;
+      if (drag) { ux /= L; uy /= L; } else [ux, uy] = this.dir;
+      const reach = sp + wg * 2.4;
+      const i0 = Math.max(0, Math.floor((Math.min(x0, x1) - reach) / G)), i1 = Math.min(w - 1, Math.ceil((Math.max(x0, x1) + reach) / G));
+      const j0 = Math.max(0, Math.floor((Math.min(y0, y1) - reach) / G)), j1 = Math.min(this.h - 1, Math.ceil((Math.max(y0, y1) + reach) / G));
+      for (let j = j0; j <= j1; j++) for (let i = i0, o = j * w + i0; i <= i1; i++, o++) {
+        const px = i * G - x0, py = j * G - y0, a = px * ux + py * uy, u = py * ux - px * uy, da = a < 0 ? -a : a > L ? a - L : 0;
+        let hi = 0, lo = 0;
+        for (let f = -1; f <= 1; f++) {
+          const du = Math.abs(u - f * sp), d = Math.hypot(da, du) / wg;
+          if (d < 1) lo = Math.min(lo, -D * (1 - d * d) ** 2);
+          // the heaped ridge runs only beside the stroke, so where one step's stroke meets the next it doesn't fill the furrow
+          const r = drag ? (da ? 9 : (du / wg - 1.55) / .75) : (d - 1.55) / .75;
+          if (r > -1 && r < 1) hi = Math.max(hi, Rm * (1 - r * r) ** 2);
+        }
+        if (hi) H[o] = Math.max(H[o], B[o] + hi);
+        if (lo) H[o] = Math.min(H[o], B[o] + lo);
+      }
+      this.at = performance.now(); this.still = false;
+    },
+    move(x, y, dx, dy) {
+      const l = Math.hypot(dx, dy);
+      if (l > .5) this.dir = [dx / l, dy / l];
+      this.mt = performance.now();
+      if (l < 300) this.carve(x - dx, y - dy, x, y);
+    },
+    hit(x, y, k, now) {
+      // a drag carves as the cursor moves; keys, taps and the preview swipe have none, so a press soon after the last one
+      // drags the fingertips over to it and any other just sinks in
+      if (now - this.mt < 150) return;
+      const L = this.last, d = L ? Math.hypot(x - L.x, y - L.y) : 0, near = L && now - L.t < 400 && d < 220;
+      if (near && d > .5) this.dir = [(x - L.x) / d, (y - L.y) / d];
+      this.carve(near ? L.x : x, near ? L.y : y, x, y);
+      this.last = { x, y, t: now };
+    },
+    draw(now, dt) {
+      const G = this.G, w = this.w, h = this.h, H = this.H, B = this.B, T = this.T, P = this.px, D = this.wg * .9;
+      // once the slime has settled the last picture is kept and only drawn again
+      const idle = now - this.at > 16000;
+      if (!idle || !this.still) {
+        const k = 1 - Math.exp(-dt / 4500);
+        for (let o = 0; o < H.length; o++) H[o] += (B[o] - H[o]) * k;
+        // light from the top left: walls facing it shed their grains for white crystals, walls facing away crowd with
+        // cobalt; creases darken and ridge crests brighten, so a furrow shows whichever way it runs
+        for (let j = 0; j < h; j++) {
+          const up = j ? -w : 0, dn = j < h - 1 ? w : 0;
+          for (let i = 0, o = j * w; i < w; i++, o++) {
+            const l = H[i ? o - 1 : o], r = H[i < w - 1 ? o + 1 : o], t0 = H[o + up], b = H[o + dn], c = H[o];
+            const lit = .7 * (r - l + b - t0) / (2 * G), lap = l + r + t0 + b - 4 * c, dip = clamp((B[o] - c) / D, 0, 1), t = T[o];
+            const ink = .07 - .6 * lit + .14 * lap + .3 * dip;
+            P[o] = t < ink ? (t < ink * .45 ? 0xfffb622c : 0xffeea68f) : t > .975 - .8 * lit + .1 * lap ? 0xffffffff : 0xfff9cdbe;
+          }
+        }
+        this.oc.putImageData(this.img, 0, 0);
+        this.still = idle;
+      }
+      sc.imageSmoothingEnabled = false; sc.drawImage(this.off, 0, 0, w * G, h * G); sc.imageSmoothingEnabled = true;
+    }
+  },
 };
 
 function sceneHit(k) {
@@ -1530,6 +1627,26 @@ function thumb(id) {
         b += `<g transform="translate(${(x - Math.sin(a) * sd).toFixed(1)} ${(y + Math.cos(a) * sd).toFixed(1)}) rotate(${(a * 57.3).toFixed(0)})"><ellipse cx="1.4" rx="2.8" ry="1.4"/><ellipse cx="-2.7" rx="1.4" ry="1.15"/></g>`;
       }
       return svg('#f6f8fd', `<g fill="#b9c8f4">${b}</g>`);
+    case 'sugar': {
+      // three furrows raked through the grains, lit from the top left like the scene: cobalt on the shaded walls,
+      // white crystals on the lit ones and a sparse speckle of both on the flat slime
+      const hf = (x, y) => {
+        let hi = 0, lo = 0;
+        for (let f = -1; f <= 1; f++) {
+          const a = Math.abs(y - 25 - f * 8 - Math.sin(x * .06 + .4) * 6) / 2.6, q = (a - 1.55) / .75;
+          if (a < 1) lo = Math.min(lo, -.9 * (1 - a * a) ** 2);
+          if (q > -1 && q < 1) hi = Math.max(hi, .4 * (1 - q * q) ** 2);
+        }
+        return lo || hi;
+      };
+      const d = ['', '', ''];   // cobalt, soft blue and white grains
+      for (let y = .2; y < 50; y += 1.25) for (let x = .2; x < 80; x += 1.25) {
+        const lit = .7 * 2.6 * (hf(x + .6, y) - hf(x - .6, y) + hf(x, y + .6) - hf(x, y - .6)) / 1.2, v = .07 - .6 * lit + .3 * Math.max(0, -hf(x, y) / .9), t = r();
+        const g = `M${x.toFixed(2)} ${y.toFixed(2)}h1v1h-1z`;
+        if (t < v) d[t < v * .45 ? 0 : 1] += g; else if (t > .975 - .8 * lit) d[2] += g;
+      }
+      return svg('#becdf9', `<path d="${d[1]}" fill="#8fa6ee"/><path d="${d[0]}" fill="${C.cobalt}"/><path d="${d[2]}" fill="#fff"/>`);
+    }
   }
   return svg('#eee', '');
 }
