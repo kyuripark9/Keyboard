@@ -25,7 +25,7 @@
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --panel: rgba(40,70,150,.9); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="wax"]    { --bg: #f8f3d6; --ink: #3f5abb; --ink-soft: #7486c2; --line: rgba(74,102,198,.18); --panel: rgba(250,247,230,.9); --acc: #4a66c6; --cursor: #4a66c6; color-scheme: light; }
+body[data-scene="wax"]    { --bg: #5a211f; --ink: #f6d06a; --ink-soft: #d8a48a; --line: rgba(246,208,106,.2); --panel: rgba(76,27,25,.92); --acc: #f6d06a; --cursor: #5b82e6; color-scheme: dark; }
 body[data-scene="keys"]   { --bg: #1c1c1c; --ink: #f3eee6; --ink-soft: #9d988e; --line: rgba(243,238,230,.16); --panel: rgba(38,38,38,.92); --acc: #5c80ea; --cursor: #5c80ea; color-scheme: dark; }
 body[data-scene="glass"]  { --bg: #5c80ea; --ink: #ffffff; --ink-soft: #dbe3fb; --line: rgba(255,255,255,.26); --panel: rgba(74,110,222,.92); --acc: #ffffff; --cursor: #1b2a6b; color-scheme: dark; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --panel: rgba(244,231,205,.9); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
@@ -820,53 +820,77 @@ const SCENES = {
     }
   },
 
-  /* 04 Wax Ball: the 왁뿌볼's wax shell drawn like a line-screen print: rows of rounded cobalt dashes on butter-cream
-     paper, whose breaks line up here and there into narrow channels. The shell is set in blocks a few rows tall, like
-     the floors of a building. Every step cracks the blocks around it, nearest first: they split apart and slide
-     outward so their rows fall out of line with their neighbours', white clay shows in the cracks, the cursor
-     squeezes it up between them, and the wax slowly sets back into place. */
+  /* 04 Wax Ball: the 왁뿌볼's wax shell drawn as tower facades at sunset, after a photo: a sunlit gold tower with pale
+     glass, a maroon one in shadow beside it whose windows hold the blue sky, a sliver of another on the far side and a
+     lower block of mottled maroon stone standing in front. Each facade is set in blocks a few windows wide and a few
+     floors tall. Every step cracks the blocks around it, nearest first: they split apart and slide outward so their
+     windows fall out of line with their neighbours', white clay shows in the cracks, the cursor squeezes it up
+     between them, and the wax slowly sets back into place. */
   wax: {
     frame: 'feather',
     init() {
-      const p = this.p = clamp(Math.round(Math.min(SW, SH) / 46), 12, 18), t = this.t = p * .46, s = this.s = clamp(Math.round(Math.min(SW, SH) / 14), 30, 60);
-      const rows = Math.ceil(SH / p) + 1, Y0 = this.Y0 = (SH - (rows - 1) * p) / 2;
-      // columns of uneven width; some of their edges pull the dashes' breaks onto them, so faint channels run down the sheet
-      const xs = [-s * rand(.2, .9)], chan = [0];
-      while (xs[xs.length - 1] < SW) { xs.push(xs[xs.length - 1] + s * rand(.8, 2.1)); chan.push(Math.random() < .45 ? rand(.5, .85) : rand(0, .15)); }
-      // each column is stacked with blocks 2 to 6 rows tall that start at their own row, so the cracks between floors
-      // never line up across columns; some blocks split once more down the middle, and a few carry a vertical bar
-      this.b = []; this.rb = Array.from({ length: rows }, () => []);
-      for (let i = 0; i + 1 < xs.length; i++) for (let r = -Math.floor(rand(0, 5)), n; r < rows; r += n) {
-        n = Math.floor(rand(2, 7));
-        const r0 = Math.max(0, r), r1 = Math.min(rows, r + n);
-        if (r1 <= r0) continue;
-        const w = xs[i + 1] - xs[i], cut = w > s * 1.3 && Math.random() < .35 ? [xs[i], xs[i] + w * rand(.35, .65), xs[i + 1]] : [xs[i], xs[i + 1]];
-        for (let q = 0; q + 1 < cut.length; q++) {
-          const B = { x0: cut[q], x1: cut[q + 1], r0, r1, y0: Y0 + (r0 - .5) * p, y1: Y0 + (r1 - .5) * p, bar: r1 - r0 > 2 && Math.random() < .05 ? (Math.random() < .5 ? -1 : 1) : 0,
-            c: 0, amt: 0, at: 0, end: 0, dx: 0, dy: 0, tone: 0, ox: 0, oy: 0, m: 0, k: 2 };
-          this.b.push(B);
-          for (let j = r0; j < r1; j++) this.rb[j].push(B);
+      const u = this.u = clamp(Math.round(Math.min(SW, SH) / 32), 12, 22), s = this.s = clamp(Math.round(Math.min(SW, SH) / 14), 30, 60);
+      // each facade: a window cell of cw x ch units with its frame fx/fy of the cell on each side, the frame's colour
+      // top to bottom, and the glass, which varies pane by pane between a base, a cooler and a warmer shade
+      const T = {
+        gold: { cw: 1.12, ch: 1, fx: .11, fy: .13, frame: ['#f7d46c', '#efb243'], glass: ['#c4bec3', '#a9a8b9', '#d9cbb0'], lit: '#e8d7ad',
+          sill: 'rgba(255,236,170,.7)', recess: 'rgba(150,92,28,.24)', w: [2, 5] },
+        shade: { cw: .8, ch: 1.08, fx: .14, fy: .11, frame: ['#7b2f2c', '#61231f'], glass: ['#6688d0', '#4d6cb3', '#8ba7df'],
+          sill: 'rgba(168,78,66,.4)', recess: 'rgba(28,18,44,.28)', w: [2, 4] },
+        front: { cw: 1.25, ch: 1.5, fx: .2, fy: .16, frame: ['#934038', '#7c312b'], glass: ['#7193da', '#5573bc', '#9bb4e6'],
+          sill: 'rgba(214,132,108,.45)', recess: 'rgba(36,16,30,.3)', w: [1, 3], stone: true },
+      };
+      // the towers, laid out like the photo: maroon in shadow on the left, the gold one in the middle, a sliver of
+      // maroon on the right, and the low block in front of both at the bottom right. Each is drawn over its grid, which
+      // starts at its sunlit corner (gx, gy); the gold tower's blocks stop where the low block stands in front of it
+      const gw = T.gold.cw * u, xL = Math.round(SW * .24), xR = Math.round(xL + Math.round(SW * .66 / gw) * gw), xF = Math.round(xL + Math.round(SW * .52 / gw) * gw), yF = Math.round(SH * .38);
+      const R = [
+        [0, 0, xL, SH, T.shade, xL, 0], [xL, 0, xR, SH, T.gold, xL, 0, [[xL, 0, xF, SH], [xF, 0, xR, yF]]],
+        [xR, 0, SW, yF, T.shade, xR, u * .4], [xF, yF, SW, SH, T.front, xF + T.front.cw * u * .35, yF + u * .5],
+      ];
+      this.b = [];
+      for (const [x0, y0, x1, y1, t, gx, gy, areas] of R) {
+        const cw = t.cw * u, ch = t.ch * u;
+        dc.save(); dc.beginPath(); dc.rect(x0, y0, x1 - x0, y1 - y0); dc.clip();
+        const g = dc.createLinearGradient(0, 0, 0, SH);
+        g.addColorStop(0, t.frame[0]); g.addColorStop(1, t.frame[1]); dc.fillStyle = g; dc.fillRect(x0, y0, x1 - x0, y1 - y0);
+        if (t.stone) for (let n = (x1 - x0) * (y1 - y0) / (u * u) * 3; n > 0; n--) {
+          // weathered stone: soft patches a shade lighter or darker
+          const r = u * rand(.2, 1.1);
+          dc.fillStyle = Math.random() < .5 ? `rgba(184,90,74,${rand(.05, .14)})` : `rgba(80,26,24,${rand(.05, .14)})`;
+          dc.fillRect(rand(x0, x1) - r, rand(y0, y1) - r * .6, r * 2, r * 1.2);
+        }
+        for (let i = Math.floor((x0 - gx) / cw); gx + i * cw < x1; i++) for (let j = Math.floor((y0 - gy) / ch); gy + j * ch < y1; j++) {
+          const x = gx + (i + t.fx) * cw, y = gy + (j + t.fy) * ch, w = cw * (1 - t.fx * 2), h = ch * (1 - t.fy * 2);
+          dc.fillStyle = t.lit && Math.random() < .015 ? t.lit : mix(t.glass[0], t.glass[Math.random() < .5 ? 1 : 2], Math.random() ** 1.5 * .8);
+          dc.fillRect(x, y, w, h);
+          // the frame is set out from the glass: it shades the top of each pane, and the sill under it catches the light
+          dc.fillStyle = t.recess; dc.fillRect(x, y, w, h * .16); dc.fillRect(x, y, w * .07, h);
+          dc.fillStyle = t.sill; dc.fillRect(x - cw * t.fx * .5, y + h, w + cw * t.fx, Math.max(1, ch * t.fy * .35));
+        }
+        dc.restore();
+        // blocks a few windows wide, stacked with blocks a few floors tall that start at their own floor, so the cracks
+        // between floors never line up across columns
+        for (const [a0, b0, a1, b1] of areas || [[x0, y0, x1, y1]]) for (let i = Math.floor((a0 - gx) / cw), n; gx + i * cw < a1; i += n) {
+          n = Math.floor(rand(t.w[0], t.w[1] + 1));
+          const bx0 = Math.max(a0, gx + i * cw), bx1 = Math.min(a1, gx + (i + n) * cw);
+          if (bx1 - bx0 < 2) continue;
+          for (let j = Math.floor((b0 - gy) / ch) - Math.floor(rand(0, 5)), m; gy + j * ch < b1; j += m) {
+            m = Math.floor(rand(2, 7));
+            const by0 = Math.max(b0, gy + j * ch), by1 = Math.min(b1, gy + (j + m) * ch);
+            if (by1 - by0 < 2) continue;
+            this.b.push({ x0: bx0, x1: bx1, y0: by0, y1: by1, c: 0, amt: 0, at: 0, end: 0, dx: 0, dy: 0, tone: 0 });
+          }
         }
       }
-      // the dashes in each row: mostly a few rows' pitch long, with dots and long runs mixed in, and each a touch thicker
-      // or thinner, higher or lower and rounder or squarer at its ends than the next, as if traced from a print
-      this.d = [];
-      for (let r = 0; r < rows; r++) {
-        let D = [];
-        for (let x = -rand(0, p * 4); x < SW + p;) {
-          const u = Math.random(), L = p * (u < .16 ? rand(.5, 1.1) : u < .82 ? rand(1.6, 4.6) : rand(5, 9));
-          D.push([x, x + L]);
-          x += L + p * (Math.random() < .12 ? rand(1.1, 2.2) : rand(.38, .9));
-        }
-        for (let i = 1; i < xs.length; i++) if (Math.random() < chan[i]) {
-          const a = xs[i] - p * rand(.2, .4), b = xs[i] + p * rand(.2, .4);
-          D = D.flatMap(([u, v]) => v <= a || u >= b ? [[u, v]] : [[u, a], [b, v]].filter(([e, f]) => f - e > t * .5));
-        }
-        this.d.push(D.map(([a, b]) => ({ a, b, w: t * rand(.88, 1.1), oy: rand(-.5, .5), ra: rand(.6, 1), rb: rand(.6, 1) })));
-      }
-      this.grain = sc.createPattern(grainFill(160, 160, .05), 'repeat');
+      // the seams where the towers meet, and the top edge of the low block
+      dc.fillStyle = 'rgba(52,14,12,.55)'; dc.fillRect(xL - 2, 0, 2, SH); dc.fillRect(xR, 0, 2, yF);
+      const cg = dc.createLinearGradient(xL, 0, xL + gw * 3, 0);
+      cg.addColorStop(0, 'rgba(196,106,22,.16)'); cg.addColorStop(1, 'rgba(196,106,22,0)'); dc.fillStyle = cg; dc.fillRect(xL, 0, gw * 3, SH);
+      dc.fillStyle = '#a84c41'; dc.fillRect(xF, yF, SW - xF, Math.max(2, u * .2));
+      dc.fillStyle = 'rgba(52,14,12,.4)'; dc.fillRect(xF, yF, 2, SH - yF);
+      dc.save(); dc.fillStyle = dc.createPattern(grainFill(160, 160, .05), 'repeat'); dc.fillRect(0, 0, SW, SH); dc.restore();
       this.cur = { x: -999, y: -999, t: 0 };
-      paper(dc, '#f8f3d6', .05);
     },
     move(x, y) { this.cur = { x, y, t: performance.now() }; },
     hit(x, y, k, now) {
@@ -886,54 +910,32 @@ const SCENES = {
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const p = this.p, t = this.t, h = t / 2, bw = t * 1.4, s = this.s, cu = this.cur, sq = Math.exp(-Math.max(0, now - cu.t) / 500), Rs = s * 2.2;
-      const clay = new Path2D(), drop = new Path2D(), back = new Path2D(), ink = [0, 1, 2, 3, 4].map(() => new Path2D());
-      let any = false;
+      const s = this.s, cu = this.cur, sq = Math.exp(-Math.max(0, now - cu.t) / 500), Rs = s * 2.2, k = SDPR;
+      const clay = new Path2D(), drop = new Path2D(), live = [];
       for (const B of this.b) {
         const tg = now >= B.at && now < B.end ? B.amt : 0;
         B.c += (tg - B.c) * Math.min(1, dt * (tg > B.c ? .05 : .0009));
-        if (B.c < .01) B.c = 0;
+        if (B.c < .01) { B.c = 0; continue; }
+        // a cracked block drifts away from where the crack started and pulls in from its edges; near the cursor the
+        // clay squeezes up and pushes the blocks further apart
         const c1 = Math.min(1, B.c);
-        B.ox = B.oy = B.m = 0; B.k = 2;
-        if (c1) {
-          any = true;
-          // a cracked block drifts away from where the crack started and pulls in from its edges; near the cursor the
-          // clay squeezes up and pushes the blocks further apart
-          let ox = B.dx * B.c * s * .1, oy = B.dy * B.c * s * .1;
-          const ex = (B.x0 + B.x1) / 2 - cu.x, ey = (B.y0 + B.y1) / 2 - cu.y, ed = Math.hypot(ex, ey);
-          if (sq > .01 && ed < Rs) { const q = (1 - ed / Rs) ** 2 * s * .25 * sq * c1 / (ed || 1); ox += ex * q; oy += ey * q; }
-          const m = c1 * p * .3, mv = c1 * (p - t) * .3, x = B.x0 + m + ox, y = B.y0 + mv + oy, w = B.x1 - B.x0 - m * 2, bh = B.y1 - B.y0 - mv * 2;
-          B.ox = ox; B.oy = oy; B.m = m; B.k = clamp(Math.round((B.tone * c1 + 1) * 2), 0, 4);
-          clay.rect(B.x0, B.y0, B.x1 - B.x0, B.y1 - B.y0); back.rect(x, y, w, bh); drop.rect(x + 1.5, y + 2.5, w, bh);
-        }
-        if (B.bar) { const bx = B.bar < 0 ? B.x0 + B.m + bw * .2 : B.x1 - B.m - bw * 1.2; ink[B.k].roundRect(bx + B.ox, this.Y0 + B.r0 * p - h + B.oy, bw, (B.r1 - B.r0 - 1) * p + t, bw / 2); }
+        let ox = B.dx * B.c * s * .1, oy = B.dy * B.c * s * .1;
+        const ex = (B.x0 + B.x1) / 2 - cu.x, ey = (B.y0 + B.y1) / 2 - cu.y, ed = Math.hypot(ex, ey);
+        if (sq > .01 && ed < Rs) { const q = (1 - ed / Rs) ** 2 * s * .25 * sq * c1 / (ed || 1); ox += ex * q; oy += ey * q; }
+        const m = c1 * this.u * .14, x = B.x0 + m, y = B.y0 + m, w = B.x1 - B.x0 - m * 2, h = B.y1 - B.y0 - m * 2;
+        if (w < 1 || h < 1) continue;
+        clay.rect(B.x0, B.y0, B.x1 - B.x0, B.y1 - B.y0); drop.rect(x + ox + 1.5, y + oy + 2.5, w, h);
+        live.push([B.tone * c1, x, y, w, h, ox, oy]);
       }
-      // the rows, block by block: a dash keeps its own ends, but where a block edge cuts it the end stays square while
-      // the sheet is whole, so the pieces join seamlessly, and rounds off as the crack beside it opens. A block's
-      // vertical bar stands in a channel of its own, so the dashes stop short of it with round ends
-      for (let r = 0; r < this.rb.length; r++) {
-        const Bs = this.rb[r], D = this.d[r], y = this.Y0 + r * p, gap = bw * 1.2 + p * .35;
-        for (let i = 0, j = 0; i < Bs.length; i++) {
-          const B = Bs[i], x0 = B.x0 + B.m + (B.bar < 0 ? gap : 0), x1 = B.x1 - B.m - (B.bar > 0 ? gap : 0);
-          const rl = B.bar < 0 ? h : h * Math.min(1, 3 * Math.max(B.c, i ? Bs[i - 1].c : 0)), rr = B.bar > 0 ? h : h * Math.min(1, 3 * Math.max(B.c, i + 1 < Bs.length ? Bs[i + 1].c : 0));
-          for (let q = j; q < D.length && D[q].a < B.x1; q++) {
-            const e = D[q];
-            if (e.b <= B.x0) { j = q + 1; continue; }
-            const a = Math.max(e.a, x0), b = Math.min(e.b, x1);
-            if (b - a < .5) continue;
-            const ea = e.a < x0 ? rl : h * e.ra, eb = e.b > x1 ? rr : h * e.rb;
-            ink[B.k].roundRect(a + B.ox, y + e.oy - e.w / 2 + B.oy, b - a, e.w, [ea, eb, eb, ea]);
-          }
-        }
+      if (!live.length) return;
+      // white clay shows where blocks have split off, with each block's shadow falling into the crack beside it
+      sc.fillStyle = '#fdf8ee'; sc.fill(clay);
+      sc.save(); sc.clip(clay); sc.fillStyle = 'rgba(112,52,34,.3)'; sc.fill(drop); sc.restore();
+      // each block carries its own piece of the facade with it; lifted ones catch more sun, sunken ones fall into shade
+      for (const [v, x, y, w, h, ox, oy] of live) {
+        sc.drawImage(deco, x * k, y * k, w * k, h * k, x + ox, y + oy, w, h);
+        if (Math.abs(v) > .02) { sc.fillStyle = v > 0 ? `rgba(255,236,186,${(.24 * v).toFixed(3)})` : `rgba(64,18,16,${(-.16 * v).toFixed(3)})`; sc.fillRect(x + ox, y + oy, w, h); }
       }
-      if (any) {
-        // white clay shows where blocks have split off, with each block's grey-blue shadow falling into the crack beside it
-        sc.fillStyle = '#fff'; sc.fill(clay);
-        sc.save(); sc.clip(clay); sc.fillStyle = '#dce1ee'; sc.fill(drop); sc.restore();
-        sc.fillStyle = '#f8f3d6'; sc.fill(back); sc.fillStyle = this.grain; sc.fill(back);
-      }
-      // lifted blocks print paler, sunken ones deeper, like the faded rows at the foot of the print
-      ['#a3b3e6', '#7890d9', '#4a66c6', '#3f5abb', '#3550ae'].forEach((c, i) => { sc.fillStyle = c; sc.fill(ink[i]); });
     }
   },
 
@@ -1572,28 +1574,18 @@ function thumb(id) {
       }
       return svg('#3557b0', `<g fill="#eef2ff">${b}</g>`);
     case 'wax': {
-      // rows of dashes with one cracked patch: its blocks slide apart over white clay and their rows fall out of line
-      const f1 = v => v.toFixed(1), dash = (a, c, y) => c - a > .8 ? `<rect x="${f1(a)}" y="${f1(y - .9)}" width="${f1(c - a)}" height="1.8" rx=".9"/>` : '';
-      const blocks = [[21, 35, 3, 6, -1.4, -1], [35, 47, 2, 5, .4, -1.6], [35, 47, 5, 8, .8, 1.2], [47, 61, 3, 6, 1.6, .6], [21, 35, 6, 9, -1, 1.4]];
-      let hole = '', back = '';
-      for (const [x0, x1, r0, r1, dx, dy] of blocks) {
-        hole += `<rect x="${x0}" y="${1 + r0 * 4}" width="${x1 - x0}" height="${(r1 - r0) * 4}"/>`;
-        back += `<rect x="${f1(x0 + .8 + dx)}" y="${f1(1.6 + r0 * 4 + dy)}" width="${f1(x1 - x0 - 1.6)}" height="${f1((r1 - r0) * 4 - 1.2)}"/>`;
+      // the gold tower between two maroon ones with the low block in front, and one cracked patch: its blocks slide
+      // apart over white clay and their windows fall out of line
+      const pat = (id, w, h, wall, gx, gy, glass) => `<pattern id="${id}" width="${w}" height="${h}" patternUnits="userSpaceOnUse"><rect width="${w}" height="${h}" fill="${wall}"/><rect x="${gx}" y="${gy}" width="${(w - gx * 2).toFixed(2)}" height="${(h - gy * 2).toFixed(2)}" fill="${glass}"/></pattern>`;
+      const face = (id, x, y, w, h) => `<rect width="${w}" height="${h}" fill="url(#${id})" transform="translate(${x} ${y})"/>`;
+      const blocks = [[7.2, 18, 12.8, 22.4, -1, -.9], [18, 28.8, 9.6, 19.2, .6, -1.2], [18, 28.8, 19.2, 28.8, .9, 1], [7.2, 18, 22.4, 32, -1.1, 1.1], [28.8, 36, 16, 25.6, 1.3, .3]];
+      let hole = '';
+      for (const [x0, x1, y0, y1, dx, dy] of blocks) {
+        hole += `<rect x="${21.6 + x0}" y="${y0}" width="${(x1 - x0).toFixed(1)}" height="${(y1 - y0).toFixed(1)}"/>`;
+        b += `<rect x="${x0 + .4}" y="${y0 + .4}" width="${(x1 - x0 - .8).toFixed(1)}" height="${(y1 - y0 - .8).toFixed(1)}" fill="url(#waxGold)" transform="translate(${(21.6 + dx).toFixed(1)} ${dy})"/>`;
       }
-      for (let j = 0; j < 12; j++) {
-        const y = 3 + j * 4, cut = blocks.filter(B => j >= B[2] && j < B[3]);
-        for (let x = -r() * 10; x < 80;) {
-          const L = r() < .18 ? 2 + r() * 2 : 5 + r() * 13;
-          let segs = [[x, x + L]];
-          for (const [x0, x1, , , dx, dy] of cut) {
-            b += dash(Math.max(x, x0 + .8) + dx, Math.min(x + L, x1 - .8) + dx, y + dy);
-            segs = segs.flatMap(([a, c]) => [[a, Math.min(c, x0)], [Math.max(a, x1), c]]);
-          }
-          for (const [a, c] of segs) b += dash(a, c, y);
-          x += L + 1.4 + r() * 2.2;
-        }
-      }
-      return svg('#f8f3d6', `<g fill="#fff">${hole}</g><g fill="#f8f3d6">${back}</g><g fill="#4a66c6">${b}</g>`);
+      const defs = pat('waxShade', 2.7, 3.4, '#6e2926', .38, .38, '#6688d0') + pat('waxGold', 3.6, 3.2, '#f3c457', .4, .42, '#c4bec3') + pat('waxFront', 4.6, 5.4, '#8a3a33', .92, .86, '#7193da');
+      return svg('#5a211f', `<defs>${defs}</defs>${face('waxShade', 0, 0, 21.6, 50)}${face('waxGold', 21.6, 0, 50.4, 50)}${face('waxShade', 72, 1.4, 8, 50)}<g fill="#fdf8ee">${hole}</g>${b}${face('waxFront', 61.2, 20, 18.8, 30)}`);
     }
     case 'thock':
       [1, 1.5, 1.75, 2.25, 1.25].forEach((w0, j) => {
