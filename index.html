@@ -316,10 +316,15 @@ const SOUNDS = {
     },
     up(k, t, j) { hiss(t, { f: 700 * j, f2: 1500, ft: 0.08, q: 8, a: 0.01, d: 0.08, g: 0.4 }); crinkle(t, 4, 0.06, { g: 0.2 }); } },
   cyano: { name: 'Cyanotype', desc: 'Expose white dots on blue', scene: 'cyano',
-    // light stippling paper: a soft, airy brush of breath and a few faint grains, like dots being printed one by one
+    // a stippling pen dotting thick paper: the soft tick of the tip, a papery dab with a little weight under it, a brush of
+    // air and a fizz of fine grains; now and then a faint twinkle rings out with the glints
     down(k, t, j) {
-      hiss(t, { type: 'lowpass', f: 1500 * j, f2: 800, ft: 0.12, q: 0.7, a: 0.02, d: 0.15, g: 0.24 });
-      crinkle(t + 0.02, 5, 0.1, { lo: 2600, hi: 5200, g: 0.07, q: 2 });
+      hiss(t, { f: 3000 * j, q: 1.4, a: 0.0008, d: 0.009, g: 1.2 });
+      hiss(t, { type: 'lowpass', f: 950 * j, q: 0.8, a: 0.002, d: 0.035, g: 0.9 });
+      tone('sine', (190 + k.seed * 50) * j, t, { f2: 140, ft: 0.03, a: 0.002, d: 0.035, g: 0.2 });
+      hiss(t + 0.006, { f: 3400 * j, f2: 1900, ft: 0.06, q: 0.9, a: 0.008, d: 0.06, g: 0.28, wet: 0.05 });
+      crinkle(t + 0.008, 6 + Math.floor(Math.random() * 4), 0.07, { lo: 3200, hi: 7200, g: 0.32, q: 2.5 });
+      if (Math.random() < 0.3) tone('sine', [2349, 2637, 3136, 3520, 3951][Math.floor(Math.random() * 5)], t + 0.02, { a: 0.008, d: 0.24, g: 0.03, wet: 0.5 });
     } },
   wax: { name: 'Wax Ball', desc: 'Crack the wax shell, squish the clay', scene: 'wax',
     // the 왁뿌볼: a hard wax shell gives way in one dry snap and a rush of brittle crackles, then the soft clay inside squishes
@@ -344,13 +349,12 @@ const SOUNDS = {
       tone('sine', 300 * j, at, { a: 0.001, d: 0.02, g: 0.1 });
     } },
   tanghulu: { name: 'Tanghulu', desc: 'Bite cracks into candy glass', scene: 'glass',
-    // a bite through sugar glass: a bright crack, glassy tinks ringing off the shards and the crunch of the fruit
+    // a slow, close bite into the sugar shell: a muffled snap, a soft crunch of candy grains and the juicy give of the fruit
     down(k, t, j) {
-      const f0 = rand(2300, 3400) * j;
-      hiss(t, { type: 'highpass', f: 3800, q: 0.8, a: 0.0005, d: 0.006, g: 1 });
-      [1, 2.32, 4.25].forEach((m, i) => tone('sine', f0 * m, t + i * 0.004, { a: 0.001, d: 0.12 / (i + 1) + 0.03, g: 0.09 / (i + 1), wet: 0.3 }));
-      crinkle(t + 0.003, 9, 0.07, { lo: 3200, hi: 8000, g: 0.5, q: 3 });
-      hiss(t + 0.01, { type: 'lowpass', f: 1300, q: 0.9, a: 0.003, d: 0.04, g: 0.45 });
+      hiss(t, { type: 'lowpass', f: 1700 * j, q: 0.7, a: 0.002, d: 0.02, g: 0.8 });
+      tone('sine', (240 + k.seed * 60) * j, t, { f2: 170, ft: 0.04, a: 0.003, d: 0.06, g: 0.18 });
+      crinkle(t + 0.005, 9 + Math.floor(Math.random() * 4), 0.1, { lo: 1000, hi: 3000, g: 0.38, q: 1.3 });
+      hiss(t + 0.03, { f: 520 * j, f2: 340, ft: 0.1, q: 3, a: 0.03, d: 0.13, g: 0.3, wet: 0.12 });
     } },
   pudding: { name: 'Pudding', desc: 'Tap soft jellies till they jiggle', scene: 'jelly',
     // a spoon tapping custard: a soft wet slap and a low wobble that shivers as the pudding jiggles
