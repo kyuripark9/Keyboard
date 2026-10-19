@@ -314,7 +314,7 @@ function crinkle(t, n, spread, o = {}) {
   for (let i = 0; i < n; i++) { const at = t + Math.pow(Math.random(), 1.6) * spread; hiss(at, { f: rand(lo, hi), q, a: 0.0015, d: rand(0.004, 0.012), g: rand(0.4, 1) * g * (1 - (at - t) / spread * 0.6) }); }
 }
 const SOUNDS = {
-  bubble: { name: 'Bubble Wrap', desc: 'Pop rings of blue ink', scene: 'wrap',
+  bubble: { name: 'Bubble Wrap', desc: 'Pop rings of blue ink', scene: 'wrap', noTrail: true,
     // a soft round pop with a whisper of plastic crinkle after it
     down(k, t, j) {
       const f0 = (220 + k.seed * 160) * j;
@@ -322,7 +322,7 @@ const SOUNDS = {
       tone('sine', f0, t, { f2: f0 * 2.4, ft: 0.05, a: 0.002, d: 0.07, g: 0.5, wet: 0.2 });
       crinkle(t + 0.015, 4, 0.12, { lo: 3500, hi: 7000, g: 0.16 });
     } },
-  slime: { name: 'Crunchy Slime', desc: 'Crumple a sheet of stitches', scene: 'cloth',
+  slime: { name: 'Crunchy Slime', desc: 'Crumple a sheet of stitches', scene: 'cloth', noTrail: true,
     // foam beads bursting inside glossy slime: a wet press and a fizz of tiny crackles
     down(k, t, j) {
       hiss(t, { f: 380 * j, f2: 700, ft: 0.1, q: 6, a: 0.025, d: 0.14, g: 1, wet: 0.08 });
@@ -879,7 +879,7 @@ function moveCursor(e) {
   if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
   cursorEl.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
   cursorEl.classList.add('on');
-  if (S.trail && S.cur !== 'system') { trail.push({ x: e.clientX, y: e.clientY, t: performance.now() }); if (trail.length > 60) trail.shift(); loop(); }
+  if (S.trail && S.cur !== 'system' && !SOUNDS[S.sound].noTrail) { trail.push({ x: e.clientX, y: e.clientY, t: performance.now() }); if (trail.length > 60) trail.shift(); loop(); }
 }
 let pulseT = 0;
 function pulseCursor() { cursorEl.classList.add('press'); clearTimeout(pulseT); pulseT = setTimeout(() => cursorEl.classList.remove('press'), 80); }
