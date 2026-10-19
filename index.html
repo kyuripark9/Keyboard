@@ -943,35 +943,37 @@ const SCENES = {
   },
 
   /* 05 Thocky Keys: light through a perforated sheet, after a photo. Pale grey steel that shades to steel blue at the
-     bottom, cut with a grid of round holes scattered like braille. A hole shows only once light comes through it: a
-     strip on the left always glows, and the cursor shoots a laser along its path that lights the holes near it, each
-     one igniting in a bright flash that settles into a soft white glow. A few seconds after the cursor passes they go
-     out again, the outer ones first. */
+     bottom, cut with a grid of round holes scattered like braille. A hole shows only once light comes through it: the
+     cursor shoots a laser along its path that lights the holes near it, and each one burns open in a bright flash,
+     its rim glowing orange and throwing a few sparks, then cools to a soft white glow inside a faint scorch mark. A few
+     seconds after the cursor passes they go out again, the outer ones first, and the scorch fades. */
   laser: {
     frame: 'full',
     init() {
-      const s = this.s = clamp(Math.round(Math.min(SW, SH) / 12), 40, 76), r = s * .39, now = performance.now();
+      const s = this.s = clamp(Math.round(Math.min(SW, SH) / 12), 40, 76), r = this.r = s * .39;
       const cols = this.cols = Math.ceil(SW / s) + 1, rows = this.rows = Math.ceil(SH / s) + 1, n = cols * rows;
       this.x0 = (SW - cols * s + s) / 2; this.y0 = (SH - rows * s + s) / 2;
       this.E = new Float32Array(n); this.T = new Float64Array(n); this.on = new Uint8Array(n); this.a0 = new Float64Array(n).fill(-1e4);
-      this.fl = new Float32Array(n); this.nx = new Float64Array(n); this.base = new Uint8Array(n);
+      this.ig = new Float64Array(n).fill(-1e5); this.fl = new Float32Array(n); this.sk = [];
       // only about three grid points in five are cut through, and each hole lets the light in at its own level, so the
       // lit band comes out ragged at its edges
       this.th = Float32Array.from({ length: n }, () => Math.random() < .6 ? rand(.35, 1.15) : 99);
-      // the strip on the left, as in the photo; it lights up from the top down when the scene opens
-      const b0 = Math.max(0, Math.round(cols * .06)), bw = clamp(Math.round(cols * .22), 2, 4);
-      for (let j = 0; j < rows; j++) for (let i = b0; i < b0 + bw; i++) { const q = j * cols + i; this.base[q] = 1; this.E[q] = 9; this.nx[q] = now + 150 + j * 45 + rand(0, 90); }
-      // a lit hole is a white disc with a soft edge and a halo that tails off into the sheet; the flash is a wider bloom
-      const sprite = (R, tint, stops) => {
+      // a lit hole is a white disc with a soft edge and a halo that tails off into the sheet, and the flash a wider
+      // bloom; while it is hot its rim glows orange over a warm glow on the sheet, and it leaves a bronze scorch ring
+      const sprite = (R, stops) => {
         const d = Math.ceil(R * 2 * SDPR), c = document.createElement('canvas'); c.width = c.height = d;
         const x = c.getContext('2d'), g = x.createRadialGradient(d / 2, d / 2, 0, d / 2, d / 2, d / 2);
-        for (const [t, a] of stops) g.addColorStop(t * r / R, `rgba(${tint},${a})`);
+        for (const [t, col] of stops) g.addColorStop(t * r / R, col);
         x.fillStyle = g; x.fillRect(0, 0, d, d);
         return c;
       };
-      this.HR = r * 1.9; this.BR = r * 3.2;
-      this.dot = sprite(this.HR, '255,255,255', [[0, 1], [.955, 1], [1, .82], [1.05, .55], [1.12, .38], [1.2, .26], [1.3, .19], [1.45, .15], [1.6, .08], [1.75, .03], [1.9, 0]]);
-      this.bloom = sprite(this.BR, '244,248,255', [[0, 1], [.5, .9], [1, .62], [1.7, .26], [2.4, .08], [3.2, 0]]);
+      const tint = (rgb, stops) => stops.map(([t, a]) => [t, `rgba(${rgb},${a})`]);
+      this.HR = r * 1.9; this.BR = r * 3.2; this.GR = r * 2.6; this.RR = r * 1.5; this.CR = r * 2;
+      this.dot = sprite(this.HR, tint('255,255,255', [[0, 1], [.955, 1], [1, .82], [1.05, .55], [1.12, .38], [1.2, .26], [1.3, .19], [1.45, .15], [1.6, .08], [1.75, .03], [1.9, 0]]));
+      this.bloom = sprite(this.BR, tint('255,243,222', [[0, 1], [.5, .9], [1, .62], [1.7, .26], [2.4, .08], [3.2, 0]]));
+      this.glow = sprite(this.GR, tint('255,128,48', [[0, .7], [1, .55], [1.4, .28], [2, .08], [2.6, 0]]));
+      this.rim = sprite(this.RR, [[.6, 'rgba(255,214,140,0)'], [.86, 'rgba(255,190,90,.6)'], [1, 'rgba(255,120,40,.95)'], [1.12, 'rgba(230,80,30,.45)'], [1.35, 'rgba(200,60,20,.1)'], [1.5, 'rgba(200,60,20,0)']]);
+      this.char = sprite(this.CR, tint('140,88,52', [[.9, 0], [1.04, .5], [1.3, .26], [1.7, .07], [2, 0]]));
       // the sheet: cool pale grey, with the light falling off into steel blue toward the bottom, most at the bottom left
       dc.fillStyle = '#d3d5d7'; dc.fillRect(0, 0, SW, SH);
       let g = dc.createLinearGradient(0, SH * .6, 0, SH);
@@ -982,43 +984,67 @@ const SCENES = {
       dc.fillStyle = g; dc.fillRect(0, 0, SW, SH);
       dc.save(); dc.fillStyle = dc.createPattern(grainFill(160, 160, .08), 'repeat'); dc.fillRect(0, 0, SW, SH); dc.restore();
     },
+    // a burning hole spits a spark or two out over its rim, mostly upward
+    spark(x, y, n, now) {
+      for (let i = 0; i < n; i++) {
+        const a = rand(-Math.PI * .95, -Math.PI * .05) + rand(-.4, .4), v = rand(.12, .36);
+        this.sk.push({ x: x + Math.cos(a) * this.r * .8, y: y + Math.sin(a) * this.r * .8, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t0: now, life: rand(300, 650) });
+      }
+      if (this.sk.length > 80) this.sk.splice(0, this.sk.length - 80);
+    },
     // the laser lights the holes near it, the nearer the brighter, so its path leaves a core of lit holes with a ragged
-    // fringe; a hole it crosses right over flares up again
+    // fringe; a hole it crosses right over flares up and heats again
     paint(x, y, P, now) {
-      const { s, cols, E, T, th, on, a0 } = this, L = s * 1.15, reach = L * Math.log(P / .3);
+      const { s, cols, E, T, th, on, a0, ig, fl } = this, L = s * 1.15, reach = L * Math.log(P / .3);
       const i0 = Math.max(0, Math.floor((x - reach - this.x0) / s)), i1 = Math.min(cols - 1, Math.ceil((x + reach - this.x0) / s));
       const j0 = Math.max(0, Math.floor((y - reach - this.y0) / s)), j1 = Math.min(this.rows - 1, Math.ceil((y + reach - this.y0) / s));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-        const q = j * cols + i, d = Math.hypot(this.x0 + i * s - x, this.y0 + j * s - y), v = P * Math.exp(-d / L);
+        const q = j * cols + i, hx = this.x0 + i * s, hy = this.y0 + j * s, d = Math.hypot(hx - x, hy - y), v = P * Math.exp(-d / L);
         if (th[q] > 9) continue;
         if (v >= E[q]) { E[q] = v; T[q] = now; }
-        if (on[q] && d < s * .5 && now - a0[q] > 900) { a0[q] = now; this.fl[q] = .5; }
+        if (on[q] && d < s * .5 && now - a0[q] > 900) { a0[q] = ig[q] = now; fl[q] = .5; if (Math.random() < .35) this.spark(hx, hy, 1, now); }
       }
     },
     move(x, y) { this.paint(x, y, 2.4, performance.now()); },
     hit(x, y, k, now) { this.paint(x, y, k.code === 'Cell' ? 2.4 : 2.7, now); },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const { s, cols, E, T, th, on, a0, fl, nx, base, HR, BR } = this, fade = Math.exp(-dt / 3500);
+      const { s, cols, E, T, th, on, a0, ig, fl, HR, BR, GR, RR, CR } = this, fade = Math.exp(-dt / 3500);
       for (let j = 0, q = 0; j < this.rows; j++) for (let i = 0; i < cols; i++, q++) {
         if (th[q] > 9) continue;
         // a hole holds its light for a moment after the cursor leaves, then dims out once its level drops below its own
-        if (E[q] && !base[q] && now - T[q] > 2500) { E[q] *= fade; if (E[q] < .05) E[q] = 0; }
-        const lit = E[q] > th[q] && now >= nx[q] ? 1 : 0;
-        if (lit !== on[q]) { on[q] = lit; a0[q] = now; fl[q] = 1; }
-        const age = now - a0[q];
-        if (!lit && age > 450) continue;
+        if (E[q] && now - T[q] > 2500) { E[q] *= fade; if (E[q] < .05) E[q] = 0; }
+        const lit = E[q] > th[q] ? 1 : 0, x = this.x0 + i * s, y = this.y0 + j * s;
+        if (lit !== on[q]) {
+          on[q] = lit; a0[q] = now;
+          if (lit) { ig[q] = now; fl[q] = 1; if (Math.random() < .6) this.spark(x, y, 1 + (Math.random() < .4), now); }
+        }
+        // the heat of the last burn: the rim cools within a second, the scorch it leaves takes a few
+        const age = now - a0[q], burn = now - ig[q], hot = fl[q] * Math.exp(-burn / 900), char = fl[q] * Math.exp(-burn / 2600);
+        if (!lit && age > 450 && char < .02) continue;
         let k = 1, al = 1, b = 0;
-        if (!lit) { const u = age / 450; al = Math.pow(1 - u, 1.5); k = 1 - .15 * u; }
+        if (!lit) { const u = Math.min(1, age / 450); al = Math.pow(1 - u, 1.5); k = 1 - .15 * u; }
         else if (fl[q] === 1) {
           // the hole burns open: a hot point swells past full size in a flash, then settles with a little give
           const u = age / 80;
           k = u < 1 ? .2 + .9 * (1 - Math.pow(1 - u, 3)) : 1 + .1 * Math.exp(-(age - 80) / 90) * Math.cos((age - 80) / 55);
           b = age < 30 ? age / 30 : Math.exp(-(age - 30) / 170);
         } else { k = 1 + .07 * Math.exp(-age / 110); b = fl[q] * Math.exp(-age / 170); }
-        const x = this.x0 + i * s, y = this.y0 + j * s;
+        if (char > .02) { sc.globalAlpha = char * .5; sc.drawImage(this.char, x - CR, y - CR, CR * 2, CR * 2); }
+        if (hot > .02) { sc.globalAlpha = hot * al * .75; sc.drawImage(this.glow, x - GR, y - GR, GR * 2, GR * 2); }
         if (b > .01) { sc.globalAlpha = b; sc.drawImage(this.bloom, x - BR, y - BR, BR * 2, BR * 2); }
+        if (al < .01) continue;
         sc.globalAlpha = al; sc.drawImage(this.dot, x - HR * k, y - HR * k, HR * k * 2, HR * k * 2);
+        if (hot > .02) { sc.globalAlpha = Math.pow(hot, 1.2) * al; sc.drawImage(this.rim, x - RR * k, y - RR * k, RR * k * 2, RR * k * 2); }
+      }
+      // sparks: short streaks that fly off, fall, and cool from pale yellow to orange as they fade
+      this.sk = this.sk.filter(p => now - p.t0 < p.life);
+      sc.lineCap = 'round';
+      for (const p of this.sk) {
+        const u = (now - p.t0) / p.life;
+        p.vy += .0011 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+        sc.globalAlpha = 1 - u * u; sc.strokeStyle = `hsl(${38 - 22 * u},100%,${68 - 16 * u}%)`; sc.lineWidth = 2.2 - u;
+        sc.beginPath(); sc.moveTo(p.x, p.y); sc.lineTo(p.x - p.vx * 30, p.y - p.vy * 30); sc.stroke();
       }
       sc.globalAlpha = 1;
     }
@@ -1606,14 +1632,16 @@ function thumb(id) {
       return svg('#181818', `<g fill="#f4f4f0">${b}</g>`);
     }
     case 'thock': {
-      // the perforated sheet: a strip of holes glowing white on grey that shades to steel blue at the bottom, and a
-      // swipe of the laser lighting more of them
+      // the perforated sheet: a swipe of the laser lights a ragged band of holes glowing white on grey that shades to
+      // steel blue at the bottom; the newest ones at its end still burn with orange rims
+      let hot = '';
       for (let j = 0; j < 7; j++) for (let i = 0; i < 11; i++) {
         const x = (4 + i * 7.4).toFixed(1), y = (4 + j * 7.4).toFixed(1), sw = Math.abs(j - 5.6 + i * .45);
-        if (r() < .4 || !(i >= 1 && i <= 3 || i > 4 && sw < 1 + r() * .7)) continue;
+        if (r() < .4 || !(i > 0 && sw < 1 + r() * .7)) continue;
         b += `<circle cx="${x}" cy="${y}" r="2.9"/>`;
+        if (i > 8) hot += `<circle cx="${x}" cy="${y}" r="2.9"/>`;
       }
-      return svg('#d3d5d7', `<defs><linearGradient id="laserShade" x1="0" y1="0" x2="0" y2="1"><stop offset=".45" stop-color="#546577" stop-opacity="0"/><stop offset=".75" stop-color="#546577" stop-opacity=".32"/><stop offset="1" stop-color="#546577" stop-opacity=".75"/></linearGradient><filter id="laserGlow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".8"/></filter></defs><rect width="80" height="50" fill="url(#laserShade)"/><g fill="#fff"><g filter="url(#laserGlow)" opacity=".7">${b}</g>${b}</g>`);
+      return svg('#d3d5d7', `<defs><linearGradient id="laserShade" x1="0" y1="0" x2="0" y2="1"><stop offset=".45" stop-color="#546577" stop-opacity="0"/><stop offset=".75" stop-color="#546577" stop-opacity=".32"/><stop offset="1" stop-color="#546577" stop-opacity=".75"/></linearGradient><filter id="laserGlow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".8"/></filter></defs><rect width="80" height="50" fill="url(#laserShade)"/><g fill="#fff"><g filter="url(#laserGlow)" opacity=".7">${b}</g>${b}</g><g fill="none" stroke="#ff7a2a" stroke-width=".8" filter="url(#laserGlow)">${hot}</g>`);
     }
     case 'tanghulu': {
       // two stars of straight, kinked fractures with a crack running between them
