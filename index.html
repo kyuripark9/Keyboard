@@ -536,6 +536,10 @@ const SCENES = {
       this.x0 = (SW % s2) / 2; this.y0 = ((ZT + ZB) / 2) % s2;
       this.cosT = Float32Array.from({ length: 1024 }, (_, i) => .5 + .5 * Math.cos(i / 1024 * 6.2832));
       this.rip = []; this.cur = { x: -999, y: -999, a: 0, t: 0 };
+      // the sheet flattens toward the frame, so every contour closes into a rounded end inside it instead of being cut
+      const ss = e => { const q = clamp(e, 0, 1); return q * q * (3 - 2 * q); }, pad = BL + 10, ramp = s2 * 1.1;
+      this.wx = Float32Array.from({ length: w }, (_, i) => ss((Math.min(i * G, SW - i * G) - pad) / ramp));
+      this.wy = Float32Array.from({ length: h }, (_, j) => ss((Math.min(j * G, SH - j * G) - pad) / ramp));
       paper(dc, '#eae8dc', .07);
     },
     move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
@@ -589,6 +593,7 @@ const SCENES = {
       const c = this.cur, ca = clamp(1 - (now - c.t - 300) / 800, 0, 1);
       c.a += (ca - c.a) * Math.min(1, dt * .01);
       if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * Math.pow(1 - d / R, 2)); }
+      for (let j = 0, o = 0; j < h; j++) { const wy = this.wy[j]; for (let i = 0; i < w; i++, o++) F[o] *= wy * this.wx[i]; }
       // contour lines: four levels, each drawn at a steady width by dividing by the slope
       const P = this.px, L = 4, LW = .3;
       P.fill(0);
