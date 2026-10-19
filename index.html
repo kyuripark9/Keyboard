@@ -24,7 +24,6 @@
 }
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --panel: rgba(40,70,150,.9); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
-body[data-scene="stitch"] { --bg: #e2b04a; --ink: #1f3fb4; --ink-soft: #5a5f9a; --line: rgba(31,63,180,.18); --panel: rgba(240,206,128,.92); --acc: #2f5fe0; --cursor: #2f5fe0; color-scheme: light; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 
 * { box-sizing: border-box; }
@@ -110,7 +109,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 .panel h2 + * { margin-bottom: 18px; }
 .panel > :last-child { margin-bottom: 0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
-#soundGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+#soundGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 640px) { #soundGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .opt {
   text-align: left; font: inherit; color: var(--ink); cursor: pointer;
@@ -174,7 +173,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
-      <h1>clack<sup>04</sup></h1>
+      <h1>clack<sup>03</sup></h1>
     </div>
     <div class="tally" aria-live="off">
       <b id="count">0</b>
@@ -204,7 +203,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
     </nav>
 
     <section class="panel" id="panel-sound" hidden aria-label="Choose a sound">
-      <h2>4 SOUNDS, 4 PICTURES</h2>
+      <h2>3 SOUNDS, 3 PICTURES</h2>
       <div class="grid" id="soundGrid"></div>
     </section>
 
@@ -241,7 +240,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 const $ = id => document.getElementById(id);
 
 /* ---------- settings ---------- */
-const SOUND_IDS = ['bubble', 'slime', 'cyano', 'stitch'];
+const SOUND_IDS = ['bubble', 'slime', 'cyano'];
 const DEF = { mode: 'hover', sound: 'bubble', cur: 'ring', curColor: 'auto', curSize: 30, trail: true, volume: 0.7, muted: false, count: 0 };
 let S = { ...DEF };
 try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
@@ -335,12 +334,6 @@ const SOUNDS = {
     down(k, t, j) {
       hiss(t, { type: 'lowpass', f: 1500 * j, f2: 800, ft: 0.12, q: 0.7, a: 0.02, d: 0.15, g: 0.24 });
       crinkle(t + 0.02, 5, 0.1, { lo: 2600, hi: 5200, g: 0.07, q: 2 });
-    } },
-  stitch: { name: 'Cross Stitch', desc: 'Wipe a stitched cloth back to yellow', scene: 'stitch',
-    // thread pulled out of cloth: a soft, rising brush of fabric with a faint fibrous tick
-    down(k, t, j) {
-      hiss(t, { f: 1300 * j, f2: 2300 * j, ft: 0.1, q: 1.4, a: 0.012, d: 0.11, g: 0.32, wet: 0.06 });
-      crinkle(t + 0.015, 3, 0.06, { lo: 2200, hi: 4200, g: 0.06, q: 2 });
     } },
 };
 
@@ -513,7 +506,7 @@ function wrapText(ctx, txt, x, y, w, lh) {
 
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
-  /* 02 Bubble Wrap: the sheet drawn as a contour map in blue ink on cream paper. Every bubble is a hill of rings,
+  /* 01 Bubble Wrap: the sheet drawn as a contour map in blue ink on cream paper. Every bubble is a hill of rings,
      the sheet sways gently, and a pop flattens its hill and sends a ripple through the neighbours' rings. */
   wrap: {
     init() {
@@ -603,7 +596,7 @@ const SCENES = {
     }
   },
 
-  /* 04 Crunchy Slime: a sheet of + stitches that crumples like paper. Every step folds the sheet along a straight
+  /* 02 Crunchy Slime: a sheet of + stitches that crumples like paper. Every step folds the sheet along a straight
      crease with flat facets on each side, so the grid kinks at sharp angles instead of rippling. Stitches follow
      the stretch and squeeze of the sheet, and the creases slowly flatten out. */
   cloth: {
@@ -743,79 +736,6 @@ const SCENES = {
     }
   },
 
-  /* 04 Cross Stitch: a dense textile sampler in blue, red, lime and white on a mustard ground, laid out in blocks
-     (stitched lattices, rows of blue stars, sparse dots) with zigzag borders between them. The cursor unpicks the
-     stitches it passes, leaving scalloped patches of bare yellow that are slowly stitched back in. */
-  stitch: {
-    init() {
-      const c = this.c = clamp(Math.round(Math.min(SW, SH) / 34), 16, 26);
-      this.cols = Math.ceil(SW / c) + 1; this.rows = Math.ceil(SH / c) + 1;
-      this.E = new Float32Array(this.cols * this.rows); this.T = new Float64Array(this.cols * this.rows);
-      paper(dc, '#e2b04a', .05);
-      // the cloth is stitched once into its own canvas; erasing only paints yellow over it
-      this.off = this.off || document.createElement('canvas'); this.off.width = SW * SDPR; this.off.height = SH * SDPR;
-      const g = this.oc = this.off.getContext('2d'); g.setTransform(SDPR, 0, 0, SDPR, 0, 0); g.clearRect(0, 0, SW, SH);
-      const B = '#3b63e0', Rd = '#d4502b', Gr = '#8fe36a', W = '#ffffff', hash = (a, b) => Math.abs(Math.sin(a * 127.1 + b * 311.7) * 43758.5453) % 1;
-      const bw = 9, bh = 7, oi = Math.floor(rand(0, bw)), oj = Math.floor(rand(0, bh)), seed = rand(0, 100);
-      for (let j = 0; j < this.rows; j++) for (let i = 0; i < this.cols; i++) {
-        const x = i * c + c / 2, y = j * c + c / 2, ii = i + oi, jj = j + oj, bi = Math.floor(ii / bw), bj = Math.floor(jj / bh), h = hash(bi + seed, bj);
-        const di = ii % bw, dj = jj % bh;
-        g.lineCap = 'square';
-        if (di === 0 || dj === 0) { // border: lime band with a red tick, blue teeth either side
-          if (h > .8 && hash(bi, bj + 7) > .5) continue;
-          const v = di === 0 && dj !== 0;
-          g.fillStyle = Gr; v ? g.fillRect(x - c * .3, y - c / 2, c * .6, c) : g.fillRect(x - c / 2, y - c * .3, c, c * .6);
-          g.fillStyle = Rd; v ? g.fillRect(x - c * .25, y - c * .06, c * .5, c * .12) : g.fillRect(x - c * .06, y - c * .25, c * .12, c * .5);
-          g.fillStyle = B; g.beginPath();
-          if (v) { g.moveTo(x - c * .3, y - c * .3); g.lineTo(x - c * .55, y); g.lineTo(x - c * .3, y + c * .3); g.moveTo(x + c * .3, y - c * .3); g.lineTo(x + c * .55, y); g.lineTo(x + c * .3, y + c * .3); }
-          else { g.moveTo(x - c * .3, y - c * .3); g.lineTo(x, y - c * .55); g.lineTo(x + c * .3, y - c * .3); g.moveTo(x - c * .3, y + c * .3); g.lineTo(x, y + c * .55); g.lineTo(x + c * .3, y + c * .3); }
-          g.fill();
-        } else if (h < .38) { // stitched lattice: lime squares with a red diamond and white cross, between blue rings
-          if ((i + j) % 2 === 0) {
-            g.fillStyle = Gr; g.fillRect(x - c / 2, y - c / 2, c, c);
-            g.strokeStyle = W; g.lineWidth = c * .08; g.beginPath(); g.moveTo(x - c / 2, y); g.lineTo(x + c / 2, y); g.moveTo(x, y - c / 2); g.lineTo(x, y + c / 2); g.stroke();
-            g.fillStyle = Rd; g.beginPath(); g.moveTo(x, y - c * .2); g.lineTo(x + c * .2, y); g.lineTo(x, y + c * .2); g.lineTo(x - c * .2, y); g.fill();
-          } else {
-            g.strokeStyle = B; g.lineWidth = c * .1; g.beginPath(); g.arc(x, y, c * .3, 0, 6.283); g.stroke();
-            g.lineWidth = c * .07; g.beginPath(); g.moveTo(x - c * .2, y - c * .2); g.lineTo(x + c * .2, y + c * .2); g.moveTo(x + c * .2, y - c * .2); g.lineTo(x - c * .2, y + c * .2); g.stroke();
-          }
-        } else if (h < .68) { // rows of blue eight-point stars, red ticks between rows
-          if (dj % 2) {
-            g.strokeStyle = B; g.lineWidth = c * .11; g.beginPath();
-            for (let a = 0; a < 4; a++) { const ca = Math.cos(a * Math.PI / 4) * c * .44, sa = Math.sin(a * Math.PI / 4) * c * .44; g.moveTo(x - ca, y - sa); g.lineTo(x + ca, y + sa); }
-            g.stroke();
-          } else if (di % 2) { g.fillStyle = Rd; g.fillRect(x - c * .07, y - c * .28, c * .14, c * .56); }
-        } else if (h < .86) { // sparse: small blue diamonds on bare yellow
-          if ((di + dj) % 2 === 0) { g.fillStyle = B; g.beginPath(); g.moveTo(x, y - c * .14); g.lineTo(x + c * .14, y); g.lineTo(x, y + c * .14); g.lineTo(x - c * .14, y); g.fill(); }
-        }
-      }
-    },
-    erase(x, y, R) {
-      const c = this.c, now = performance.now();
-      const i0 = Math.max(0, Math.floor((x - R) / c)), i1 = Math.min(this.cols - 1, Math.floor((x + R) / c)), j0 = Math.max(0, Math.floor((y - R) / c)), j1 = Math.min(this.rows - 1, Math.floor((y + R) / c));
-      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-        const d = Math.hypot(i * c + c / 2 - x, j * c + c / 2 - y), v = clamp((R - d) / (R * .45), 0, 1), q = j * this.cols + i;
-        if (v > 0) { this.E[q] = Math.max(this.E[q], v); this.T[q] = now; }
-      }
-    },
-    move(x, y) { this.erase(x, y, this.c * 2.3); },
-    hit(x, y) { this.erase(x + rand(-8, 8), y + rand(-8, 8), this.c * rand(2.6, 3.4)); },
-    draw(now, dt) {
-      sc.drawImage(deco, 0, 0, SW, SH);
-      sc.drawImage(this.off, 0, 0, SW, SH);
-      // bare cloth: a yellow disc over every unpicked cell; neighbouring discs merge into scalloped patches
-      const c = this.c, E = this.E, T = this.T;
-      sc.fillStyle = '#e2b04a'; sc.beginPath();
-      for (let j = 0; j < this.rows; j++) for (let i = 0; i < this.cols; i++) {
-        const q = j * this.cols + i; let e = E[q];
-        if (e <= 0) continue;
-        if (now - T[q] > 4500) e = E[q] = Math.max(0, e - dt / 2600); // stitched back in, a little at a time
-        const r = c * .78 * e, x = i * c + c / 2, y = j * c + c / 2;
-        sc.moveTo(x + r, y); sc.arc(x, y, r, 0, 6.283);
-      }
-      sc.fill();
-    }
-  },
 
 };
 
@@ -988,14 +908,6 @@ function thumb(id) {
         if (v > .1) b += `<circle cx="${x}" cy="${y}" r="${Math.min(1.5, .7 + v * .7).toFixed(2)}"/>`;
       }
       return svg('#3557b0', `<g fill="#eef2ff">${b}</g>`);
-    case 'stitch':
-      for (let j = 0; j < 5; j++) for (let i = 0; i < 8; i++) {
-        const x = i * 10 + 5, y = j * 10 + 5;
-        if (j === 2) { b += `<rect x="${x - 5}" y="${y - 3}" width="10" height="6" fill="#8fe36a"/><rect x="${x - 1}" y="${y - 2.5}" width="2" height="5" fill="#d4502b"/>`; continue; }
-        if (i < 4 && j < 2) b += (i + j) % 2 ? `<circle cx="${x}" cy="${y}" r="3" fill="none" stroke="#3b63e0" stroke-width="1.2"/>` : `<rect x="${x - 5}" y="${y - 5}" width="10" height="10" fill="#8fe36a"/><path d="M${x} ${y - 2}l2 2-2 2-2-2z" fill="#d4502b"/>`;
-        else if (j > 2 || i > 5) b += `<path d="M${x - 4} ${y}h8M${x} ${y - 4}v8M${x - 3} ${y - 3}l6 6M${x + 3} ${y - 3}l-6 6" stroke="#3b63e0" stroke-width="1.3"/>`;
-      }
-      return svg('#e2b04a', b + '<circle cx="58" cy="14" r="9" fill="#e2b04a"/><circle cx="66" cy="20" r="8" fill="#e2b04a"/>');
   }
   return svg('#eee', '');
 }
