@@ -364,8 +364,8 @@ const SOUNDS = {
       wobble(f0 * 2, t, { f2: f0 * 2.7, ft: 0.05, a: 0.008, d: 0.14, g: 0.12, rate, depth: 0.09 });
       hiss(t, { f: 520 * j, f2: 900, ft: 0.08, q: 5, a: 0.015, d: 0.08, g: 0.45 });
     } },
-  soap: { name: 'Soap Cutting', desc: 'Shave tiny cubes off a bar of soap', scene: 'soap',
-    // a blade drawn through dry soap: a crisp rising shave, then the little cubes patter as they fall
+  soap: { name: 'Soap Cutting', desc: 'Shave tiny beads off a bar of soap', scene: 'soap',
+    // a blade drawn through dry soap: a crisp rising shave, then the loose beads patter as they fall
     down(k, t, j) {
       hiss(t, { f: 2200 * j, f2: 4200, ft: 0.05, q: 1.6, a: 0.004, d: 0.055, g: 0.9 });
       hiss(t, { type: 'lowpass', f: 1400, q: 0.8, a: 0.001, d: 0.01, g: 0.7 });
@@ -1147,64 +1147,97 @@ const SCENES = {
     }
   },
 
-  /* 08 Soap Cutting: a cream bar of soap with a periwinkle core, scored into tiny cubes. Every step shaves a short strip
-     along the way the cursor travels: its cubes come loose, tumble off and fall out of the frame, the core shows in
-     the cut, and the bar slowly sets smooth again. */
+  /* 08 Soap Cutting: a bar of soap packed with tiny cream beads over a core of periwinkle ones. Every step shaves a
+     short strip along the way the cursor travels: its beads come loose, tumble off and fall out of the frame, the core
+     shows in the cut, and the beads pop back in one by one as the bar sets again. */
   soap: {
     init() {
-      const c = this.c = clamp(Math.round(Math.min(SW, SH) / 36), 9, 15);
-      this.cols = Math.ceil(SW / c); this.rows = Math.ceil(SH / c);
-      this.cut = new Float64Array(this.cols * this.rows); this.back = new Float64Array(this.cut.length);
-      paper(dc, '#f3eee6', .06);
-      dc.strokeStyle = 'rgba(28,28,28,.09)'; dc.lineWidth = 1; dc.beginPath();
-      for (let i = 1; i < this.cols; i++) { dc.moveTo(i * c + .5, 0); dc.lineTo(i * c + .5, SH); }
-      for (let j = 1; j < this.rows; j++) { dc.moveTo(0, j * c + .5); dc.lineTo(SW, j * c + .5); }
-      dc.stroke();
-      this.bits = []; this.dir = [1, 0];
+      const c = this.c = clamp(Math.round(Math.min(SW, SH) / 60), 8, 12), h = c * .866, R = c / 2;
+      const cols = this.cols = Math.ceil(SW / c) + 1, rows = this.rows = Math.ceil(SH / h) + 1, n = cols * rows;
+      // every shade is drawn once into a sprite: a soft round bead lit from the top left, darker toward its far edge
+      const sprite = ([col, dark]) => {
+        const cv = document.createElement('canvas'), s = Math.ceil(R * 2.2 * SDPR), x = cv.getContext('2d'), k = s / (R * 2.2);
+        cv.width = cv.height = s; x.setTransform(k, 0, 0, k, s / 2, s / 2);
+        const g = x.createRadialGradient(-R * .35, -R * .4, R * .05, -R * .1, -R * .12, R * 1.15);
+        g.addColorStop(0, mix(col, '#ffffff', .75)); g.addColorStop(.45, col); g.addColorStop(1, mix(col, dark, .45));
+        x.fillStyle = g; x.beginPath(); x.arc(0, 0, R, 0, 6.283); x.fill();
+        return cv;
+      };
+      this.shell = [['#fdfbf7', '#9c8a6c'], ['#f6f1e8', '#9c8a6c'], ['#efe8dc', '#9c8a6c'], ['#e7decf', '#9c8a6c']].map(sprite);
+      this.core = [['#c9d5fa', '#3f5abb'], ['#becdf9', '#3f5abb'], ['#b1c2f5', '#3f5abb'], ['#a3b6f1', '#3f5abb']].map(sprite);
+      // the beads sit in staggered rows, odd rows in the gaps of the even ones. Each keeps a centre, a size, a shade for
+      // the shell (k: whiter or warmer in soft clouds) and one for the core under it (m)
+      this.bx = new Float32Array(n); this.by = new Float32Array(n); this.br = new Float32Array(n); this.bk = new Uint8Array(n); this.bm = new Uint8Array(n);
+      for (let j = 0, q = 0; j < rows; j++) for (let i = 0; i < cols; i++, q++) {
+        const x = (i + (j & 1) * .5 + rand(-.09, .09)) * c, y = j * h + rand(-.09, .09) * c;
+        const w = .5 + .25 * Math.sin(x * .012 + Math.sin(y * .008) * 2.4) + .25 * Math.sin(y * .01 - x * .004 + 1.7);
+        this.bx[q] = x; this.by[q] = y; this.br[q] = R * rand(.86, 1.02);
+        this.bk[q] = clamp(Math.round(w * 3 + rand(-.9, .9)), 0, 3); this.bm[q] = Math.floor(Math.random() * 4);
+      }
+      // the crevices between the beads, and each bead's shadow down into them
+      paper(dc, '#d9cfbf', .08);
+      const sh = new Path2D();
+      for (let q = 0; q < n; q++) { const r = this.br[q], x = this.bx[q] + r * .12, y = this.by[q] + r * .18; sh.moveTo(x + r, y); sh.arc(x, y, r, 0, 6.283); }
+      dc.fillStyle = 'rgba(122,100,66,.22)'; dc.fill(sh);
+      for (let q = 0; q < n; q++) this.put(dc, this.shell[this.bk[q]], this.bx[q], this.by[q], this.br[q]);
+      this.cut = new Uint8Array(n); this.back = new Float64Array(n); this.seen = new Uint32Array(n); this.stamp = 0;
+      this.open = []; this.bits = []; this.dir = [1, 0];
+    },
+    put(ctx, img, x, y, r) { ctx.drawImage(img, x - r * 1.1, y - r * 1.1, r * 2.2, r * 2.2); },
+    // the six beads around bead q
+    near(q) {
+      const cols = this.cols, i = q % cols, j = (q - i) / cols, o = j & 1, out = [];
+      for (const [di, dj] of [[-1, 0], [1, 0], [o - 1, -1], [o, -1], [o - 1, 1], [o, 1]]) {
+        const a = i + di, b = j + dj;
+        if (a >= 0 && a < cols && b >= 0 && b < this.rows) out.push(b * cols + a);
+      }
+      return out;
     },
     move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; },
     hit(x, y, k, now) {
       // the blade takes an oval strip, long along the stroke so consecutive steps join into one carved line
-      const c = this.c, [ux, uy] = this.dir, ra = Math.max(CELL * .75, c * 2), rb = c * rand(1.2, 1.9), R = Math.max(ra, rb);
-      const i0 = Math.max(0, Math.floor((x - R) / c)), i1 = Math.min(this.cols - 1, Math.floor((x + R) / c));
-      const j0 = Math.max(0, Math.floor((y - R) / c)), j1 = Math.min(this.rows - 1, Math.floor((y + R) / c));
+      const c = this.c, [ux, uy] = this.dir, ra = Math.max(CELL * .75, c * 2), rb = c * rand(1.2, 1.9), R = Math.max(ra, rb), h = c * .866;
+      const i0 = Math.max(0, Math.floor((x - R) / c) - 1), i1 = Math.min(this.cols - 1, Math.ceil((x + R) / c));
+      const j0 = Math.max(0, Math.floor((y - R) / h)), j1 = Math.min(this.rows - 1, Math.ceil((y + R) / h));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-        const cx = (i + .5) * c - x, cy = (j + .5) * c - y, a = (cx * ux + cy * uy) / ra, b = (cy * ux - cx * uy) / rb, q = j * this.cols + i;
+        const q = j * this.cols + i, cx = this.bx[q] - x, cy = this.by[q] - y, a = (cx * ux + cy * uy) / ra, b = (cy * ux - cx * uy) / rb;
         if (a * a + b * b > 1 || (this.cut[q] && now < this.back[q])) continue;
-        this.cut[q] = now; this.back[q] = now + rand(8000, 12000);
-        this.bits.push({ x: (i + .5) * c, y: (j + .5) * c, vx: ux * rand(.03, .12) + rand(-.03, .03), vy: uy * rand(.03, .1) - rand(.04, .14), a: 0, va: rand(-.012, .012) });
+        if (!this.cut[q]) this.open.push(q);
+        this.cut[q] = 1; this.back[q] = now + rand(8000, 12000);
+        this.bits.push({ x: this.bx[q], y: this.by[q], r: this.br[q], k: this.bk[q], vx: ux * rand(.03, .12) + rand(-.03, .03), vy: uy * rand(.03, .1) - rand(.04, .14) });
       }
-      if (this.bits.length > 700) this.bits.splice(0, this.bits.length - 700);
+      if (this.bits.length > 900) this.bits.splice(0, this.bits.length - 900);
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const c = this.c, cols = this.cols, cut = this.cut, hole = [0, 1, 2, 3].map(() => new Path2D()), lip = [0, 1, 2, 3].map(() => new Path2D());
-      for (let q = 0; q < cut.length; q++) {
-        if (!cut[q]) continue;
-        // once a spot's time is up it fills back in over a couple of seconds
-        const al = clamp((this.back[q] + 2500 - now) / 2500, 0, 1);
-        if (!al) { cut[q] = 0; continue; }
-        const i = q % cols, j = (q - i) / cols, b = Math.min(3, Math.floor(al * 4)), x = i * c, y = j * c;
-        hole[b].rect(x + 1, y + 1, c - 1, c - 1);
-        // the uncut wall above and to the left throws a shadow into the cut
-        if (j && !cut[q - cols]) lip[b].rect(x, y, c, c * .3);
-        if (i && !cut[q - 1]) lip[b].rect(x, y, c * .22, c);
+      const { bx, by, br, bk, cut, back, seen } = this, stamp = ++this.stamp, POP = 420, d = this.c * .6, hole = new Path2D(), rim = [];
+      // once a bead's time is up it pops back into the shell, and then it leaves the cut
+      this.open = this.open.filter(q => { if (now < back[q] + POP) return true; cut[q] = 0; return false; });
+      for (const q of this.open) { hole.moveTo(bx[q] + d, by[q]); hole.arc(bx[q], by[q], d, 0, 6.283); seen[q] = stamp; }
+      // the cut shows the core: periwinkle beads sitting a little lower, with dark gaps between them
+      sc.fillStyle = '#8fa6ee'; sc.fill(hole);
+      for (const q of this.open) this.put(sc, this.core[this.bm[q]], bx[q] + br[q] * .1, by[q] + br[q] * .14, br[q] * .92);
+      // the shell beads around the cut stand over it and throw their shadows down into it
+      for (const q of this.open) for (const p of this.near(q)) if (seen[p] !== stamp) { seen[p] = stamp; rim.push(p); }
+      const shade = new Path2D();
+      for (const p of rim) { const r = br[p], x = bx[p] + r * .3, y = by[p] + r * .42; shade.moveTo(x + r, y); shade.arc(x, y, r, 0, 6.283); }
+      sc.save(); sc.clip(hole); sc.fillStyle = 'rgba(44,70,170,.32)'; sc.fill(shade); sc.restore();
+      for (const p of rim) this.put(sc, this.shell[bk[p]], bx[p], by[p], br[p]);
+      for (const q of this.open) if (now > back[q]) {
+        // ease out with a little overshoot, so the bead settles into its place
+        const t = (now - back[q]) / POP - 1;
+        this.put(sc, this.shell[bk[q]], bx[q], by[q], br[q] * (1 + 2.7 * t * t * t + 1.7 * t * t));
       }
-      for (let b = 0; b < 4; b++) { sc.globalAlpha = (b + 1) / 4; sc.fillStyle = '#becdf9'; sc.fill(hole[b]); sc.fillStyle = '#8fa6ee'; sc.fill(lip[b]); }
-      sc.globalAlpha = 1;
-      // the loose cubes tumble down out of the frame
+      // the loose beads tumble down out of the frame, each with its shadow on the bar
       this.bits = this.bits.filter(p => p.y < SH + 30);
-      const side = new Path2D(), top = new Path2D(), hs = c * .42;
+      const drop = new Path2D();
       for (const p of this.bits) {
-        p.vy += .0016 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.a += p.va * dt;
-        const cs = Math.cos(p.a) * hs, sn = Math.sin(p.a) * hs;
-        [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([u, v], i) => {
-          const X = p.x + u * cs - v * sn, Y = p.y + u * sn + v * cs, m = i ? 'lineTo' : 'moveTo';
-          side[m](X + 1.5, Y + 2.5); top[m](X, Y);
-        });
-        side.closePath(); top.closePath();
+        p.vy += .0016 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+        const x = p.x + p.r * .5, y = p.y + p.r * .8;
+        drop.moveTo(x + p.r, y); drop.arc(x, y, p.r, 0, 6.283);
       }
-      sc.fillStyle = '#8fa6ee'; sc.fill(side); sc.fillStyle = '#f7f3ec'; sc.fill(top);
+      sc.fillStyle = 'rgba(90,74,48,.18)'; sc.fill(drop);
+      for (const p of this.bits) this.put(sc, this.shell[p.k], p.x, p.y, p.r);
     }
   },
 
@@ -1479,13 +1512,16 @@ function thumb(id) {
       for (const [x, y, a] of [[60.4, .2, 20], [40.9, 21.6, -35], [15.8, 35.7, 24], [68.4, 29.7, -28]]) b += `<rect x="-7.7" y="-7.7" width="15.4" height="15.4" rx="2.9" fill="#f31802" transform="translate(${x} ${y}) rotate(${a})"/>`;
       return svg('#eed9b1', `<filter id="jellyBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.3"/></filter><g filter="url(#jellyBlur)">${b}</g>`);
     case 'soap': {
-      // a carved diagonal strip showing the core, and cubes tumbling off its end
-      for (let j = 0; j < 10; j++) for (let i = 2; i < 14; i++) if (Math.abs(j - 7.5 + i * .42) < 1.1) b += `<rect x="${i * 5 + .5}" y="${j * 5 + .5}" width="4.5" height="4.5" fill="${C.peri}"/>`;
-      for (let i = 0; i < 6; i++) { const x = (58 + r() * 14).toFixed(1), y = (18 + r() * 28).toFixed(1); b += `<rect x="${x}" y="${y}" width="3.6" height="3.6" fill="#f7f3ec" stroke="#8fa6ee" stroke-width=".6" transform="rotate(${(r() * 90).toFixed(0)} ${x} ${y})"/>`; }
-      let grid = '';
-      for (let i = 5; i < 80; i += 5) grid += `M${i} 0V50`;
-      for (let j = 5; j < 50; j += 5) grid += `M0 ${j}H80`;
-      return svg(C.paper, `<path d="${grid}" stroke="#1c1c1c" stroke-opacity=".1" stroke-width=".4"/>${b}`);
+      // a shell of cream beads with a carved diagonal strip showing the periwinkle core, and beads tumbling off its end.
+      // Each bead is three discs: a darker one, a lighter one nudged up and to the left, and a small highlight
+      const L = Array(11).fill(''), F = ['#8fa6ee', '#cdbfa8', '#f4eee4', '#fffdf9', '#8396d9', '#becdf9', '#e4eafc', 'rgba(90,74,48,.2)', '#cdbfa8', '#f4eee4', '#fffdf9'];
+      const bead = (x, y, rr, o) => [[0, 0, 1], [-.12, -.15, .82], [-.38, -.42, .3]].forEach(([u, v, s], n) => { L[o + n] += `<circle cx="${(x + u * rr).toFixed(1)}" cy="${(y + v * rr).toFixed(1)}" r="${(rr * s).toFixed(1)}"/>`; });
+      for (let j = 0; j < 13; j++) for (let i = 0; i < 17; i++) {
+        const x = i * 5 + (j & 1) * 2.5, y = j * 4.33, core = x > 8 && x < 66 && Math.abs(y - 39 + x * .42) < 4.5;
+        if (core) { L[0] += `<circle cx="${x}" cy="${y.toFixed(1)}" r="3.1"/>`; bead(x + .3, y + .4, 2.1, 4); } else bead(x, y, 2.3, 1);
+      }
+      for (let i = 0; i < 6; i++) { const x = 66 + r() * 11, y = 12 + r() * 32; L[7] += `<circle cx="${(x + 1).toFixed(1)}" cy="${(y + 1.6).toFixed(1)}" r="2.3"/>`; bead(x, y, 2.3, 8); }
+      return svg('#d9cfbf', L.map((s, n) => `<g fill="${F[n]}">${s}</g>`).join(''));
     }
     case 'snow':
       // a trail of boot prints, left and right along a gentle curve
