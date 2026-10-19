@@ -9,7 +9,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 | 01 | Bubble Wrap | The sheet as a blue contour map on cream paper: each bubble is a hill of rings, and a pop flattens it and sends a ripple through its neighbours before it slowly refills |
 | 02 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
 | 03 | Ink Mountains | Hills printed in short green bars on white, solid on the slopes and breaking into scattered dashes in the sky. Every column the cursor crosses fills solid from the ground up to exactly where it passed, so your path becomes a crisp green ridge that piles up as you play and slowly settles; steps add a small mound, and the sound is a soft puff with a fine patter of grains |
-| 04 | Bubbles | Big grainy soap bubbles on coral, airbrushed white at the rim and clear inside. The cursor blows a few that drift up and pop softly; where two bubbles overlap, the shared film and the crossing rim glow strong white. The sound is a muffled blup |
+| 04 | Cyanotype | A cobalt print in camouflage patches: grainy solid blue next to a white halftone dot screen. The cursor exposes the paper as it passes, so dots bloom open in ragged patches along its path and slowly sink back into the blue; the sound is a soft, airy brush with a few faint grains |
 | 05 | Rain on Glass | Drops on a misty periwinkle window: steps tap new drops, the cursor merges them, and heavy drops slide down leaving clear trails; the sound is a few soft, muffled taps |
 
 - **Just move**: sounds play as your cursor moves. On touch screens, drag a finger. The page always opens on 01 Bubble Wrap.
