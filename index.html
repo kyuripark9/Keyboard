@@ -6,7 +6,7 @@
 <!--artifact:start-->
 <title>Clack</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Move your cursor and every step clicks, pops or squishes. Six stress-relief sounds, each with its own graphic to play with.">
+<meta name="description" content="Move your cursor and every step clicks, pops or squishes. Nine stress-relief sounds, each with its own graphic to play with.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -25,6 +25,12 @@
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --panel: rgba(40,70,150,.9); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
+body[data-scene="wax"]    { --bg: #c5d2f8; --ink: #1b3a9e; --ink-soft: #4d64b0; --line: rgba(27,58,158,.16); --panel: rgba(214,224,251,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="keys"]   { --bg: #1c1c1c; --ink: #f3eee6; --ink-soft: #9d988e; --line: rgba(243,238,230,.16); --panel: rgba(38,38,38,.92); --acc: #5c80ea; --cursor: #5c80ea; color-scheme: dark; }
+body[data-scene="glass"]  { --bg: #5c80ea; --ink: #ffffff; --ink-soft: #dbe3fb; --line: rgba(255,255,255,.26); --panel: rgba(74,110,222,.92); --acc: #ffffff; --cursor: #1b2a6b; color-scheme: dark; }
+body[data-scene="jelly"]  { --bg: #e6e6e3; --ink: #1d3fa8; --ink-soft: #5d6f9e; --line: rgba(29,63,168,.15); --panel: rgba(243,243,241,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="soap"]   { --bg: #f3eee6; --ink: #1c1c1c; --ink-soft: #6d685f; --line: rgba(28,28,28,.13); --panel: rgba(249,246,241,.9); --acc: #1c1c1c; --cursor: #1c1c1c; color-scheme: light; }
+body[data-scene="snow"]   { --bg: #f6f8fd; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(246,248,253,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -58,15 +64,14 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 .tally span { font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
 .stage { min-height: 0; min-width: 0; }
 
-/* custom cursor + trail canvas */
+/* custom cursor + trail canvas: a ring in each picture's own --cursor color */
 #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 .cursor {
   position: fixed; left: 0; top: 0; z-index: 50; pointer-events: none; color: var(--cursor);
-  width: var(--cs, 28px); height: var(--cs, 28px); margin: calc(var(--cs, 28px) / -2) 0 0 calc(var(--cs, 28px) / -2);
+  width: 30px; height: 30px; margin: -15px 0 0 -15px;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,.2)); will-change: transform; opacity: 0; transition: opacity .2s;
 }
 .cursor.on { opacity: 1; }
-.cursor.tl { margin: -2px 0 0 -3px; }
 .cursor svg { width: 100%; height: 100%; display: block; transition: transform 90ms ease-out; }
 .cursor.press svg { transform: scale(.78); transition-duration: 30ms; }
 
@@ -99,7 +104,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 /* Panels */
 .panel {
   position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
-  width: min(760px, calc(100vw - 32px)); max-height: min(66vh, 600px); overflow: auto;
+  width: min(760px, calc(100vw - 32px)); max-height: min(78vh, 700px); overflow: auto;
   padding: 18px; border-radius: 22px; background: var(--panel); border: 1px solid var(--line);
   backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3);
   box-shadow: 0 20px 50px rgba(10,20,60,.2); animation: rise .18s ease-out;
@@ -110,6 +115,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 .panel > :last-child { margin-bottom: 0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
 #soundGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+#soundGrid .thumb { aspect-ratio: 2 / 1; }
 @media (max-width: 640px) { #soundGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .opt {
   text-align: left; font: inherit; color: var(--ink); cursor: pointer;
@@ -123,18 +129,6 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 .opt > span:last-child { font-size: 11px; line-height: 1.35; color: var(--ink-soft); padding: 0 2px 2px; }
 .thumb { display: block; border-radius: 9px; overflow: hidden; aspect-ratio: 8 / 5; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
 .thumb svg { width: 100%; height: 100%; display: block; }
-.swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--panel); cursor: pointer; padding: 0; box-shadow: 0 0 0 1px var(--line); }
-.sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ink); }
-.sw.auto { background: conic-gradient(#2c62fb, #becdf9, #f3eee6, #1c1c1c, #2c62fb); }
-.sw.pick { position: relative; overflow: hidden; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
-.sw.pick input { position: absolute; inset: -6px; width: 200%; height: 200%; opacity: 0; cursor: pointer; }
-.chip { font: 500 13px/1 var(--font-ui); color: var(--ink); padding: 9px 13px; border-radius: 999px; border: 1px solid var(--line); background: transparent; cursor: pointer; }
-.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.cur-opt { align-items: center; text-align: center; padding: 11px 8px; }
-.cur-opt svg { width: 26px; height: 26px; color: var(--ink); }
-.cur-opt span { font-size: 12px; color: var(--ink-soft); }
-.row-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--ink-soft); }
 
 /* Intro */
 .intro {
@@ -151,7 +145,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 .go { margin-top: 6px; font: 600 16px/1 var(--font-ui); padding: 16px 28px; border-radius: 999px; border: 0; background: var(--ink); color: var(--bg); cursor: pointer; box-shadow: 0 10px 24px rgba(10,20,60,.22); }
 
 @media (max-width: 720px) {
-  .dbtn .lbl, .brand p { display: none; }
+  .brand p { display: none; }
   .seg button { padding: 9px 11px; }
   input[type="range"] { width: 64px; }
   .tally b { font-size: 18px; }
@@ -173,7 +167,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
-      <h1>clack<sup>03</sup></h1>
+      <h1>clack<sup>09</sup></h1>
     </div>
     <div class="tally" aria-live="off">
       <b id="count">0</b>
@@ -191,11 +185,6 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
       </button>
       <button class="dbtn step" id="next" type="button" aria-label="Next sound"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
       <span class="sep"></span>
-      <button class="dbtn" type="button" data-panel="cursor" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z"/></svg>
-        <span class="lbl">Cursor</span>
-      </button>
-      <span class="sep"></span>
       <div class="vol">
         <button class="dbtn" id="mute" type="button" aria-label="Mute" style="padding:9px"></button>
         <input id="volume" type="range" min="0" max="1" step="0.01" aria-label="Volume">
@@ -203,33 +192,20 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
     </nav>
 
     <section class="panel" id="panel-sound" hidden aria-label="Choose a sound">
-      <h2>3 SOUNDS, 3 PICTURES</h2>
+      <h2>9 SOUNDS, 9 PICTURES</h2>
       <div class="grid" id="soundGrid"></div>
-    </section>
-
-    <section class="panel" id="panel-cursor" hidden aria-label="Style the cursor">
-      <h2>CURSOR SHAPE</h2>
-      <div class="grid" id="curGrid"></div>
-      <h2>CURSOR COLOR</h2>
-      <div class="swatches" id="curColors"></div>
-      <h2>SIZE &amp; TRAIL</h2>
-      <div class="row-line">
-        <label for="curSize">Size</label>
-        <input id="curSize" type="range" min="16" max="64" step="1">
-        <button class="chip" id="tTrail" type="button">Trail</button>
-      </div>
     </section>
   </div>
 </div>
 
 <canvas id="fx" aria-hidden="true"></canvas>
-<div class="cursor" id="cursor" aria-hidden="true"></div>
+<div class="cursor" id="cursor" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg></div>
 
 <div class="intro" id="intro">
   <div class="intro-card">
     <small>A TOY ABOUT DOING NOTHING</small>
     <h2>clack</h2>
-    <p>Move your cursor and every step clicks, pops or squishes.<br>Six sounds, six pictures to crack, pour and crumple.</p>
+    <p>Move your cursor and every step clicks, pops or squishes.<br>Nine sounds, nine pictures to crack, squish and crunch.</p>
     <button class="go" id="go" type="button">Turn on sound &amp; start</button>
   </div>
 </div>
@@ -240,8 +216,8 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 const $ = id => document.getElementById(id);
 
 /* ---------- settings ---------- */
-const SOUND_IDS = ['bubble', 'slime', 'cyano'];
-const DEF = { mode: 'hover', sound: 'bubble', cur: 'ring', curColor: 'auto', curSize: 30, trail: true, volume: 0.7, muted: false, count: 0 };
+const SOUND_IDS = ['bubble', 'slime', 'cyano', 'wax', 'thock', 'tanghulu', 'pudding', 'soap', 'snow'];
+const DEF = { mode: 'hover', sound: 'bubble', volume: 0.7, muted: false, count: 0 };
 let S = { ...DEF };
 try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
 S.sound = DEF.sound; // every visit opens on 01 Bubble Wrap; the other settings are remembered
@@ -250,7 +226,7 @@ let saveT = 0;
 function save() {
   clearTimeout(saveT);
   saveT = setTimeout(() => {
-    try { const { mode, sound, cur, curColor, curSize, trail, volume, muted, count } = S; localStorage.setItem('clack', JSON.stringify({ mode, sound, cur, curColor, curSize, trail, volume, muted, count })); } catch (e) {}
+    try { const { mode, sound, volume, muted, count } = S; localStorage.setItem('clack', JSON.stringify({ mode, sound, volume, muted, count })); } catch (e) {}
   }, 300);
 }
 
@@ -304,6 +280,16 @@ function hiss(t, o = {}) {
   env(v, t, a, d, g); s.connect(fl); fl.connect(v); out(v, wet);
   s.start(t, Math.random() * 0.5); s.stop(t + a + d + 0.05);
 }
+// a tone whose pitch shivers with a fading vibrato, for anything that jiggles
+function wobble(f, t, o = {}) {
+  const { a = 0.006, d = 0.25, g = 0.5, rate = 9, depth = 0.1, f2 = 0, ft = 0.08, wet = 0 } = o;
+  const C = A.ctx, osc = C.createOscillator(), lfo = C.createOscillator(), lg = C.createGain(), v = C.createGain();
+  osc.frequency.setValueAtTime(f, t); if (f2) osc.frequency.exponentialRampToValueAtTime(f2, t + ft);
+  lfo.frequency.value = rate; lg.gain.setValueAtTime(f * depth, t); lg.gain.exponentialRampToValueAtTime(f * depth * 0.05, t + a + d);
+  lfo.connect(lg); lg.connect(osc.frequency);
+  env(v, t, a, d, g); osc.connect(v); out(v, wet);
+  osc.start(t); lfo.start(t); osc.stop(t + a + d + 0.05); lfo.stop(t + a + d + 0.05);
+}
 const rand = (a, b) => a + Math.random() * (b - a);
 
 /* Each sound: scene = the picture it draws, desc = one line for the picker.
@@ -334,6 +320,59 @@ const SOUNDS = {
     down(k, t, j) {
       hiss(t, { type: 'lowpass', f: 1500 * j, f2: 800, ft: 0.12, q: 0.7, a: 0.02, d: 0.15, g: 0.24 });
       crinkle(t + 0.02, 5, 0.1, { lo: 2600, hi: 5200, g: 0.07, q: 2 });
+    } },
+  wax: { name: 'Wax Ball', desc: 'Crack the wax shell, squish the clay', scene: 'wax',
+    // the 왁뿌볼: a hard wax shell gives way in one dry snap and a rush of brittle crackles, then the soft clay inside squishes
+    down(k, t, j) {
+      hiss(t, { type: 'highpass', f: 2200, q: 0.7, a: 0.0006, d: 0.007, g: 1.1 });
+      hiss(t, { type: 'lowpass', f: 1100 * j, q: 1, a: 0.001, d: 0.035, g: 0.9 });
+      crinkle(t + 0.004, 16 + Math.floor(Math.random() * 8), 0.11, { lo: 1000, hi: 4800, g: 0.75, q: 1.4 });
+      hiss(t + 0.03, { f: 340 * j, f2: 230, ft: 0.12, q: 4, a: 0.03, d: 0.12, g: 0.45, wet: 0.06 });
+    } },
+  thock: { name: 'Thocky Keys', desc: 'Bottom out a board of cream keycaps', scene: 'keys',
+    // a lubed, foam-filled custom board: a padded tap, the hollow of the case and a low thud; the spacebar sits deeper
+    down(k, t, j) {
+      const sp = k.code === 'Space', f0 = (sp ? 120 : 165 + k.seed * 40) * j;
+      hiss(t, { type: 'lowpass', f: 1600, q: 0.8, a: 0.0008, d: 0.01, g: 1.1 });
+      hiss(t, { f: (sp ? 380 : 520) * j, q: 5, a: 0.001, d: sp ? 0.06 : 0.035, g: 0.7 });
+      tone('sine', f0, t, { f2: f0 * 0.7, ft: 0.04, a: 0.001, d: sp ? 0.09 : 0.05, g: 0.6 });
+    },
+    // the key springs back up with a lighter tick; on the screen it lands just after the next key goes down
+    up(k, t, j) {
+      const at = t + (k.code === 'Cell' ? 0.045 : 0);
+      hiss(at, { f: 1300 * j, q: 3, a: 0.0008, d: 0.012, g: 0.3 });
+      tone('sine', 300 * j, at, { a: 0.001, d: 0.02, g: 0.1 });
+    } },
+  tanghulu: { name: 'Tanghulu', desc: 'Bite cracks into candy glass', scene: 'glass',
+    // a bite through sugar glass: a bright crack, glassy tinks ringing off the shards and the crunch of the fruit
+    down(k, t, j) {
+      const f0 = rand(2300, 3400) * j;
+      hiss(t, { type: 'highpass', f: 3800, q: 0.8, a: 0.0005, d: 0.006, g: 1 });
+      [1, 2.32, 4.25].forEach((m, i) => tone('sine', f0 * m, t + i * 0.004, { a: 0.001, d: 0.12 / (i + 1) + 0.03, g: 0.09 / (i + 1), wet: 0.3 }));
+      crinkle(t + 0.003, 9, 0.07, { lo: 3200, hi: 8000, g: 0.5, q: 3 });
+      hiss(t + 0.01, { type: 'lowpass', f: 1300, q: 0.9, a: 0.003, d: 0.04, g: 0.45 });
+    } },
+  pudding: { name: 'Pudding', desc: 'Tap caramel puddings till they jiggle', scene: 'jelly',
+    // a spoon tapping custard: a soft wet slap and a low wobble that shivers as the pudding jiggles
+    down(k, t, j) {
+      const f0 = (150 + k.seed * 70) * j, rate = rand(8, 11);
+      wobble(f0, t, { f2: f0 * 1.35, ft: 0.05, a: 0.008, d: 0.22, g: 0.26, rate, depth: 0.09, wet: 0.1 });
+      wobble(f0 * 2, t, { f2: f0 * 2.7, ft: 0.05, a: 0.008, d: 0.14, g: 0.12, rate, depth: 0.09 });
+      hiss(t, { f: 520 * j, f2: 900, ft: 0.08, q: 5, a: 0.015, d: 0.08, g: 0.45 });
+    } },
+  soap: { name: 'Soap Cutting', desc: 'Shave tiny cubes off a bar of soap', scene: 'soap',
+    // a blade drawn through dry soap: a crisp rising shave, then the little cubes patter as they fall
+    down(k, t, j) {
+      hiss(t, { f: 2200 * j, f2: 4200, ft: 0.05, q: 1.6, a: 0.004, d: 0.055, g: 0.9 });
+      hiss(t, { type: 'lowpass', f: 1400, q: 0.8, a: 0.001, d: 0.01, g: 0.7 });
+      crinkle(t + 0.03, 7, 0.16, { lo: 1600, hi: 4200, g: 0.45, q: 2 });
+    } },
+  snow: { name: 'Snow', desc: 'Crunch boot prints into fresh snow', scene: 'snow',
+    // boots in fresh snow: a soft compression, a dense dull crunch of crystals packing together and a faint cold squeak
+    down(k, t, j) {
+      hiss(t, { type: 'lowpass', f: 650 * j, q: 0.7, a: 0.012, d: 0.1, g: 0.7 });
+      crinkle(t + 0.004, 20 + Math.floor(Math.random() * 8), 0.13, { lo: 450, hi: 2300, g: 0.55, q: 1.1 });
+      crinkle(t + 0.02, 5, 0.08, { lo: 2600, hi: 4200, g: 0.12, q: 4 });
     } },
 };
 
@@ -503,12 +542,32 @@ function wrapText(ctx, txt, x, y, w, lh) {
   for (const word of txt.split(' ')) { const t = line ? line + ' ' + word : word; if (ctx.measureText(t).width > w) { ctx.fillText(line, x, yy); line = word; yy += lh; } else line = t; }
   ctx.fillText(line, x, yy);
 }
+const hexRGB = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function mix(a, b, t) { const p = hexRGB(a), q = hexRGB(b); return `rgb(${p.map((v, i) => Math.round(v + (q[i] - v) * t)).join(',')})`; }
+// cut polygon P down to the side of the line through (mx, my) that its normal (nx, ny) points away from
+function clipHalf(P, mx, my, nx, ny) {
+  const out = [], side = p => (p[0] - mx) * nx + (p[1] - my) * ny;
+  for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], sa = side(a), sb = side(b);
+    if (sa <= 0) out.push(a);
+    if ((sa <= 0) !== (sb <= 0)) { const t = sa / (sa - sb); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+  }
+  return out;
+}
+// a closed polygon with rounded corners, added to path p
+function roundPoly(p, P, r) {
+  const L = P.length;
+  p.moveTo((P[L - 1][0] + P[0][0]) / 2, (P[L - 1][1] + P[0][1]) / 2);
+  for (let i = 0; i < L; i++) { const a = P[i], b = P[(i + 1) % L]; p.arcTo(a[0], a[1], b[0], b[1], r); }
+  p.closePath();
+}
 
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
   /* 01 Bubble Wrap: the sheet drawn as a contour map in blue ink on cream paper. Every bubble is a hill of rings,
      the sheet sways gently, and a pop flattens its hill and sends a ripple through the neighbours' rings. */
   wrap: {
+    frame: 'full',
     init() {
       const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
       this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
@@ -522,11 +581,27 @@ const SCENES = {
       this.x0 = (SW % s2) / 2; this.y0 = ((ZT + ZB) / 2) % s2;
       this.cosT = Float32Array.from({ length: 1024 }, (_, i) => .5 + .5 * Math.cos(i / 1024 * 6.2832));
       this.rip = []; this.cur = { x: -999, y: -999, a: 0, t: 0 };
-      // the sheet flattens toward the frame, so every contour closes into a rounded end inside it instead of being cut
-      const ss = e => { const q = clamp(e, 0, 1); return q * q * (3 - 2 * q); }, pad = BL + 10, ramp = s2 * 1.1;
-      this.wx = Float32Array.from({ length: w }, (_, i) => ss((Math.min(i * G, SW - i * G) - pad) / ramp));
-      this.wy = Float32Array.from({ length: h }, (_, j) => ss((Math.min(j * G, SH - j * G) - pad) / ramp));
+      this.M = new Float32Array(w * h); this.mk = ''; this.mt = 0;
       paper(dc, '#eae8dc', .07);
+    },
+    // the sheet flattens around the logo, the tally and the dock, so the rings close into rounded ends and part
+    // around them instead of running under the text. Rebuilt whenever one of them moves or grows (the tally gains digits)
+    ui() {
+      const rs = [...document.querySelectorAll('.brand, .tally, #dock')].map(e => e.getBoundingClientRect()).filter(r => r.width);
+      const key = rs.map(r => [r.left, r.top, r.right, r.bottom].map(Math.round).join()).join('|');
+      if (key === this.mk) return;
+      this.mk = key;
+      const G = this.G, w = this.w, h = this.h, M = this.M, pad = 8, ramp = this.s * 1.1;
+      M.fill(1);
+      for (const r of rs) {
+        // each element is kept clear by a capsule around it: the distance to its middle segment, less its half-height
+        const rr = Math.min(r.width, r.height) / 2, l = r.left - FX + rr, t = r.top - FY + rr, R = r.right - FX - rr, B = r.bottom - FY - rr, reach = rr + pad + ramp;
+        const i0 = Math.max(0, Math.floor((l - reach) / G)), i1 = Math.min(w - 1, Math.ceil((R + reach) / G)), j0 = Math.max(0, Math.floor((t - reach) / G)), j1 = Math.min(h - 1, Math.ceil((B + reach) / G));
+        for (let j = j0; j <= j1; j++) for (let i = i0, o = j * w + i0; i <= i1; i++, o++) {
+          const x = i * G, y = j * G, q = clamp((Math.hypot(Math.max(l - x, 0, x - R), Math.max(t - y, 0, y - B)) - rr - pad) / ramp, 0, 1);
+          M[o] *= q * q * (3 - 2 * q);
+        }
+      }
     },
     move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
     hit(x, y, k, now) {
@@ -579,7 +654,8 @@ const SCENES = {
       const c = this.cur, ca = clamp(1 - (now - c.t - 300) / 800, 0, 1);
       c.a += (ca - c.a) * Math.min(1, dt * .01);
       if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * Math.pow(1 - d / R, 2)); }
-      for (let j = 0, o = 0; j < h; j++) { const wy = this.wy[j]; for (let i = 0; i < w; i++, o++) F[o] *= wy * this.wx[i]; }
+      if (now > this.mt) { this.mt = now + 500; this.ui(); }
+      for (let o = 0, M = this.M; o < F.length; o++) F[o] *= M[o];
       // contour lines: four levels, each drawn at a steady width by dividing by the slope
       const P = this.px, L = 4, LW = .3;
       P.fill(0);
@@ -736,7 +812,414 @@ const SCENES = {
     }
   },
 
+  /* 04 Wax Ball: a sheet of hard periwinkle wax poured over soft cobalt clay, like the shell of a 왁뿌볼 squishy. Every
+     step cracks the shell into polygon flakes that split apart outward from the step, nearest first; the flakes lift
+     and tilt so the clay shows through the cracks, the cursor squeezes the clay up between them, and the wax slowly
+     sets smooth again. */
+  wax: {
+    init() {
+      // the flakes are cells of a jittered Voronoi diagram: each starts as a square cut down by its neighbours' bisectors
+      const s = this.s = clamp(Math.round(Math.min(SW, SH) / 15), 26, 46), cols = Math.ceil(SW / s) + 2, rows = Math.ceil(SH / s) + 2, px = [], py = [];
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { px.push((i - 1 + rand(.2, .8)) * s); py.push((j - 1 + rand(.2, .8)) * s); }
+      this.f = [];
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const x = px[j * cols + i], y = py[j * cols + i];
+        let P = [[x - s * 2, y - s * 2], [x + s * 2, y - s * 2], [x + s * 2, y + s * 2], [x - s * 2, y + s * 2]];
+        for (let jj = Math.max(0, j - 2); jj <= Math.min(rows - 1, j + 2); jj++) for (let ii = Math.max(0, i - 2); ii <= Math.min(cols - 1, i + 2); ii++) {
+          const o = jj * cols + ii;
+          if (ii !== i || jj !== j) P = clipHalf(P, (x + px[o]) / 2, (y + py[o]) / 2, px[o] - x, py[o] - y);
+        }
+        this.f.push({ x, y, P: P.map(p => [p[0] - x, p[1] - y]), c: 0, amt: 0, at: 0, end: 0, dx: 0, dy: 0, rot: 0, tone: 0 });
+      }
+      this.grain = sc.createPattern(grainFill(160, 160, .08), 'repeat');
+      this.cur = { x: -999, y: -999, t: 0 };
+      paper(dc, '#c5d2f8', .07);
+    },
+    move(x, y) { this.cur = { x, y, t: performance.now() }; },
+    hit(x, y, k, now) {
+      // the crack runs out from the step through a rough disc of flakes, and splits them less toward its rim
+      const R = this.s * rand(1.7, 2.6);
+      for (const f of this.f) {
+        const dx = f.x - x, dy = f.y - y, d = Math.hypot(dx, dy);
+        if (d > R) continue;
+        const w = .4 + .6 * (1 - d / R), at = now + d * 1.3;
+        if (f.end < now) { const a = d > 4 ? Math.atan2(dy, dx) : rand(0, 6.283); f.amt = 0; f.at = at; f.dx = Math.cos(a); f.dy = Math.sin(a); f.rot = rand(-.14, .14); f.tone = rand(-1, 1); }
+        f.amt = Math.min(1.4, f.amt ? f.amt + w * .4 : w);
+        f.end = Math.max(f.end, at + rand(5000, 8000));
+      }
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const s = this.s, cu = this.cur, sq = Math.exp(-Math.max(0, now - cu.t) / 500), Rs = s * 2.2;
+      const clay = new Path2D(), drop = new Path2D(), all = new Path2D(), shade = [0, 1, 2, 3, 4].map(() => new Path2D());
+      let any = false;
+      for (const f of this.f) {
+        const tg = now >= f.at && now < f.end ? f.amt : 0;
+        f.c += (tg - f.c) * Math.min(1, dt * (tg > f.c ? .05 : .0009));
+        if (f.c < .01) continue;
+        any = true;
+        // each flake drifts away from where the crack started; near the cursor the clay squeezes up and pushes flakes apart
+        let ox = f.dx * f.c * s * .1, oy = f.dy * f.c * s * .1;
+        const ex = f.x - cu.x, ey = f.y - cu.y, ed = Math.hypot(ex, ey);
+        if (sq > .01 && ed < Rs) { const p = (1 - ed / Rs) ** 2 * s * .25 * sq * Math.min(1, f.c) / (ed || 1); ox += ex * p; oy += ey * p; }
+        // flakes shrink as they split; a nearly healed one overlaps its hole a hair so no seam of clay is left showing
+        const k = 1.02 - Math.min(.32, f.c * .18), r = f.rot * f.c, cs = Math.cos(r) * k, sn = Math.sin(r) * k;
+        const sh = shade[clamp(Math.round((f.tone * Math.min(1, f.c) + 1) * 2), 0, 4)];
+        f.P.forEach(([px, py], i) => {
+          const X = f.x + ox + px * cs - py * sn, Y = f.y + oy + px * sn + py * cs, m = i ? 'lineTo' : 'moveTo';
+          clay[m](f.x + px, f.y + py); sh[m](X, Y); all[m](X, Y); drop[m](X + 1.5, Y + 2.5);
+        });
+        clay.closePath(); sh.closePath(); all.closePath(); drop.closePath();
+      }
+      if (!any) return;
+      // clay shows where flakes have split off, with each flake's shadow falling into the crack beside it
+      sc.fillStyle = '#2c62fb'; sc.fill(clay);
+      sc.save(); sc.clip(clay); sc.fillStyle = 'rgba(16,36,128,.55)'; sc.fill(drop); sc.restore();
+      ['#a9bbf0', '#b8c8f5', '#c5d2f8', '#d2ddfa', '#e0e8fc'].forEach((c, i) => { sc.fillStyle = c; sc.fill(shade[i]); });
+      sc.fillStyle = this.grain; sc.fill(all);
+    }
+  },
 
+  /* 05 Thocky Keys: a cream keyboard on an ink-black desk. Every step bottoms out the key under it: the cap sinks with a
+     springy bounce and glows cobalt for a moment, and the plate flexes so its neighbours dip a little with it. Your
+     real keyboard presses the matching keycap. */
+  keys: {
+    frame: 'full',
+    init() {
+      // a 60% board with a row of F keys on top, every row 15 units wide; a narrow screen gets a compact 10-unit board
+      const one = s => s.split('').map(l => [l, 1]), narrow = (SW - 40) / 15.8 < 34, cols = narrow ? 10 : 15;
+      const ROWS = narrow ? [
+        one('1234567890'),
+        one('QWERTYUIOP'),
+        [...one('ASDFGHJKL'), ['enter', 1]],
+        [['shift', 1.5], ...one('ZXCVBNM'), ['back', 1.5]],
+        [['fn', 1.25], ['opt', 1.25], [' ', 5], ['opt', 1.25], ['ctrl', 1.25]],
+      ] : [
+        [['esc', 1], ...'F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12'.split(' ').map(l => [l, 1]), ['ins', 1], ['del', 1]],
+        [...one('`1234567890-='), ['back', 2]],
+        [['tab', 1.5], ...one('QWERTYUIOP[]'), ['\\', 1.5]],
+        [['caps', 1.75], ...one('ASDFGHJKL;\''), ['enter', 2.25]],
+        [['shift', 2.25], ...one('ZXCVBNM,./'), ['shift', 2.75]],
+        [['ctrl', 1.25], ['opt', 1.25], ['cmd', 1.25], [' ', 6.25], ['cmd', 1.25], ['opt', 1.25], ['fn', 1.25], ['ctrl', 1.25]],
+      ];
+      const u = this.u = Math.floor(clamp(Math.min((SW - 40) / (cols + .8), (ZB - ZT - 40) / (ROWS.length + .8)), 20, 84)), W = u * cols, H = u * ROWS.length;
+      const x0 = Math.round((SW - W) / 2), y0 = Math.round(ZT + (ZB - ZT - H) / 2), pad = u * .4;
+      this.k = [];
+      ROWS.forEach((row, j) => { let x = x0; row.forEach(([l, w]) => { this.k.push({ l, id: l.length === 1 ? l : l === 'enter' ? 'enter' : '', x, y: y0 + j * u, w: w * u, d: 0, v: 0, hold: 0, g: 0 }); x += w * u; }); });
+      // the desk, the case with a faint lit edge, then the plate the keys sit in
+      paper(dc, '#1c1c1c', .05);
+      dc.fillStyle = '#2a2a2a'; dc.beginPath(); dc.roundRect(x0 - pad, y0 - pad, W + pad * 2, H + pad * 2, u * .3); dc.fill();
+      dc.strokeStyle = 'rgba(255,255,255,.07)'; dc.lineWidth = 1; dc.stroke();
+      dc.fillStyle = '#121212'; dc.beginPath(); dc.roundRect(x0 - 2, y0 - 2, W + 4, H + 4, u * .12); dc.fill();
+    },
+    press(K, now) {
+      K.hold = now + 70; K.g = 1;
+      // the plate flexes: keys around the pressed one dip a little with it
+      for (const o of this.k) { const d = Math.hypot(o.x + o.w / 2 - K.x - K.w / 2, o.y - K.y) / this.u; if (o !== K && d < 2.2) o.v += .006 * (1 - d / 2.2); }
+    },
+    hit(x, y, k, now) {
+      const u = this.u, K = k.code !== 'Cell' ? this.k.find(o => o.id === k.label) : this.k.find(o => x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + u);
+      if (K) this.press(K, now);
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const u = this.u, p = u * .05, r = u * .12;
+      sc.textAlign = 'center'; sc.textBaseline = 'middle';
+      for (const K of this.k) {
+        // a springy key: it bottoms out while held, then bounces back past its rest and settles
+        const tg = now < K.hold ? 1 : 0;
+        for (let h = dt; h > 0; h -= 4) { const st = Math.min(4, h); K.v += ((tg - K.d) * .004 - K.v * .045) * st; K.d += K.v * st; }
+        K.g *= Math.exp(-dt / 650);
+        const d = clamp(K.d, -.3, 1.1), x = K.x + p, y = K.y + p, w = K.w - p * 2, h = u - p * 2;
+        // the skirt, and the top sitting up and in from it; pressing drops the top toward the skirt's middle
+        const ti = u * (.09 - .025 * d), tt = u * (.035 + .06 * d), tb = u * (.15 - .07 * d);
+        sc.fillStyle = mix('#cdc4b2', '#1d48c8', K.g); sc.beginPath(); sc.roundRect(x, y + d * u * .04, w, h - d * u * .04, r); sc.fill();
+        sc.fillStyle = mix('#f3eee6', '#2c62fb', K.g); sc.beginPath(); sc.roundRect(x + ti, y + tt, w - ti * 2, h - tt - tb, r * .8); sc.fill();
+        if (K.l === ' ') continue;
+        sc.fillStyle = mix('#3a3631', '#ffffff', K.g);
+        sc.font = mono(K.l.length > 1 ? Math.max(7, u * .15) : u * .25, 500);
+        sc.fillText(K.l, x + w / 2, y + tt + (h - tt - tb) / 2);
+      }
+    }
+  },
+
+  /* 06 Tanghulu: a sheet of glossy candy glass, like the sugar shell on a skewer of fruit. Every step bites a crack into
+     it: a star of straight, kinked fractures snaps out from the bite and runs back to the last one, so a swipe leaves
+     one connected crack; the bite crushes to white frost, chips of sugar flick out and fall, a soft highlight slides
+     over the gloss with the cursor, and the cracks melt away. */
+  glass: {
+    frame: 'feather',
+    init() {
+      paper(dc, '#5c80ea', .06);
+      // gloss: soft diagonal bands of light across the sheet
+      for (const [cx, w, al] of [[.2, .18, .3], [.31, .04, .45], [.68, .24, .16], [.8, .03, .3]]) {
+        dc.save(); dc.translate(SW * cx, SH / 2); dc.rotate(-.55);
+        const b = dc.createLinearGradient(-SW * w / 2, 0, SW * w / 2, 0);
+        b.addColorStop(0, 'rgba(255,255,255,0)'); b.addColorStop(.5, `rgba(255,255,255,${al})`); b.addColorStop(1, 'rgba(255,255,255,0)');
+        dc.fillStyle = b; dc.fillRect(-SW * w / 2, -SH * 2, SW * w, SH * 4); dc.restore();
+      }
+      this.cr = []; this.chips = []; this.last = null; this.cur = { x: -999, y: -999, t: 0 };
+    },
+    move(x, y) { this.cur = { x, y, t: performance.now() }; },
+    hit(x, y, k, now) {
+      // fractures run straight out from the bite, kinking a little as they go: a full star where a swipe starts and
+      // now and then along it, and between those just a couple of short side branches off the running crack
+      const L = this.last, d = L ? Math.hypot(L.x - x, L.y - y) : 0, star = !L || now - L.t > 300 || Math.random() < .2;
+      const R = star ? rand(36, 70) : rand(14, 32), n = star ? 5 + Math.floor(Math.random() * 3) : 2 + Math.floor(Math.random() * 2), a0 = rand(0, 6.283), rays = [], rings = [];
+      const ray = (a, len) => {
+        const pts = [[x, y, 0]];
+        for (let r = 0; r < len;) { r = Math.min(len, r + rand(10, 18)); a += rand(-.08, .08); pts.push([x + Math.cos(a) * r, y + Math.sin(a) * r, r]); }
+        return pts;
+      };
+      for (let i = 0; i < n; i++) rays.push(ray(a0 + i / n * 6.283 + rand(-.25, .25), R * rand(.45, 1)));
+      // short straight cracks join neighbouring fractures near the middle
+      const on = (ray, r) => { for (let i = 1; i < ray.length; i++) if (ray[i][2] >= r) { const p = ray[i - 1], q = ray[i], t = (r - p[2]) / (q[2] - p[2]); return [lerp(p[0], q[0], t), lerp(p[1], q[1], t)]; } return null; };
+      if (star) for (let i = 0; i < n; i++) {
+        const r = R * rand(.3, .5), A = on(rays[i], r), B = on(rays[(i + 1) % n], r);
+        if (A && B && Math.random() < .7) rings.push({ r, A, B, m: [(A[0] + B[0]) / 2 + rand(-2, 2), (A[1] + B[1]) / 2 + rand(-2, 2)] });
+      }
+      // a step soon after the last one runs a fracture back to it
+      if (L && now - L.t < 300 && d > 8 && d < 160) rays.push(ray(Math.atan2(L.y - y, L.x - x), d));
+      this.last = { x, y, t: now };
+      this.cr.push({ x, y, star, R: Math.max(R, d < 160 ? d : 0), rays, rings, t0: now, life: rand(5000, 8000) });
+      if (this.cr.length > 50) this.cr.shift();
+      for (let i = 0; i < 5; i++) this.chips.push({ x, y, vx: rand(-.18, .18), vy: rand(-.32, -.08), r: rand(2, 5), a: rand(0, 6.283), va: rand(-.015, .015), t0: now, life: rand(600, 1000) });
+      if (this.chips.length > 120) this.chips.splice(0, this.chips.length - 120);
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const cu = this.cur, act = Math.exp(-Math.max(0, now - cu.t) / 700);
+      if (act > .01) {
+        const g = sc.createRadialGradient(cu.x, cu.y, 0, cu.x, cu.y, 140);
+        g.addColorStop(0, `rgba(255,255,255,${.3 * act})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+        sc.fillStyle = g; sc.fillRect(cu.x - 140, cu.y - 140, 280, 280);
+      }
+      this.cr = this.cr.filter(c => now - c.t0 < c.life);
+      sc.lineCap = 'round'; sc.lineJoin = 'round';
+      for (const c of this.cr) {
+        // the web snaps out in a blink, holds, then melts away
+        const age = now - c.t0, reach = c.R * (1 - Math.pow(1 - clamp(age / 130, 0, 1), 3)), p = new Path2D();
+        for (const ray of c.rays) {
+          p.moveTo(c.x, c.y);
+          for (let i = 1; i < ray.length; i++) {
+            const a = ray[i - 1], b = ray[i];
+            if (b[2] > reach) { const t = (reach - a[2]) / (b[2] - a[2]); if (t > 0) p.lineTo(lerp(a[0], b[0], t), lerp(a[1], b[1], t)); break; }
+            p.lineTo(b[0], b[1]);
+          }
+        }
+        for (const g of c.rings) if (g.r < reach) { p.moveTo(g.A[0], g.A[1]); p.lineTo(g.m[0], g.m[1]); p.lineTo(g.B[0], g.B[1]); }
+        sc.globalAlpha = clamp((c.life - age) / 1800, 0, 1);
+        sc.save(); sc.translate(1, 1.4); sc.strokeStyle = 'rgba(20,40,130,.5)'; sc.lineWidth = 2; sc.stroke(p); sc.restore();
+        sc.strokeStyle = 'rgba(255,255,255,.95)'; sc.lineWidth = 1.1; sc.stroke(p);
+        if (!c.star) continue;
+        const fr = sc.createRadialGradient(c.x, c.y, 0, c.x, c.y, 9);
+        fr.addColorStop(0, 'rgba(255,255,255,.8)'); fr.addColorStop(1, 'rgba(255,255,255,0)');
+        sc.fillStyle = fr; sc.beginPath(); sc.arc(c.x, c.y, 9, 0, 6.283); sc.fill();
+      }
+      // chips of sugar glass flick out of the bite and fall
+      this.chips = this.chips.filter(q => now - q.t0 < q.life);
+      sc.fillStyle = '#fff';
+      for (const q of this.chips) {
+        q.vy += .0011 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.a += q.va * dt;
+        sc.globalAlpha = 1 - (now - q.t0) / q.life; sc.beginPath();
+        for (let i = 0; i < 3; i++) { const a = q.a + i * 2.1 + (i === 1 ? .5 : 0), r = q.r * (i === 2 ? .6 : 1); sc.lineTo(q.x + Math.cos(a) * r, q.y + Math.sin(a) * r); }
+        sc.fill();
+      }
+      sc.globalAlpha = 1;
+    }
+  },
+
+  /* 07 Pudding: rows of caramel puddings, each on its own little plate. Every step taps one with a spoon: it squashes
+     flat, springs back taller and jiggles side to side, and the wobble ripples out through its neighbours a beat later,
+     weaker the farther they sit. The pudding under a resting cursor stays pressed in a little. */
+  jelly: {
+    init() {
+      const s = this.s = clamp(Math.round(Math.min(SW - BL * 2, SH - BL * 2) / 5), 40, 110), p = s * 1.75, m = BL + s * .3;
+      const cols = Math.max(1, Math.floor((SW - m * 2 - s * 1.3) / p) + 1), rows = Math.max(1, Math.floor((SH - m * 2 - s * 1.2) / p) + 1);
+      const x0 = (SW - (cols - 1) * p) / 2, y0 = (SH - (rows - 1) * p) / 2 + s * .55;
+      // each pudding is kept by the middle of its base, with a squash spring (sq), a sideways lean spring (ln) and
+      // its own caramel drips: [across, length, width]
+      this.p = [];
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) this.p.push({ x: x0 + i * p, y: y0 + j * p, sq: 0, sv: 0, ln: 0, lv: 0,
+        drips: Array.from({ length: 5 }, (_, n) => [(n + rand(.25, .75)) / 5 - .5, rand(.04, .36), rand(.1, .16)]) });
+      this.q = []; this.dir = [1, 0]; this.cur = { x: -999, y: -999, t: 0 };
+      paper(dc, '#e6e6e3', .06);
+    },
+    move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; this.cur = { x, y, t: performance.now() }; },
+    hit(x, y, k, now) {
+      // the pudding under the step gets the full tap; the rest catch the wobble later and weaker, leaning away from it
+      const s = this.s, R = s * 3.2;
+      for (const P of this.p) {
+        const dx = P.x - x, dy = P.y - s / 2 - y, d = Math.hypot(dx, dy);
+        if (d > R) continue;
+        const own = d < s * .8;
+        this.q.push({ P, t: now + (own ? 0 : d * 1.6), a: own ? 1 : .5 * (1 - d / R), lean: own ? this.dir[0] : dx / (d || 1) });
+      }
+      if (this.q.length > 400) this.q.splice(0, this.q.length - 400);
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      this.q = this.q.filter(e => { if (now < e.t) return true; e.P.sv += .022 * e.a; e.P.lv += .016 * e.a * e.lean; return false; });
+      const s = this.s, cu = this.cur, rest = now - cu.t < 600;
+      for (const P of this.p) {
+        const tg = rest && Math.abs(cu.x - P.x) < s * .6 && Math.abs(cu.y - P.y + s / 2) < s * .6 ? .14 : 0;
+        for (let h = dt; h > 0; h -= 4) {
+          const st = Math.min(4, h);
+          P.sv += ((tg - P.sq) * .0026 - P.sv * .009) * st; P.sq += P.sv * st;
+          P.lv += (-P.ln * .0019 - P.lv * .006) * st; P.ln += P.lv * st;
+        }
+      }
+      for (const P of this.p) {
+        // squash widens the base and lowers the top; lean slides the top sideways
+        const q = clamp(P.sq, -.45, .8), w = s * (1 + .45 * q), h = s * (1 - .55 * q), tw = w * .72, L = clamp(P.ln, -.6, .6) * s * .35, x = P.x, y = P.y;
+        // the plate
+        sc.fillStyle = 'rgba(28,28,28,.07)'; sc.beginPath(); sc.ellipse(x + s * .03, y + s * .05, s * .7, s * .15, 0, 0, 6.283); sc.fill();
+        sc.fillStyle = '#fbfaf7'; sc.beginPath(); sc.ellipse(x, y + s * .02, s * .68, s * .14, 0, 0, 6.283); sc.fill();
+        const body = new Path2D(); roundPoly(body, [[x - w / 2, y], [x - tw / 2 + L, y - h], [x + tw / 2 + L, y - h], [x + w / 2, y]], s * .14);
+        sc.fillStyle = '#becdf9'; sc.fill(body);
+        sc.save(); sc.clip(body);
+        // shade down the right side, a soft sheen down the left
+        sc.fillStyle = '#a9bcf4'; sc.beginPath(); sc.moveTo(x + tw * .2 + L, y - h); sc.lineTo(x + w, y - h); sc.lineTo(x + w, y); sc.lineTo(x + w * .24, y); sc.fill();
+        sc.fillStyle = 'rgba(255,255,255,.45)'; sc.beginPath(); sc.moveTo(x - tw * .36 + L, y - h); sc.lineTo(x - tw * .25 + L, y - h); sc.lineTo(x - w * .3, y); sc.lineTo(x - w * .42, y); sc.fill();
+        // the caramel: a cap over the top, running down the sides in drips
+        const top = y - h * .81, wc = lerp(tw, w, .25), lc = L * .8;
+        sc.fillStyle = '#2c62fb'; sc.fillRect(x - w + L, y - h - 4, w * 2, h * .19 + 4);
+        for (const [f, len, dw] of P.drips) {
+          const dx = x + lc + f * wc, r = dw * w / 2, bot = top + len * h;
+          sc.beginPath(); sc.moveTo(dx - r, top - 1); sc.lineTo(dx - r, bot - r); sc.arc(dx, bot - r, r, Math.PI, 0, true); sc.lineTo(dx + r, top - 1); sc.fill();
+        }
+        sc.restore();
+        sc.fillStyle = 'rgba(255,255,255,.85)'; sc.beginPath(); sc.ellipse(x - tw * .24 + L * .95, y - h * .9, s * .06, s * .035, -.15, 0, 6.283); sc.fill();
+      }
+    }
+  },
+
+  /* 08 Soap Cutting: a cream bar of soap with a periwinkle core, scored into tiny cubes. Every step shaves a short strip
+     along the way the cursor travels: its cubes come loose, tumble off and fall out of the frame, the core shows in
+     the cut, and the bar slowly sets smooth again. */
+  soap: {
+    init() {
+      const c = this.c = clamp(Math.round(Math.min(SW, SH) / 36), 9, 15);
+      this.cols = Math.ceil(SW / c); this.rows = Math.ceil(SH / c);
+      this.cut = new Float64Array(this.cols * this.rows); this.back = new Float64Array(this.cut.length);
+      paper(dc, '#f3eee6', .06);
+      dc.strokeStyle = 'rgba(28,28,28,.09)'; dc.lineWidth = 1; dc.beginPath();
+      for (let i = 1; i < this.cols; i++) { dc.moveTo(i * c + .5, 0); dc.lineTo(i * c + .5, SH); }
+      for (let j = 1; j < this.rows; j++) { dc.moveTo(0, j * c + .5); dc.lineTo(SW, j * c + .5); }
+      dc.stroke();
+      this.bits = []; this.dir = [1, 0];
+    },
+    move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; },
+    hit(x, y, k, now) {
+      // the blade takes an oval strip, long along the stroke so consecutive steps join into one carved line
+      const c = this.c, [ux, uy] = this.dir, ra = Math.max(CELL * .75, c * 2), rb = c * rand(1.2, 1.9), R = Math.max(ra, rb);
+      const i0 = Math.max(0, Math.floor((x - R) / c)), i1 = Math.min(this.cols - 1, Math.floor((x + R) / c));
+      const j0 = Math.max(0, Math.floor((y - R) / c)), j1 = Math.min(this.rows - 1, Math.floor((y + R) / c));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const cx = (i + .5) * c - x, cy = (j + .5) * c - y, a = (cx * ux + cy * uy) / ra, b = (cy * ux - cx * uy) / rb, q = j * this.cols + i;
+        if (a * a + b * b > 1 || (this.cut[q] && now < this.back[q])) continue;
+        this.cut[q] = now; this.back[q] = now + rand(8000, 12000);
+        this.bits.push({ x: (i + .5) * c, y: (j + .5) * c, vx: ux * rand(.03, .12) + rand(-.03, .03), vy: uy * rand(.03, .1) - rand(.04, .14), a: 0, va: rand(-.012, .012) });
+      }
+      if (this.bits.length > 700) this.bits.splice(0, this.bits.length - 700);
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const c = this.c, cols = this.cols, cut = this.cut, hole = [0, 1, 2, 3].map(() => new Path2D()), lip = [0, 1, 2, 3].map(() => new Path2D());
+      for (let q = 0; q < cut.length; q++) {
+        if (!cut[q]) continue;
+        // once a spot's time is up it fills back in over a couple of seconds
+        const al = clamp((this.back[q] + 2500 - now) / 2500, 0, 1);
+        if (!al) { cut[q] = 0; continue; }
+        const i = q % cols, j = (q - i) / cols, b = Math.min(3, Math.floor(al * 4)), x = i * c, y = j * c;
+        hole[b].rect(x + 1, y + 1, c - 1, c - 1);
+        // the uncut wall above and to the left throws a shadow into the cut
+        if (j && !cut[q - cols]) lip[b].rect(x, y, c, c * .3);
+        if (i && !cut[q - 1]) lip[b].rect(x, y, c * .22, c);
+      }
+      for (let b = 0; b < 4; b++) { sc.globalAlpha = (b + 1) / 4; sc.fillStyle = '#becdf9'; sc.fill(hole[b]); sc.fillStyle = '#8fa6ee'; sc.fill(lip[b]); }
+      sc.globalAlpha = 1;
+      // the loose cubes tumble down out of the frame
+      this.bits = this.bits.filter(p => p.y < SH + 30);
+      const side = new Path2D(), top = new Path2D(), hs = c * .42;
+      for (const p of this.bits) {
+        p.vy += .0016 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.a += p.va * dt;
+        const cs = Math.cos(p.a) * hs, sn = Math.sin(p.a) * hs;
+        [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([u, v], i) => {
+          const X = p.x + u * cs - v * sn, Y = p.y + u * sn + v * cs, m = i ? 'lineTo' : 'moveTo';
+          side[m](X + 1.5, Y + 2.5); top[m](X, Y);
+        });
+        side.closePath(); top.closePath();
+      }
+      sc.fillStyle = '#8fa6ee'; sc.fill(side); sc.fillStyle = '#f7f3ec'; sc.fill(top);
+    }
+  },
+
+  /* 09 Snow: a field of fresh snow. Every step crunches a boot print into it, left and right in turn along the way the
+     cursor walks, each with a blue shadow pressed inside it and a rim of kicked-up crumbs; glitter twinkles across the
+     field and around the cursor, and new snow slowly fills the prints back in. */
+  snow: {
+    init() {
+      paper(dc, '#f6f8fd', .04);
+      // wind-packed drifts: wavy crests with a faint blue shadow falling away below each
+      for (let i = 0; i < 5; i++) {
+        const y = SH * (i + rand(.3, .7)) / 5, ph = rand(0, 6.283), g = dc.createLinearGradient(0, y - 24, 0, y + 60);
+        g.addColorStop(0, 'rgba(190,205,249,.34)'); g.addColorStop(1, 'rgba(190,205,249,0)');
+        dc.fillStyle = g; dc.beginPath(); dc.moveTo(0, y + 60);
+        for (let x = 0; x <= SW + 20; x += 20) dc.lineTo(x, y - 10 + 14 * Math.sin(x / 190 + ph) + 5 * Math.sin(x / 67 + ph * 2));
+        dc.lineTo(SW + 20, y + 60); dc.closePath(); dc.fill();
+      }
+      this.pr = []; this.gl = []; this.foot = 1; this.dir = [1, 0];
+      // one boot sole, toe pointing along +x: the ball of the foot, a narrow waist and the heel
+      const L = this.L = clamp(CELL * 1.3, 30, 54), sole = this.sole = new Path2D();
+      sole.moveTo(L * .48, 0); sole.ellipse(L * .18, 0, L * .3, L * .16, 0, 0, 6.283);
+      sole.moveTo(L * .12, 0); sole.ellipse(-L * .08, 0, L * .2, L * .1, 0, 0, 6.283);
+      sole.moveTo(-L * .16, 0); sole.ellipse(-L * .32, 0, L * .16, L * .13, 0, 0, 6.283);
+    },
+    move(x, y, dx, dy) {
+      const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l];
+      if (Math.random() < .35) this.glint(x + rand(-60, 60), y + rand(-60, 60), performance.now());
+    },
+    glint(x, y, now) { this.gl.push({ x, y, t0: now, life: rand(300, 700), r: rand(2, 4.5) }); if (this.gl.length > 70) this.gl.shift(); },
+    hit(x, y, k, now) {
+      // a print every stride, feet taking turns either side of the path, each pointing the way the cursor walks
+      const L = this.L, last = this.pr[this.pr.length - 1];
+      if (last && now - last.t0 < 2000 && Math.hypot(last.sx - x, last.sy - y) < L) return;
+      const [ux, uy] = this.dir, f = this.foot = -this.foot, o = L * .2;
+      this.pr.push({ sx: x, sy: y, x: x - uy * o * f, y: y + ux * o * f, a: Math.atan2(uy, ux) + rand(-.12, .12), t0: now, life: rand(14000, 20000),
+        cr: Array.from({ length: 3 }, () => [rand(-.8, .8), Math.random() < .5 ? 1 : -1, rand(.8, 1.5)]) });
+      if (this.pr.length > 200) this.pr.shift();
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      if (Math.random() < dt / 90) this.glint(rand(0, SW), rand(0, SH), now);
+      const L = this.L, sole = this.sole;
+      this.pr = this.pr.filter(p => now - p.t0 < p.life);
+      for (const p of this.pr) {
+        const age = now - p.t0;
+        sc.save(); sc.globalAlpha = Math.min(1, age / 90) * clamp((p.life - age) / 6000, 0, 1);
+        // light comes from the top left: the far wall of the print is in shadow, the floor is lit; the shift is made
+        // before turning the print so the light stays put however it points
+        sc.translate(p.x, p.y); sc.rotate(p.a); sc.fillStyle = '#b4c4f3'; sc.fill(sole);
+        sc.save(); sc.clip(sole); sc.rotate(-p.a); sc.translate(1.8, 2.4); sc.rotate(p.a); sc.fillStyle = '#d9e2fb'; sc.fill(sole); sc.restore();
+        // a few crumbs kicked up on the rim
+        for (const [t, sd, r] of p.cr) {
+          const cx = t * L * .5, cy = sd * L * (.17 + .03 * Math.abs(t));
+          sc.fillStyle = '#c3cff6'; sc.beginPath(); sc.arc(cx + .6, cy + .9, r, 0, 6.283); sc.fill();
+          sc.fillStyle = '#fff'; sc.beginPath(); sc.arc(cx, cy, r, 0, 6.283); sc.fill();
+        }
+        sc.restore();
+      }
+      // glitter: tiny four-point glints that swell and fade
+      this.gl = this.gl.filter(g => now - g.t0 < g.life);
+      sc.strokeStyle = '#5c80ea'; sc.lineWidth = 1;
+      for (const g of this.gl) {
+        const a = Math.sin(Math.PI * (now - g.t0) / g.life), r = g.r * (.4 + .6 * a);
+        sc.globalAlpha = a; sc.beginPath(); sc.moveTo(g.x - r, g.y); sc.lineTo(g.x + r, g.y); sc.moveTo(g.x, g.y - r); sc.lineTo(g.x, g.y + r); sc.stroke();
+      }
+      sc.globalAlpha = 1;
+    }
+  },
 };
 
 function sceneHit(k) {
@@ -840,7 +1323,7 @@ function frame(now) {
     const p = trail[i], q = trail[i - 1], a = 1 - (now - p.t) / 260;
     if (Math.abs(p.x - q.x) + Math.abs(p.y - q.y) > 240) continue;
     g2.strokeStyle = curCache; g2.globalAlpha = a * .55; g2.lineCap = 'round';
-    g2.lineWidth = Math.max(1, (S.curSize / 4) * a);
+    g2.lineWidth = Math.max(1, 7.5 * a); // a quarter of the 30px cursor
     g2.beginPath(); g2.moveTo(q.x, q.y); g2.lineTo(p.x, p.y); g2.stroke();
   }
   g2.globalAlpha = 1;
@@ -848,38 +1331,21 @@ function frame(now) {
 }
 function loop() { if (!raf) raf = requestAnimationFrame(frame); }
 
-/* ---------- custom cursor ---------- */
-const CURSORS = {
-  system: { name: 'Default', svg: '<path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>' },
-  ring:   { name: 'Ring', svg: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>' },
-  dot:    { name: 'Marble', svg: '<circle cx="12" cy="12" r="7" fill="currentColor"/><circle cx="9.6" cy="9.4" r="2" fill="#fff" opacity=".55"/>' },
-  arrow:  { name: 'Arrow', tl: true, svg: '<path d="M5 3v16l4.5-4.2 3.1 6.2 2.6-1.2-3-6.2H19z" fill="currentColor" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>' },
-  pixel:  { name: 'Pixel', svg: '<path d="M8 4h8v4h4v8h-4v4H8v-4H4V8h4z" fill="currentColor" stroke="#fff" stroke-width="1.2"/>' },
-  star:   { name: 'Star', svg: '<path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>' },
-  heart:  { name: 'Heart', svg: '<path d="M12 20.5s-7.8-4.7-7.8-10.3A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.8 2.6c0 5.6-7.8 10.3-7.8 10.3z" fill="currentColor" stroke="#fff" stroke-width="1.2"/>' },
-  sparkle:{ name: 'Sparkle', svg: '<path d="M12 1.5c.8 5.4 3.6 8.5 10.5 10.5-6.9 2-9.7 5.1-10.5 10.5C11.2 17.1 8.4 14 1.5 12 8.4 10 11.2 6.9 12 1.5z" fill="currentColor" stroke="#fff" stroke-width="1"/>' },
-  cross:  { name: 'Crosshair', svg: '<g stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/></g><circle cx="12" cy="12" r="1.6" fill="currentColor"/>' }
-};
-const COLORS = ['auto', '#2c62fb', '#5c80ea', '#becdf9', '#1c1c1c', '#616d78', '#f3eee6', '#ffffff'];
+/* ---------- custom cursor: always the ring, colored to match the picture ---------- */
 const cursorEl = $('cursor');
-function curColor() { return S.curColor === 'auto' ? (cssVar('--cursor') || '#2c62fb') : S.curColor; }
+function curColor() { return cssVar('--cursor') || '#2c62fb'; }
 let curCache = '#2c62fb';
 function applyCursor() {
-  const c = CURSORS[S.cur] || CURSORS.ring;
-  const custom = S.cur !== 'system' && matchMedia('(any-pointer: fine)').matches;
+  const custom = matchMedia('(any-pointer: fine)').matches;
   document.body.classList.toggle('custom-cursor', custom);
   cursorEl.hidden = !custom;
-  cursorEl.innerHTML = `<svg viewBox="0 0 24 24">${c.svg}</svg>`;
-  cursorEl.classList.toggle('tl', !!c.tl);
-  cursorEl.style.setProperty('--cs', S.curSize + 'px');
-  cursorEl.style.color = S.curColor === 'auto' ? '' : S.curColor;
   curCache = curColor();
 }
 function moveCursor(e) {
   if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
   cursorEl.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
   cursorEl.classList.add('on');
-  if (S.trail && S.cur !== 'system' && !SOUNDS[S.sound].noTrail) { trail.push({ x: e.clientX, y: e.clientY, t: performance.now() }); if (trail.length > 60) trail.shift(); loop(); }
+  if (!SOUNDS[S.sound].noTrail) { trail.push({ x: e.clientX, y: e.clientY, t: performance.now() }); if (trail.length > 60) trail.shift(); loop(); }
 }
 let pulseT = 0;
 function pulseCursor() { cursorEl.classList.add('press'); clearTimeout(pulseT); pulseT = setTimeout(() => cursorEl.classList.remove('press'), 80); }
@@ -908,6 +1374,68 @@ function thumb(id) {
         if (v > .1) b += `<circle cx="${x}" cy="${y}" r="${Math.min(1.5, .7 + v * .7).toFixed(2)}"/>`;
       }
       return svg('#3557b0', `<g fill="#eef2ff">${b}</g>`);
+    case 'wax': {
+      // a patch of split flakes around one crack in an otherwise smooth sheet, cut the same way as the scene's
+      const pts = [], f1 = v => v.toFixed(1);
+      let clay = '';
+      for (let j = -1; j < 8; j++) for (let i = -1; i < 12; i++) pts.push([(i + .2 + r() * .6) * 7.5, (j + .2 + r() * .6) * 7.5]);
+      for (const [x, y] of pts) {
+        if (Math.hypot((x - 40) / 1.35, y - 25) > 17) continue;
+        let P = [[x - 15, y - 15], [x + 15, y - 15], [x + 15, y + 15], [x - 15, y + 15]];
+        for (const [ox, oy] of pts) if (ox !== x || oy !== y) P = clipHalf(P, (x + ox) / 2, (y + oy) / 2, ox - x, oy - y);
+        clay += `<polygon points="${P.map(p => f1(p[0]) + ',' + f1(p[1])).join(' ')}"/>`;
+        b += `<polygon fill="${['#b8c8f5', '#d2ddfa', '#e0e8fc'][Math.floor(r() * 3)]}" points="${P.map(p => f1(x + (p[0] - x) * .76) + ',' + f1(y + (p[1] - y) * .76)).join(' ')}"/>`;
+      }
+      return svg('#c5d2f8', `<g fill="${C.cobalt}">${clay}</g>${b}`);
+    }
+    case 'thock':
+      [1, 1.5, 1.75, 2.25, 1.25].forEach((w0, j) => {
+        for (let x = 5, i = 0; x < 74.5; i++) {
+          const w = Math.min((i ? 1 : w0) * 4.67, 75 - x), lit = (j === 1 && i === 5) || (j === 2 && i === 3) || (j === 3 && i === 6);
+          b += `<rect x="${(x + .4).toFixed(1)}" y="${(7 + j * 7.4).toFixed(1)}" width="${(w - .8).toFixed(1)}" height="6.4" rx="1" fill="${lit ? C.cobalt : C.paper}"/>`;
+          x += w;
+        }
+      });
+      return svg('#1c1c1c', `<rect x="3" y="5" width="74" height="40" rx="2.5" fill="#2a2a2a"/>${b}`);
+    case 'tanghulu': {
+      // two stars of straight, kinked fractures with a crack running between them
+      const f1 = v => v.toFixed(1);
+      for (const [cx, cy, R, n] of [[27, 21, 17, 6], [56, 32, 13, 5]]) {
+        const ends = Array.from({ length: n }, (_, i) => { const a = i / n * 6.283 + cx * .13 + (r() - .5) * .5; return [Math.cos(a), Math.sin(a), R * (.55 + r() * .45)]; });
+        ends.forEach(([dx, dy, l], i) => {
+          const [ex, ey] = ends[(i + 1) % n], f = R * .38;
+          b += `M${cx} ${cy}L${f1(cx + dx * l * .5 + (r() - .5) * 2)} ${f1(cy + dy * l * .5 + (r() - .5) * 2)}L${f1(cx + dx * l)} ${f1(cy + dy * l)}`;
+          if (r() < .75) b += `M${f1(cx + dx * f)} ${f1(cy + dy * f)}L${f1(cx + ex * f)} ${f1(cy + ey * f)}`;
+        });
+      }
+      return svg('#5c80ea', `<path d="M8 55L44 -5H58L22 55z" fill="#fff" opacity=".16"/><path d="${b}M27 21L36 25.5L45 26L56 32" fill="none" stroke="#fff" stroke-width=".7" stroke-linecap="round" stroke-linejoin="round"/>`);
+    }
+    case 'pudding':
+      for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) {
+        const x = 13 + i * 18, y = 22 + j * 20, q = i === 1 && !j ? .3 : 0, w = 12 * (1 + .45 * q), h = 12 * (1 - .55 * q), tw = w * .72, cw = lerp(tw, w, .19);
+        b += `<ellipse cx="${x}" cy="${y}" rx="${(w * .66).toFixed(1)}" ry="1.7" fill="#fbfaf7"/>`
+          + `<path d="M${x - w / 2} ${y}L${x - tw / 2} ${y - h}H${x + tw / 2}L${x + w / 2} ${y}z" fill="${C.peri}"/>`
+          + `<g fill="${C.cobalt}"><path d="M${x - tw / 2} ${y - h}H${x + tw / 2}L${x + cw / 2} ${y - h * .81}H${x - cw / 2}z"/>`
+          + `<rect x="${(x - tw * .24).toFixed(1)}" y="${y - h * .85}" width="1.4" height="${(h * .38).toFixed(1)}" rx=".7"/><rect x="${(x + tw * .12).toFixed(1)}" y="${y - h * .85}" width="1.4" height="${(h * .24).toFixed(1)}" rx=".7"/></g>`
+          + `<ellipse cx="${(x - tw * .22).toFixed(1)}" cy="${y - h * .91}" rx="1" ry=".55" fill="#fff"/>`;
+      }
+      return svg('#e6e6e3', b);
+    case 'soap': {
+      // a carved diagonal strip showing the core, and cubes tumbling off its end
+      for (let j = 0; j < 10; j++) for (let i = 2; i < 14; i++) if (Math.abs(j - 7.5 + i * .42) < 1.1) b += `<rect x="${i * 5 + .5}" y="${j * 5 + .5}" width="4.5" height="4.5" fill="${C.peri}"/>`;
+      for (let i = 0; i < 6; i++) { const x = (58 + r() * 14).toFixed(1), y = (18 + r() * 28).toFixed(1); b += `<rect x="${x}" y="${y}" width="3.6" height="3.6" fill="#f7f3ec" stroke="#8fa6ee" stroke-width=".6" transform="rotate(${(r() * 90).toFixed(0)} ${x} ${y})"/>`; }
+      let grid = '';
+      for (let i = 5; i < 80; i += 5) grid += `M${i} 0V50`;
+      for (let j = 5; j < 50; j += 5) grid += `M0 ${j}H80`;
+      return svg(C.paper, `<path d="${grid}" stroke="#1c1c1c" stroke-opacity=".1" stroke-width=".4"/>${b}`);
+    }
+    case 'snow':
+      // a trail of boot prints, left and right along a gentle curve
+      for (let i = 0; i < 8; i++) {
+        const x = 8 + i * 9.4, y = 27 - Math.sin(i * .62) * 8, a = Math.atan2(-Math.cos(i * .62) * 4.96, 9.4), sd = i & 1 ? 3 : -3;
+        b += `<g transform="translate(${(x - Math.sin(a) * sd).toFixed(1)} ${(y + Math.cos(a) * sd).toFixed(1)}) rotate(${(a * 57.3).toFixed(0)})"><ellipse cx="1.4" rx="2.8" ry="1.4"/><ellipse cx="-2.7" rx="1.4" ry="1.15"/></g>`;
+      }
+      return svg('#f6f8fd', `<g fill="#b9c8f4">${b}</g>`);
   }
   return svg('#eee', '');
 }
@@ -917,11 +1445,11 @@ const ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>';
 const num = id => String(SOUND_IDS.indexOf(id) + 1).padStart(2, '0');
 function pressedAttr(el, on) { el.setAttribute('aria-pressed', on ? 'true' : 'false'); }
-function buildOptions(host, items, onPick, render, cls) {
+function buildOptions(host, items, onPick, render) {
   host.innerHTML = '';
   Object.entries(items).forEach(([id, it]) => {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'opt' + (cls ? ' ' + cls : ''); b.dataset.id = id;
+    b.type = 'button'; b.className = 'opt'; b.dataset.id = id;
     b.innerHTML = render(id, it);
     b.addEventListener('click', () => onPick(id));
     host.appendChild(b);
@@ -933,10 +1461,7 @@ function renderAll() {
   setScene();
   $('soundNum').textContent = num(S.sound);
   $('soundName').textContent = SOUNDS[S.sound].name;
-  syncOptions($('soundGrid'), S.sound); syncOptions($('curGrid'), S.cur);
-  pressedAttr($('tTrail'), S.trail);
-  $('curColors').querySelectorAll('[data-c]').forEach(b => pressedAttr(b, b.dataset.c === S.curColor));
-  pressedAttr($('curPick'), !COLORS.includes(S.curColor));
+  syncOptions($('soundGrid'), S.sound);
   $('mute').innerHTML = S.muted ? ICON_OFF : ICON_ON;
   $('mute').setAttribute('aria-label', S.muted ? 'Unmute' : 'Mute');
   $('volume').value = S.volume;
@@ -945,7 +1470,6 @@ function renderAll() {
 }
 function set(patch) {
   Object.assign(S, patch); save();
-  if ('cur' in patch || 'curColor' in patch || 'curSize' in patch) applyCursor();
   if ('volume' in patch || 'muted' in patch) { if (A.master) A.master.gain.setTargetAtTime(S.muted ? 0 : S.volume, A.ctx.currentTime, 0.02); }
   if ('mode' in patch || 'sound' in patch) releaseAll('p');
   renderAll();
@@ -955,26 +1479,11 @@ buildOptions($('soundGrid'), SOUNDS, pickSound,
   (id, s) => `<span class="thumb">${thumb(id)}</span><b><em>${num(id)}</em>${s.name}</b><span>${s.desc}</span>`);
 function pickSound(id) { set({ sound: id }); demo(); }
 function step(d) { const i = SOUND_IDS.indexOf(S.sound); pickSound(SOUND_IDS[(i + d + SOUND_IDS.length) % SOUND_IDS.length]); }
-buildOptions($('curGrid'), CURSORS, id => set({ cur: id }),
-  (id, c) => `<svg viewBox="0 0 24 24">${c.svg.replace(/stroke="#fff"/g, 'stroke="none"')}</svg><span>${c.name}</span>`, 'cur-opt');
-COLORS.forEach(c => {
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'sw' + (c === 'auto' ? ' auto' : ''); b.dataset.c = c;
-  b.setAttribute('aria-label', c === 'auto' ? 'Match the picture' : c); b.title = c === 'auto' ? 'Match the picture' : c;
-  if (c !== 'auto') b.style.background = c;
-  b.addEventListener('click', () => set({ curColor: c })); $('curColors').appendChild(b);
-});
-const pick = document.createElement('label'); pick.className = 'sw pick'; pick.id = 'curPick'; pick.title = 'Pick any color';
-pick.innerHTML = '<input type="color" aria-label="Pick any cursor color" value="#2c62fb">';
-pick.querySelector('input').addEventListener('input', e => set({ curColor: e.target.value }));
-$('curColors').appendChild(pick);
 
 $('prev').addEventListener('click', () => step(-1));
 $('next').addEventListener('click', () => step(1));
-$('tTrail').addEventListener('click', () => set({ trail: !S.trail }));
 $('mute').addEventListener('click', () => { initAudio(); set({ muted: !S.muted }); });
 $('volume').addEventListener('input', e => set({ volume: +e.target.value, muted: false }));
-$('curSize').value = S.curSize;
-$('curSize').addEventListener('input', e => set({ curSize: +e.target.value }));
 
 document.querySelectorAll('[data-panel]').forEach(b => b.addEventListener('click', () => {
   const p = $('panel-' + b.dataset.panel), open = p.hidden;
