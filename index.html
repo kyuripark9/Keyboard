@@ -22,13 +22,9 @@
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   color-scheme: light;
 }
-body[data-scene="pebble"] { --bg: #ffffff; --ink: #1b4f96; --ink-soft: #6b86ad; --line: rgba(27,79,150,.15); --panel: rgba(255,255,255,.88); --acc: #1b55a0; --cursor: #1b55a0; color-scheme: light; }
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
-body[data-scene="blob"]   { --bg: #d9d9d7; --ink: #2a2a2a; --ink-soft: #6d6d6b; --line: rgba(42,42,42,.13); --panel: rgba(250,250,249,.88); --acc: #2a2a2a; --cursor: #2a2a2a; color-scheme: light; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="sand"]   { --bg: #4d7c66; --ink: #f4f6ef; --ink-soft: #c5d6cb; --line: rgba(244,246,239,.2); --panel: rgba(62,104,85,.9); --acc: #f4f6ef; --cursor: #f4f6ef; color-scheme: dark; }
-body[data-scene="vortex"] { --bg: #ebe6dc; --ink: #1a1a1a; --ink-soft: #6c665c; --line: rgba(26,26,26,.13); --panel: rgba(246,243,237,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="type"]   { --bg: #ebebeb; --ink: #e8383d; --ink-soft: #c06a6c; --line: rgba(232,56,61,.15); --panel: rgba(246,246,246,.88); --acc: #e8383d; --cursor: #e8383d; color-scheme: light; }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -177,7 +173,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
-      <h1>clack<sup>07</sup></h1>
+      <h1>clack<sup>03</sup></h1>
       <p id="hint">Move your cursor. Each sound draws its own picture</p>
     </div>
     <div class="tally" aria-live="off">
@@ -208,7 +204,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
     </nav>
 
     <section class="panel" id="panel-sound" hidden aria-label="Choose a sound">
-      <h2>7 SOUNDS, 7 PICTURES</h2>
+      <h2>3 SOUNDS, 3 PICTURES</h2>
       <div class="grid" id="soundGrid"></div>
     </section>
 
@@ -245,14 +241,11 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 const $ = id => document.getElementById(id);
 
 /* ---------- settings ---------- */
-const SOUND_IDS = ['wax', 'bubble', 'squishy', 'slime', 'sand', 'typewriter', 'pearl'];
-const OLD = { waxxl: 'wax', mix: 'wax', mochi: 'squishy', optical: 'typewriter', gameclicky: 'typewriter', chip: 'typewriter',
-  popit: 'bubble', marimba: 'bubble', gamered: 'typewriter', voice: 'typewriter', blue: 'typewriter', brown: 'typewriter', thock: 'typewriter', woodblock: 'typewriter' };
-const DEF = { mode: 'hover', sound: 'squishy', cur: 'ring', curColor: 'auto', curSize: 30, trail: true, volume: 0.7, muted: false, count: 0 };
+const SOUND_IDS = ['bubble', 'slime', 'sand'];
+const DEF = { mode: 'hover', sound: 'bubble', cur: 'ring', curColor: 'auto', curSize: 30, trail: true, volume: 0.7, muted: false, count: 0 };
 let S = { ...DEF };
 try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
-if (OLD[S.sound]) S.sound = OLD[S.sound];
-S.sound = DEF.sound; // every visit opens on 03 Squishy; the other settings are remembered
+S.sound = DEF.sound; // every visit opens on 01 Bubble Wrap; the other settings are remembered
 S.mode = 'hover'; // Tap mode was removed: sounds always play as the cursor moves (touch screens still drag)
 let saveT = 0;
 function save() {
@@ -315,22 +308,13 @@ function hiss(t, o = {}) {
 const rand = (a, b) => a + Math.random() * (b - a);
 
 /* Each sound: scene = the picture it draws, desc = one line for the picker.
-   All ten are tuned for ASMR: soft attacks, rounded filters, tiny crisp details and a little room tone.
+   All are tuned for ASMR: soft attacks, rounded filters, tiny crisp details and a little room tone.
 */
 function crinkle(t, n, spread, o = {}) {
   const { lo = 2600, hi = 6000, g = 0.35, q = 2.5 } = o;
   for (let i = 0; i < n; i++) { const at = t + Math.pow(Math.random(), 1.6) * spread; hiss(at, { f: rand(lo, hi), q, a: 0.0015, d: rand(0.004, 0.012), g: rand(0.4, 1) * g * (1 - (at - t) / spread * 0.6) }); }
 }
 const SOUNDS = {
-  wax: { name: 'Wax Ball', desc: 'Crack the cobalt pebbles', scene: 'pebble',
-    // a thin shell snapping into crisp flakes, then a sticky, stretchy pull
-    down(k, t, j) {
-      hiss(t, { f: 2400 * j, q: 3, a: 0.002, d: 0.018, g: 1.3 });
-      crinkle(t + 0.004, 6 + Math.floor(Math.random() * 4), 0.07, { lo: 3000, hi: 6500, g: 0.45 });
-      hiss(t + 0.05, { f: 320 * j, f2: 820 * j, ft: 0.14, q: 9, a: 0.03, d: 0.16, g: 1.5, wet: 0.12 });
-      tone('sine', 140 * j, t + 0.05, { f2: 210 * j, ft: 0.12, a: 0.03, d: 0.14, g: 0.1 });
-    },
-    up(k, t, j) { hiss(t, { f: 900 * j, f2: 420, ft: 0.1, q: 10, a: 0.012, d: 0.1, g: 0.6 }); } },
   bubble: { name: 'Bubble Wrap', desc: 'Pop rings of blue ink', scene: 'wrap',
     // a soft round pop with a whisper of plastic crinkle after it
     down(k, t, j) {
@@ -338,17 +322,6 @@ const SOUNDS = {
       hiss(t, { type: 'lowpass', f: 2200, q: 1.2, a: 0.001, d: 0.012, g: 1.3 });
       tone('sine', f0, t, { f2: f0 * 2.4, ft: 0.05, a: 0.002, d: 0.07, g: 0.5, wet: 0.2 });
       crinkle(t + 0.015, 4, 0.12, { lo: 3500, hi: 7000, g: 0.16 });
-    } },
-  squishy: { name: 'Squishy', desc: 'Squeeze a wall of puffy tiles', scene: 'blob',
-    // a stress ball: a wet, rubbery squeeze in, then foam slowly breathing back out
-    down(k, t, j) {
-      hiss(t, { type: 'lowpass', f: 260 * j, f2: 900 * j, ft: 0.18, q: 3, a: 0.03, d: 0.2, g: 1.5 });
-      hiss(t + 0.02, { f: 480 * j, f2: 680 * j, ft: 0.12, q: 10, a: 0.02, d: 0.12, g: 0.5, wet: 0.08 });
-      tone('sine', 170 * j, t + 0.015, { f2: 250 * j, ft: 0.06, a: 0.012, d: 0.07, g: 0.12 });
-    },
-    up(k, t, j) {
-      hiss(t, { type: 'lowpass', f: 900 * j, f2: 300, ft: 0.4, q: 1.4, a: 0.06, d: 0.38, g: 0.75 });
-      crinkle(t + 0.05, 5, 0.3, { lo: 2000, hi: 4200, g: 0.07, q: 1.5 });
     } },
   slime: { name: 'Crunchy Slime', desc: 'Crumple a sheet of stitches', scene: 'cloth',
     // foam beads bursting inside glossy slime: a wet press and a fizz of tiny crackles
@@ -358,31 +331,11 @@ const SOUNDS = {
       if (Math.random() < 0.5) tone('sine', rand(1800, 2600), t + rand(0.02, 0.1), { a: 0.002, d: 0.02, g: 0.04, wet: 0.3 });
     },
     up(k, t, j) { hiss(t, { f: 700 * j, f2: 1500, ft: 0.08, q: 8, a: 0.01, d: 0.08, g: 0.4 }); crinkle(t, 4, 0.06, { g: 0.2 }); } },
-  sand: { name: 'Kinetic Sand', desc: 'Send ripples through the sand', scene: 'sand',
+  sand: { name: 'Kinetic Sand', desc: 'Trickle grains through the ripples', scene: 'sand',
     // only fine grains trickling: an airy hiss that fades in slowly, never a burst
     down(k, t, j) {
       hiss(t, { f: 3400 * j, q: 0.8, a: 0.07, d: 0.2, g: 0.2 });
       crinkle(t + 0.02, 16, 0.26, { lo: 2600, hi: 6200, g: 0.2, q: 1.6 });
-    } },
-  typewriter: { name: 'Typewriter', desc: 'Rake red lines into moiré', scene: 'type',
-    // creamy, thocky keys with a soft upstroke, and a little bell on Enter
-    down(k, t, j) {
-      if (k.code === 'Space') { hiss(t, { type: 'lowpass', f: 700, d: 0.06, g: 1 }); tone('sine', 90, t, { f2: 60, ft: 0.06, d: 0.08, g: 0.45 }); return; }
-      hiss(t, { type: 'lowpass', f: 1500 * j, q: 2.4, a: 0.001, d: 0.03, g: 1.5 });
-      tone('sine', 230 * j, t, { f2: 150 * j, ft: 0.03, a: 0.001, d: 0.05, g: 0.4 });
-      hiss(t, { f: 4200 * j, q: 4, a: 0.001, d: 0.006, g: 0.25 });
-      if (k.code === 'Enter') { tone('sine', 2093, t + 0.02, { d: 1.6, g: 0.16, wet: 0.45 }); tone('sine', 4186, t + 0.02, { d: 0.5, g: 0.03, wet: 0.3 }); }
-    },
-    up(k, t, j) { hiss(t, { type: 'lowpass', f: 2400 * j, q: 2, d: 0.012, g: 0.4 }); } },
-  pearl: { name: 'Pearl', desc: 'Swirl the dots around a sinking pearl', scene: 'vortex',
-    // glassy music-box pings on a pentatonic scale (left to right climbs the scale), with a dusting of sparkle
-    down(k, t, j) {
-      const P = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21], n = P[Math.min(9, Math.floor(k.x / 15 * 10))] - (k.row > 3 ? 12 : 0);
-      const f = 880 * Math.pow(2, n / 12) * (0.997 + 0.006 * j - 0.003);
-      tone('sine', f, t, { a: 0.004, d: 0.9, g: 0.09, wet: 0.4 });
-      tone('sine', f * 2.76, t, { a: 0.002, d: 0.16, g: 0.018, wet: 0.45 });
-      tone('triangle', f / 2, t, { a: 0.01, d: 0.3, g: 0.025, wet: 0.25 });
-      crinkle(t + 0.01, 3, 0.1, { lo: 6000, hi: 9000, g: 0.05, q: 3 });
     } },
 };
 
@@ -552,106 +505,6 @@ function wrapText(ctx, txt, x, y, w, lh) {
 
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
-  /* 01 Wax Ball: cobalt pebbles printed like a cyanotype. Each one is a solid core over a pale grainy halo that sits
-     a little off register, and overlapping halos stack darker. A step cracks a big pebble in two or pops a small one. */
-  pebble: {
-    init() {
-      const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
-      this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
-      this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
-      this.H = new Float32Array(w * h); this.K = new Uint8Array(w * h); this.N = Float32Array.from({ length: w * h }, () => Math.random());
-      // tone ramp from paper white to cobalt (27,85,160), stored as ABGR for the pixel buffer
-      this.pal = new Uint32Array(256);
-      for (let i = 0; i < 256; i++) { const t = i / 255, c = (v) => Math.round(255 + (v - 255) * t); this.pal[i] = 0xff000000 | c(160) << 16 | c(85) << 8 | c(27); }
-      const m = this.m = Math.min(SW, ZB - ZT); this.p = [];
-      const n = clamp(Math.round(7 * SW / m), 7, 18);
-      for (let tries = 0; this.p.length < n && tries < 600; tries++) {
-        const r = m * rand(.1, .17), x = rand(.05, .95) * SW, y = rand(ZT + r * .5, ZB - r * .5);
-        if (this.p.some(q => Math.hypot(q.x - x, q.y - y) < (q.r + r) * .62)) continue;
-        this.p.push(this.mk(x, y, r, 0));
-      }
-    },
-    mk(x, y, r, now) {
-      const a = Math.random() * 6.283, ho = r * rand(.16, .46);
-      return { x, y, r, ox: 0, oy: 0, vx: 0, vy: 0, rot: Math.random() * 6.283, e: rand(.04, .3), asp: rand(.8, 1.06),
-        hs: rand(1.02, 1.24), hx: Math.cos(a) * ho, hy: Math.sin(a) * ho, hr: rand(-.5, .5), jx: 0, jy: 0, vjx: 0, vjy: 0, t0: now, dying: 0 };
-    },
-    shove(x, y, f) {
-      for (const q of this.p) {
-        if (q.dying) continue;
-        const dx = q.x + q.ox - x, dy = q.y + q.oy - y, d = Math.hypot(dx, dy) || 1, R = q.r * 2.2;
-        if (d > R) continue;
-        const w = (1 - d / R) * f; q.vx += dx / d * w; q.vy += dy / d * w;
-      }
-    },
-    move(x, y, dx, dy) { this.shove(x, y, Math.min(1.2, Math.hypot(dx, dy) * .03)); },
-    hit(x, y, k, now) {
-      let best = null;
-      for (const q of this.p) if (!q.dying && Math.hypot(q.x + q.ox - x, q.y + q.oy - y) < q.r * 1.05 && (!best || q.r < best.r)) best = q;
-      if (best) {
-        best.dying = now;
-        if (best.r > this.m * .075) { // crack in two (three for the big ones), pieces nudged apart along a random axis
-          const n = best.r > this.m * .14 && Math.random() < .5 ? 3 : 2, a0 = Math.random() * 6.283, cr = best.r * (n === 2 ? .68 : .56);
-          for (let i = 0; i < n; i++) {
-            const a = a0 + i / n * 6.283, c = this.mk(best.x + best.ox + Math.cos(a) * best.r * .42, best.y + best.oy + Math.sin(a) * best.r * .42, cr * rand(.92, 1.06), now);
-            c.vx = Math.cos(a) * 2.2; c.vy = Math.sin(a) * 2.2; this.p.push(c);
-          }
-        }
-      }
-      for (const q of this.p) { // the print slips: nearby cores jolt off register and settle back
-        const d = Math.hypot(q.x + q.ox - x, q.y + q.oy - y); if (d > q.r * 2.5) continue;
-        const w = (1 - d / (q.r * 2.5)) * q.r * .05; q.vjx += rand(-1, 1) * w; q.vjy += rand(-1, 1) * w;
-      }
-      this.shove(x, y, 2.2);
-      const alive = this.p.filter(q => !q.dying);
-      if (alive.length < 7) this.p.push(this.mk(rand(.08, .92) * SW, rand(ZT, ZB), this.m * rand(.11, .16), now));
-      if (alive.length > 42) alive.sort((p, q) => p.r - q.r)[0].dying = now;
-    },
-    // rasterize one pebble: an egg shape (rot, taper e, aspect asp). halo adds soft grainy coverage, core sets a solid mask
-    splat(x, y, r, rot, e, asp, halo, a) {
-      const G = this.G, w = this.w, h = this.h, H = this.H, K = this.K, N = this.N, cx = x / G, cy = y / G, rr = r / G, R = rr * (1 + e) * 1.08;
-      const cs = Math.cos(rot), sn = Math.sin(rot), x0 = Math.max(0, Math.floor(cx - R)), x1 = Math.min(w - 1, Math.ceil(cx + R)), y0 = Math.max(0, Math.floor(cy - R)), y1 = Math.min(h - 1, Math.ceil(cy + R));
-      for (let j = y0; j <= y1; j++) {
-        const dy = j - cy;
-        for (let i = x0, o = j * w + x0; i <= x1; i++, o++) {
-          const dx = i - cx, v = (-dx * sn + dy * cs) / rr; if (v <= -1 || v >= 1) continue;
-          const u = (dx * cs + dy * sn) / (rr * asp) / (1 - e * v), q = u * u + v * v;
-          if (halo) { const c = (1 - N[o] * .06 - q) * 16; if (c > 0) H[o] += (c > 1 ? 1 : c) * a; }
-          else if (q < 1 - N[o] * .03) K[o] = 1;
-        }
-      }
-    },
-    draw(now, dt) {
-      const k = .0022, f = Math.pow(.9, dt / 16), H = this.H, K = this.K;
-      H.fill(0); K.fill(0);
-      this.p = this.p.filter(q => !q.dying || now - q.dying < 260);
-      const live = [];
-      for (const q of this.p) {
-        q.vx += -q.ox * k * dt; q.vy += -q.oy * k * dt; q.vx *= f; q.vy *= f; q.ox += q.vx * dt / 16; q.oy += q.vy * dt / 16;
-        q.vjx += -q.jx * k * 3 * dt; q.vjy += -q.jy * k * 3 * dt; q.vjx *= f; q.vjy *= f; q.jx += q.vjx * dt / 16; q.jy += q.vjy * dt / 16;
-        let s2 = 1;
-        if (q.dying) s2 = 1 - (now - q.dying) / 260;
-        else if (q.t0) { const p = Math.min(1, (now - q.t0) / 520); s2 = 1 + 2.2 * Math.pow(p - 1, 3) + 1.2 * Math.pow(p - 1, 2); }
-        if (s2 <= .02) continue;
-        const x = q.x + q.ox + Math.sin(now / 2900 + q.rot) * q.r * .03, y = q.y + q.oy + Math.cos(now / 3300 + q.rot) * q.r * .03;
-        this.splat(x + q.hx * s2, y + q.hy * s2, q.r * q.hs * s2, q.rot + q.hr, q.e * .6, 1, true, q.dying ? s2 : 1);
-        live.push([q, x, y, s2]);
-      }
-      for (const [q, x, y, s2] of live) this.splat(x + q.jx, y + q.jy, q.r * s2, q.rot, q.e, q.asp, false);
-      // halos stack like transparent ink, and each pixel's own grain value thins or thickens the tone
-      const P = this.px, N = this.N, pal = this.pal, CORE = pal[255], CORE2 = pal[232];
-      for (let o = 0; o < H.length; o++) {
-        if (K[o]) { P[o] = N[o] < .05 ? CORE2 : CORE; continue; }
-        const hv = H[o];
-        if (hv <= 0) { P[o] = N[o] < .0004 ? pal[40] : pal[0]; continue; }
-        const t = (1 - Math.exp(-.5 * hv)) * (.45 + N[o] * 1.1);
-        P[o] = pal[t >= .85 ? 217 : (t * 255) | 0];
-      }
-      this.oc.putImageData(this.img, 0, 0);
-      sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
-    }
-  },
-
   /* 02 Bubble Wrap: the sheet drawn as a contour map in blue ink on cream paper. Every bubble is a hill of rings,
      the sheet sways gently, and a pop flattens its hill and sends a ripple through the neighbours' rings. */
   wrap: {
@@ -739,69 +592,6 @@ const SCENES = {
     }
   },
 
-  /* 03 Squishy: a wall of soft white silicone tiles. Pairs of puffy balls joined by a pinched neck, laid in a
-     basket weave so the pairs interlock. Each step squashes the ball under it, which wobbles back up and nudges
-     its partner, and the cursor presses a soft dent as it glides. Shaded per pixel from a height map. */
-  blob: {
-    init() {
-      const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
-      this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
-      this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
-      this.H = new Float32Array(w * h); this.D = new Float32Array(w * h);
-      const d = this.d = clamp(Math.round(Math.min(SW, ZB - ZT) / 7), 56, 120) / G;
-      this.cols = Math.ceil(w / d) + 2; this.rows = Math.ceil(h / d) + 2;
-      this.ox = (w - (this.cols - 1) * d) / 2; this.oy = (h - (this.rows - 1) * d) / 2;
-      const n = this.cols * this.rows; this.amp = new Float32Array(n).fill(1); this.vel = new Float32Array(n);
-      this.cur = { x: -999, y: -999, t: 0, a: 0 };
-      // grey levels 0..255 with a faint cool tint, ABGR
-      this.pal = Uint32Array.from({ length: 256 }, (_, i) => 0xff000000 | Math.min(255, i + 3) << 16 | i << 8 | Math.max(0, i - 2));
-    },
-    // basket weave: 2x2 blocks of balls alternate between two horizontal pairs and two vertical pairs
-    mate(i, j) { return ((i >> 1) + (j >> 1)) % 2 === 0 ? [i ^ 1, j] : [i, j ^ 1]; },
-    ball(x, y) { const G = this.G; return [Math.round((x / G - this.ox) / this.d), Math.round((y / G - this.oy) / this.d)]; },
-    poke(i, j, v) { if (i >= 0 && j >= 0 && i < this.cols && j < this.rows) this.vel[j * this.cols + i] += v; },
-    move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
-    hit(x, y) {
-      const [i, j] = this.ball(x, y), [mi, mj] = this.mate(i, j);
-      this.poke(i, j, -.075); this.poke(mi, mj, .03); // squeeze one end and the other end puffs up
-      this.cur.x = x; this.cur.y = y; this.cur.t = performance.now();
-    },
-    draw(now, dt) {
-      const { G, w, h, H, D, d, cols, rows, amp, vel } = this;
-      const k = .0016 * dt, f = Math.pow(.93, dt / 16);
-      for (let q = 0; q < amp.length; q++) { vel[q] += (1 - amp[q]) * k; vel[q] *= f; amp[q] = clamp(amp[q] + vel[q] * dt / 16, .35, 1.3); }
-      const c = this.cur; c.a += (clamp(1 - (now - c.t - 250) / 700, 0, 1) - c.a) * Math.min(1, dt * .012);
-      // each pair is a two-ball metaball: their fields add up into a pinched neck, and the surface is a smooth dome above the threshold
-      const S2 = (d * .83) * (d * .83), T = .48, R = d * .44, cx = c.x / G, cy = c.y / G, cr = d * .55, ca = c.a * d * .16;
-      const ampAt = (i, j) => i >= 0 && j >= 0 && i < cols && j < rows ? amp[j * cols + i] : 1;
-      for (let y = 0, o = 0; y < h; y++) {
-        const j = Math.round((y - this.oy) / d);
-        for (let x = 0; x < w; x++, o++) {
-          const i = Math.round((x - this.ox) / d), [mi, mj] = this.mate(i, j);
-          const ea = ((x - this.ox - i * d) ** 2 + (y - this.oy - j * d) ** 2) / S2, eb = ((x - this.ox - mi * d) ** 2 + (y - this.oy - mj * d) ** 2) / S2;
-          const fa = ea < 1 ? (1 - ea) * (1 - ea) : 0, fb = eb < 1 ? (1 - eb) * (1 - eb) : 0, F = fa + fb;
-          D[o] = F;
-          let z = 0;
-          if (F > T) z = R * Math.sqrt(Math.min(1, (F - T) / (1 - T))) * (ampAt(i, j) * fa + ampAt(mi, mj) * fb) / F;
-          if (ca > .01) { const e = Math.hypot(x - cx, y - cy); if (e < cr) { const s3 = 1 - e / cr; z -= ca * s3 * s3 * (z > 0 ? 1 : 0); } }
-          H[o] = z;
-        }
-      }
-      // light from the upper left: soft diffuse, a gentle sheen, and grooves that sink into shadow
-      const P = this.px, pal = this.pal, lx = -.45, ly = -.55, lz = .7;
-      for (let y = 1; y < h - 1; y++) for (let x = 1, o = y * w + 1; x < w - 1; x++, o++) {
-        const z = H[o];
-        if (z <= 0) { const g = .84 - .3 * D[o] / T; P[o] = pal[(g * 232) | 0]; continue; } // the gap between tiles darkens toward their rims
-        const nx = (H[o - 1] - H[o + 1]) * .5, ny = (H[o - w] - H[o + w]) * .5, nl = 1 / Math.sqrt(nx * nx + ny * ny + 1);
-        const dif = Math.max(0, (nx * lx + ny * ly + lz) * nl), hz = (nx * (lx) + ny * (ly) + (lz + 1)) * nl / Math.sqrt(lx * lx + ly * ly + (lz + 1) * (lz + 1));
-        const spec = Math.pow(Math.max(0, hz), 40) * .22, rim = z < 1.2 ? .35 * (1 - z / 1.2) : 0;
-        P[o] = pal[Math.min(255, ((.5 + .48 * dif + spec - rim) * 248) | 0)];
-      }
-      this.oc.putImageData(this.img, 0, 0);
-      sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
-    }
-  },
-
   /* 04 Crunchy Slime: a sheet of + stitches that crumples like paper. Every step folds the sheet along a straight
      crease with flat facets on each side, so the grid kinks at sharp angles instead of rippling. Stitches follow
      the stretch and squeeze of the sheet, and the creases slowly flatten out. */
@@ -862,23 +652,38 @@ const SCENES = {
     }
   },
 
-  /* 05 Kinetic Sand: white tick marks on grainy green, laid out on rows like a sand garden. Rings spread out from a
-     bright band on the right, packed tight near it and wide apart far away, and drift slowly outward like ripples.
-     Each step sends a brighter pulse rolling out, and the band follows the cursor up and down. */
+  /* 05 Kinetic Sand: white tick marks on grainy green, laid out on rows like a raked sand garden. Rings spread out
+     from a bright band, packed tight near it and wide apart far away. The ticks are grains: the cursor parts them like
+     a finger dragged through sand and they shiver as it passes, and each step spills a trickle of loose grains that
+     patter down, settle on a row and sink back in, matching the hiss and tiny grain ticks of the sound. */
   sand: {
     init() {
-      this.cy = (ZT + ZB) / 2; this.ty = this.cy; this.ph = 0; this.boost = 0; this.pulses = [];
+      this.cy = (ZT + ZB) / 2; this.ty = this.cy; this.ph = 0; this.boost = 0; this.pulses = []; this.gr = [];
+      this.cur = { x: -999, y: -999, t: 0, a: 0 };
       this.row = clamp(Math.round(Math.min(SW, SH) / 70), 9, 14);
       paper(dc, '#4d7c66', .16);
     },
-    move(x, y) { this.ty = clamp(y, ZT + 40, ZB - 40); },
-    hit(x, y, k, now) { this.boost = Math.min(3, this.boost + .25); this.pulses.push({ t0: now }); if (this.pulses.length > 10) this.pulses.shift(); },
+    move(x, y) { this.ty = clamp(y, ZT + 40, ZB - 40); this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
+    hit(x, y, k, now) {
+      this.boost = Math.min(3, this.boost + .12); this.pulses.push({ t0: now }); if (this.pulses.length > 10) this.pulses.shift();
+      // the sound plays sixteen grain ticks spread over a quarter second, so spill as many grains, staggered the same way
+      for (let i = 0; i < 16; i++) this.gr.push({ x: x + rand(-8, 8), y: y + rand(-6, 4), vx: rand(-.9, .9), vy: rand(-1.2, .2), t0: now + Math.pow(Math.random(), 1.6) * 260, land: 0 });
+      if (this.gr.length > 400) this.gr.splice(0, this.gr.length - 400);
+    },
+    // a grain's place on a ring, nudged away from the finger and shivering while the finger is near
+    shift(x, y, now) {
+      const c = this.cur; if (c.a < .01) return x;
+      const dx = x - c.x, dy = y - c.y, e2 = dx * dx + dy * dy, R = this.row * 6; if (e2 > R * R) return x;
+      const e = Math.sqrt(e2), f = 1 - e / R, h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453 % 1;
+      return x + (dx >= 0 ? 1 : -1) * f * f * this.row * 1.6 * c.a + Math.sin(now / 45 + h * 40) * f * 1.6 * c.a;
+    },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
       this.cy += (this.ty - this.cy) * Math.min(1, dt * .002);
       this.boost *= Math.pow(.9985, dt);
       this.ph = (this.ph + dt * .00012 * (1 + this.boost * 3)) % 1;
       this.pulses = this.pulses.filter(p => now - p.t0 < 3000);
+      const c = this.cur; c.a += (clamp(1 - (now - c.t - 250) / 700, 0, 1) - c.a) * Math.min(1, dt * .01);
       const left = SW * .05, right = SW * .93, cx = SW * .72, cy = this.cy, Rmax = cx - left * 1.6, N = 34, row = this.row, th = row * .45;
       const top = ZT + row, bot = ZB - row * 2;
       sc.fillStyle = '#f4f6ef';
@@ -894,124 +699,27 @@ const SCENES = {
         for (let y = top; y < bot; y += row) {
           const dy = y + th / 2 - cy; if (Math.abs(dy) >= r) continue;
           const dx = Math.sqrt(r * r - dy * dy);
-          sc.fillRect(cx - dx, y, 1.4, th);
-          if (cx + dx < right - 4) sc.fillRect(cx + dx, y, 1.4, th);
+          sc.fillRect(this.shift(cx - dx, y, now), y, 1.4, th);
+          if (cx + dx < right - 4) sc.fillRect(this.shift(cx + dx, y, now), y, 1.4, th);
         }
       }
       // the bright band: rows of short dashes stacked tight where every ring begins
       sc.globalAlpha = .95;
-      for (let y = top; y < bot; y += row) { const fall = 1 - Math.min(1, Math.abs(y - cy) / (SH * .55)); for (let i = -3; i <= 3; i++) if (Math.abs(i) < 1 + fall * 3.2) sc.fillRect(cx + i * 3 - .7, y, 2.2, th); }
-      sc.globalAlpha = 1;
-    }
-  },
-
-  /* 06 Typewriter: fine coral lines on grey, raked like a sand garden; every keystroke leaves a groove. A vertical set crosses a slanted set, and
-     where they overlap they shimmer into moiré and glow warmer. The cursor drags through the lines like a finger
-     through sand; each step leaves a groove that slowly smooths out, and the slanted set turns a little toward the cursor. */
-  type: {
-    init() {
-      this.comb = []; this.cur = { x: -999, y: -999, t: 0, a: 0 }; this.tilt = 0; this.tiltT = 0;
-      const sp = this.sp = clamp(Math.round(Math.min(SW, SH) / 95), 6, 10);
-      this.vx0 = SW * .06; this.vx1 = SW * .48;
-    },
-    move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); this.tiltT = (x / SW - .5) * .16; },
-    hit(x, y, k, now) { this.comb.push({ x, y, t0: now, A: this.sp * rand(1.6, 2.6) }); if (this.comb.length > 60) this.comb.shift(); },
-    // every point on a line is pushed away from the grooves and from the finger, so the lines part around them
-    warp(x, y, now) {
-      let dx = 0, dy = 0;
-      const R = this.sp * 9, R2 = R * R;
-      for (const c of this.comb) {
-        const ex = x - c.x, ey = y - c.y, e2 = ex * ex + ey * ey; if (e2 > R2 * 2.2) continue;
-        const life = 1 - (now - c.t0) / 6000, e = Math.sqrt(e2) || 1, g = Math.exp(-e2 / R2) * c.A * life * life;
-        dx += ex / e * g; dy += ey / e * g;
-      }
-      const c = this.cur; if (c.a > .01) {
-        const ex = x - c.x, ey = y - c.y, e2 = ex * ex + ey * ey, R3 = R2 * 1.6;
-        if (e2 < R3 * 3) { const e = Math.sqrt(e2) || 1, g = Math.exp(-e2 / R3) * this.sp * 2.4 * c.a; dx += ex / e * g; dy += ey / e * g; }
-      }
-      return [x + dx, y + dy];
-    },
-    draw(now, dt) {
-      sc.fillStyle = '#ebebeb'; sc.fillRect(0, 0, SW, SH);
-      this.comb = this.comb.filter(c => now - c.t0 < 6000);
-      const c = this.cur; c.a += (clamp(1 - (now - c.t - 300) / 900, 0, 1) - c.a) * Math.min(1, dt * .01);
-      this.tilt += (this.tiltT - this.tilt) * Math.min(1, dt * .002);
-      const sp = this.sp, th = -.6 + this.tilt + Math.sin(now / 5200) * .015, ux = Math.cos(th), uy = Math.sin(th), nx = -uy, ny = ux;
-      // a warm glow where the two sets cross, drifting toward the finger
-      const gx = lerp(SW * .3, c.x > 0 ? c.x : SW * .3, .35 * c.a), gy = lerp(SH * .62, c.y > 0 ? c.y : SH * .62, .35 * c.a);
-      const glow = sc.createRadialGradient(gx, gy, 0, gx, gy, Math.min(SW, SH) * .55);
-      glow.addColorStop(0, 'rgba(255,70,72,.32)'); glow.addColorStop(1, 'rgba(255,70,72,0)');
-      sc.fillStyle = glow; sc.fillRect(0, 0, SW, SH);
-      sc.lineWidth = 1.15; sc.lineCap = 'round';
-      const step = 12;
-      // the vertical set, on the left, running the full height
-      sc.strokeStyle = 'rgba(226,40,46,.85)';
-      sc.beginPath();
-      for (let x = this.vx0; x <= this.vx1; x += sp * 1.25) {
-        for (let y = -10, f = 1; y <= SH + 10; y += step, f = 0) { const [px, py] = this.warp(x, y, now); f ? sc.moveTo(px, py) : sc.lineTo(px, py); }
-      }
-      sc.stroke();
-      // the slanted set: a wide band rising to the right, each line starting at a staggered edge
-      sc.strokeStyle = 'rgba(240,58,62,.7)';
-      sc.beginPath();
-      const ox = SW * .55, oy = SH * .62, L = Math.hypot(SW, SH);
-      for (let k2 = -Math.round(SH * .32 / sp); k2 <= Math.round(SH * .3 / sp); k2++) {
-        const bx = ox + nx * k2 * sp, by = oy + ny * k2 * sp, t0 = -SW * .62 - Math.abs(Math.sin(k2 * 1.7)) * sp * 6 + k2 * sp * .5, t1 = L * .6;
-        for (let t = t0, f = 1; t <= t1; t += step, f = 0) { const [px, py] = this.warp(bx + ux * t, by + uy * t, now); f ? sc.moveTo(px, py) : sc.lineTo(px, py); }
-      }
-      sc.stroke();
-    }
-  },
-
-  /* 07 Pearl: fine dotted lines on cream paper, spiralling into a pearl that sits sunk in the dot field like a
-     drain. Dots stream along the lines toward it, the pearl drifts after the cursor, and a step spins the
-     vortex tighter and sends a ring rolling out through the lines. */
-  vortex: {
-    init() {
-      const m = this.m = Math.min(SW, ZB - ZT);
-      this.r0 = m * .085; this.p = { x: SW * .42, y: (ZT + ZB) / 2, tx: SW * .42, ty: (ZT + ZB) / 2 };
-      this.spin = 0; this.flow = 0; this.rot = 0; this.rings = [];
-      this.rays = clamp(Math.round(Math.hypot(SW, SH) / 9), 120, 220);
-      paper(dc, '#ebe6dc', .05);
-    },
-    move(x, y) { this.p.tx = x; this.p.ty = y; },
-    hit(x, y, k, now) { this.spin = Math.min(1.2, this.spin + .07); this.rings.push({ t0: now }); if (this.rings.length > 8) this.rings.shift(); },
-    draw(now, dt) {
-      sc.drawImage(deco, 0, 0, SW, SH);
-      const p = this.p, r0 = this.r0, f = Math.min(1, dt * .0018);
-      p.x += (p.tx - p.x) * f; p.y += (p.ty - p.y) * f;
-      this.spin *= Math.pow(.9993, dt);
-      this.flow = (this.flow + dt * (.0004 + this.spin * .0011)) % 1;
-      this.rot += dt * (.00004 + this.spin * .00028);
-      this.rings = this.rings.filter(r => now - r.t0 < 2200);
-      const T = 1.7 + this.spin * .6, Rmax = Math.hypot(SW, SH), tilt = .6, N = this.rays, gap = 6.5;
-      sc.fillStyle = '#1a1a1a';
-      for (let i = 0; i < N; i++) {
-        const a0 = i / N * 6.2832 + this.rot, ph = (i * .618) % 1; // stagger each line's dots so they never line up into rings
-        // dots march toward the pearl; the lines wind tight near it and straighten far away
-        for (let k2 = 0; ; k2++) {
-          let r = r0 * .92 + (k2 + 1 + ph - this.flow) * gap * (1 + k2 * .006);
-          if (r > Rmax) break;
-          for (const rg of this.rings) { const age = (now - rg.t0) / 1000, front = r0 + age * this.m * .55, z = (r - front) / (r0 * .9); r += Math.exp(-z * z) * Math.sin(z * 2.4) * r0 * .18 * (1 - age / 2.2); }
-          const q = r0 / r, a = a0 + T * Math.pow(q, .75), x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r * tilt;
-          if (x < -4 || x > SW + 4 || y < -4 || y > SH + 4) { if (r > Rmax * .2 && (x < -SW || x > 2 * SW || y < -SH || y > 2 * SH)) break; continue; }
-          // the field dips into a funnel: dots near the pearl shrink and darken as they slide over the rim
-          const sz = 1.6 + .5 * Math.min(1, q * 1.6);
-          sc.globalAlpha = Math.min(1, .78 + q);
-          sc.fillRect(x - sz / 2, y - sz / 2, sz, sz);
+      for (let y = top; y < bot; y += row) { const fall = 1 - Math.min(1, Math.abs(y - cy) / (SH * .55)); for (let i = -3; i <= 3; i++) if (Math.abs(i) < 1 + fall * 3.2) sc.fillRect(this.shift(cx + i * 3 - .7, y, now), y, 2.2, th); }
+      // loose grains: fall, land on the next row of ticks, rest a moment and sink back into the sand
+      const k2 = dt / 16;
+      this.gr = this.gr.filter(g => now < g.t0 || (g.land ? now - g.land < 900 : g.y < bot));
+      for (const g of this.gr) {
+        if (now < g.t0) continue;
+        if (!g.land) {
+          g.vy += .14 * k2; g.vx *= Math.pow(.97, k2); g.x += g.vx * k2; g.y += g.vy * k2;
+          const r0 = top + Math.ceil((g.y - top) / row) * row; // the row just below
+          if (g.vy > 0 && g.y + th >= r0 && g.y + th - g.vy * k2 < r0 && Math.random() < .35) { g.y = r0; g.land = now; }
         }
+        sc.globalAlpha = g.land ? .9 * (1 - (now - g.land) / 900) : .9;
+        sc.fillRect(g.x, g.y, 1.4, g.land ? th : th * .7);
       }
       sc.globalAlpha = 1;
-      // the pearl: paper-coloured, sunk a little, with a soft contact shadow along its lower rim
-      const R = r0, cx = p.x, cy = p.y - R * .45;
-      const sh = sc.createRadialGradient(cx, p.y + R * .05, R * .2, cx, p.y + R * .05, R * 1.25);
-      sh.addColorStop(0, 'rgba(20,18,15,.55)'); sh.addColorStop(1, 'rgba(20,18,15,0)');
-      sc.save(); sc.translate(cx, p.y + R * .05); sc.scale(1, tilt); sc.fillStyle = sh; sc.beginPath(); sc.arc(0, 0, R * 1.2, 0, 6.2832); sc.fill(); sc.restore();
-      const g = sc.createRadialGradient(cx - R * .35, cy - R * .4, R * .1, cx, cy, R * 1.05);
-      g.addColorStop(0, '#f6f2ea'); g.addColorStop(.7, '#e8e2d6'); g.addColorStop(1, '#d3cbbd');
-      sc.fillStyle = g; sc.beginPath(); sc.arc(cx, cy, R, 0, 6.2832); sc.fill();
-      // where it sinks in: the dot field's rim cuts straight across the lower part of the pearl
-      sc.strokeStyle = 'rgba(26,26,26,.35)'; sc.lineWidth = 1; sc.beginPath(); sc.ellipse(cx, p.y + R * .1, R * .98, R * .98 * tilt * .35, 0, 0, 3.1416); sc.stroke();
     }
   },
 
@@ -1114,20 +822,12 @@ function thumb(id) {
   const svg = (bg, body) => `<svg viewBox="0 0 80 50" preserveAspectRatio="xMidYMid slice"><rect width="80" height="50" fill="${bg}"/>${body}</svg>`;
   let b = '';
   switch (id) {
-    case 'wax':
-      [[16, 14, 11, 4, -3], [44, 12, 9, -3, 3], [64, 30, 12, 3, 4], [30, 36, 10, -4, -2], [52, 44, 8, 2, -3]].forEach(([x, y, rr, hx, hy]) => b += `<circle cx="${x + hx}" cy="${y + hy}" r="${rr * 1.25}" fill="#1b55a0" fill-opacity=".3"/>`);
-      [[16, 14, 11], [44, 12, 9], [64, 30, 12], [30, 36, 10], [52, 44, 8]].forEach(([x, y, rr]) => b += `<ellipse cx="${x}" cy="${y}" rx="${rr}" ry="${rr * .88}" fill="#1b55a0"/>`);
-      return svg('#fff', b);
     case 'bubble':
       for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) {
         const x = 7 + i * 13 + (j % 2) * 3, y = 7 + j * 12, big = r() > .25;
         b += `<ellipse cx="${x}" cy="${y}" rx="5.4" ry="4.2"/>` + (big ? `<ellipse cx="${x}" cy="${y}" rx="3" ry="2.4"/><circle cx="${x}" cy="${y}" r=".9" fill="${C.cobalt}"/>` : '');
       }
       return svg('#eae8dc', `<g fill="none" stroke="${C.cobalt}" stroke-width=".7">${b}</g>`);
-    case 'squishy':
-      b = '<defs><radialGradient id="tsq" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".65" stop-color="#ececea"/><stop offset="1" stop-color="#b9b9b6"/></radialGradient></defs><g fill="url(#tsq)">';
-      [[10, 8, 22, 8], [34, 2, 34, 14], [46, 8, 58, 8], [70, 2, 70, 14], [10, 26, 10, 38], [22, 26, 22, 38], [34, 26, 46, 26], [58, 26, 70, 26], [34, 38, 46, 38], [58, 38, 70, 38], [10, 50, 22, 50], [46, 50, 58, 50]].forEach(([x1, y1, x2, y2]) => b += `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="#e4e4e2" stroke-width="7"/><circle cx="${x1}" cy="${y1}" r="5.6"/><circle cx="${x2}" cy="${y2}" r="5.6"/>`);
-      return svg('#cfcfcd', b + '</g>');
     case 'slime':
       for (let j = 0; j < 7; j++) for (let i = 0; i < 12; i++) {
         const x = 8 + i * 6 + (j > 3 ? (j - 3) * (i < 5 ? 1.2 : .2) : 0), y = 6 + j * 6.2 - (i > 4 && i < 9 ? 1.2 : 0), a = j > 3 && i < 5 ? .25 : 0, l = j > 3 && i < 5 ? 1.2 : 1.7;
@@ -1138,17 +838,6 @@ function thumb(id) {
       for (let k = 1; k < 12; k++) { const r2 = 46 * Math.pow(k / 12, 1.7); for (let y = 4; y < 47; y += 3.4) { const dy = y + .8 - 25; if (Math.abs(dy) < r2) { const dx = Math.sqrt(r2 * r2 - dy * dy); b += `<rect x="${(58 - dx).toFixed(1)}" y="${y}" width=".5" height="1.6"/>`; if (58 + dx < 74) b += `<rect x="${(58 + dx).toFixed(1)}" y="${y}" width=".5" height="1.6"/>`; } } }
       for (let y = 4; y < 47; y += 3.4) b += `<rect x="56.5" y="${y}" width="3" height="1.6"/><rect x="5" y="${y}" width=".5" height="1.6"/><rect x="75" y="${y}" width=".5" height="1.6"/>`;
       return svg('#4d7c66', `<g fill="#f4f6ef">${b}</g>`);
-    case 'typewriter':
-      for (let x = 6; x < 36; x += 2.2) b += `<path d="M${x} 0V50" stroke="#e2282e" stroke-width=".45"/>`;
-      for (let k = -9; k < 12; k++) b += `<path d="M${-10} ${46 + k * 2.4}L90 ${-10 + k * 2.4}" stroke="#f03a3e" stroke-opacity=".7" stroke-width=".45"/>`;
-      return svg('#ebebeb', '<defs><radialGradient id="tsd"><stop offset="0" stop-color="#ff4648" stop-opacity=".35"/><stop offset="1" stop-color="#ff4648" stop-opacity="0"/></radialGradient></defs><circle cx="26" cy="32" r="26" fill="url(#tsd)"/>' + b);
-    case 'pearl':
-      for (let i = 0; i < 36; i++) {
-        const a0 = i / 36 * 6.2832; let d = '';
-        for (let r2 = 7; r2 < 60; r2 += 2.2) { const a = a0 + 2.2 * Math.pow(7 / r2, .75); d += `<circle cx="${(34 + Math.cos(a) * r2).toFixed(1)}" cy="${(25 + Math.sin(a) * r2 * .6).toFixed(1)}" r=".35"/>`; }
-        b += d;
-      }
-      return svg('#ebe6dc', `<g fill="#1a1a1a">${b}</g><ellipse cx="34" cy="26" rx="8" ry="3" fill="rgba(20,18,15,.35)"/><circle cx="34" cy="21.5" r="6.5" fill="#efe9de"/>`);
   }
   return svg('#eee', '');
 }
