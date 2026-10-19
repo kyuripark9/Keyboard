@@ -1090,15 +1090,15 @@ const SCENES = {
       const round = new Path2D(), box = new Path2D(), h = s * .4;
       round.arc(0, 0, s / 2, 0, 6.283); roundPoly(box, [[-h, -h], [h, -h], [h, h], [-h, h]], s * .15);
       this.img = [sprite('#1fa204', round), sprite('#f31802', box)];
-      // staggered rows with a little jitter, every shape whole between the header and the dock; odd rows sit in the gaps
-      // and hold one fewer. Each jelly keeps its kind (k: 0 round, 1 square), a turn (r), a size (g), a squash spring (sq)
-      // and a jiggle spring stored as a stretch (ex, ey)
+      // staggered rows with a little jitter fill the whole screen, centred on the stage and running off every edge; odd
+      // rows sit in the gaps. Each jelly keeps its kind (k: 0 round, 1 square), a turn (r), a size (g), a squash spring
+      // (sq) and a jiggle spring stored as a stretch (ex, ey)
       this.p = [];
-      const cols = Math.max(2, Math.floor((SW - s * 1.3 - 32) / p) + 1), rows = Math.max(1, Math.floor((ZB - ZT - s * 1.3 - 16) / ph) + 1);
-      const x0 = (SW - (cols - 1) * p) / 2, y0 = (ZT + ZB - (rows - 1) * ph) / 2;
+      const cx = SW / 2, cy = (ZT + ZB) / 2, nx = Math.ceil((cx + s * .7) / p), ny = Math.ceil((Math.max(cy, SH - cy) + s * .7) / ph);
+      const cols = nx * 2 + 1, rows = ny * 2 + 1, x0 = cx - nx * p, y0 = cy - ny * ph;
       for (let j = 0, prev = []; j < rows; j++) {
         const row = [];
-        for (let i = 0; i < cols - (j & 1); i++) {
+        for (let i = 0; i < cols; i++) {
           // squares and rounds mostly alternate: the more squares already sit beside and above, the likelier a round
           const reds = [row[i - 1], ...(j & 1 ? [prev[i], prev[i + 1]] : [prev[i - 1], prev[i]])].filter(v => v === 1).length;
           const k = Math.random() < [.8, .5, .2, .05][reds] ? 1 : 0;
