@@ -176,7 +176,6 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
   <header class="top">
     <div class="brand">
       <h1>clack<sup>05</sup></h1>
-      <p id="hint">Move your cursor. Each sound draws its own picture</p>
     </div>
     <div class="tally" aria-live="off">
       <b id="count">0</b>
@@ -332,7 +331,7 @@ const SOUNDS = {
       crinkle(t + 0.01, 12 + Math.floor(Math.random() * 6), 0.18, { lo: 2800, hi: 7000, g: 0.6, q: 3 });
     },
     up(k, t, j) { hiss(t, { f: 700 * j, f2: 1500, ft: 0.08, q: 8, a: 0.01, d: 0.08, g: 0.4 }); crinkle(t, 4, 0.06, { g: 0.2 }); } },
-  ink: { name: 'Ink Mountains', desc: 'Pile misty ink into mountains', scene: 'peaks',
+  ink: { name: 'Ink Mountains', desc: 'Pile green hills up', scene: 'peaks',
     // ink dust settling: a soft, low puff of air and a fine patter of grains landing, like sand sifted onto paper
     down(k, t, j) {
       hiss(t, { type: 'lowpass', f: 1100 * j, f2: 600, ft: 0.16, q: 0.8, a: 0.03, d: 0.2, g: 0.3 });
@@ -534,7 +533,7 @@ const SCENES = {
       for (let i = 0; i < this.amp.length; i++) this.amp[i] = this.base[i] = rand(.8, 1);
       this.x0 = (SW % s2) / 2; this.y0 = ((ZT + ZB) / 2) % s2;
       this.cosT = Float32Array.from({ length: 1024 }, (_, i) => .5 + .5 * Math.cos(i / 1024 * 6.2832));
-      this.rip = []; this.popped = 0; this.cur = { x: -999, y: -999, a: 0, t: 0 };
+      this.rip = []; this.cur = { x: -999, y: -999, a: 0, t: 0 };
       paper(dc, '#eae8dc', .07);
     },
     move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
@@ -551,10 +550,9 @@ const SCENES = {
       sc.drawImage(deco, 0, 0, SW, SH);
       const G = this.G, w = this.w, h = this.h, F = this.F, s2 = this.s, cols = this.cols, amp = this.amp, cosT = this.cosT;
       // popped hills sink fast, refilled ones swell back slowly
-      let popped = 0;
       for (let q = 0; q < amp.length; q++) {
         if (this.back[q] && now > this.back[q]) this.back[q] = 0;
-        const target = this.back[q] ? .2 : this.base[q]; if (this.back[q]) popped++;
+        const target = this.back[q] ? .2 : this.base[q];
         amp[q] += (target - amp[q]) * Math.min(1, dt * (this.back[q] ? .02 : .0025));
       }
       // the sheet sways: rows slide sideways and columns bob, so the lattice stretches into soft, uneven loops
@@ -602,7 +600,6 @@ const SCENES = {
       }
       this.oc.putImageData(this.img, 0, 0);
       sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
-      sc.fillStyle = C.cobalt; sc.font = mono(11, 600); sc.fillText(`POPPED ${String(popped).padStart(3, '0')}`, 24, ZB - 14);
     }
   },
 
@@ -618,8 +615,6 @@ const SCENES = {
       for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { const q = j * cols + i; this.hx[q] = x0 + i * s2; this.hy[q] = y0 + j * s2; }
       this.folds = []; this.dir = [1, 0];
       paper(dc, '#e6e6e6', .05);
-      dc.fillStyle = '#1a1a1a'; dc.font = mono(11);
-      dc.fillText('CRUNCH  ·  CRUMPLE  ·  FLATTEN', 24, ZB - 12);
     },
     move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; },
     hit(x, y, k, now) {
@@ -965,7 +960,6 @@ function buildOptions(host, items, onPick, render, cls) {
 function syncOptions(host, cur) { host.querySelectorAll('[data-id]').forEach(b => pressedAttr(b, b.dataset.id === cur)); }
 
 function renderAll() {
-  $('hint').textContent = 'Move your cursor. Each sound draws its own picture';
   setScene();
   $('soundNum').textContent = num(S.sound);
   $('soundName').textContent = SOUNDS[S.sound].name;
