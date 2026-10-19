@@ -28,7 +28,7 @@ body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; 
 body[data-scene="wax"]    { --bg: #c5d2f8; --ink: #1b3a9e; --ink-soft: #4d64b0; --line: rgba(27,58,158,.16); --panel: rgba(214,224,251,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 body[data-scene="keys"]   { --bg: #1c1c1c; --ink: #f3eee6; --ink-soft: #9d988e; --line: rgba(243,238,230,.16); --panel: rgba(38,38,38,.92); --acc: #5c80ea; --cursor: #5c80ea; color-scheme: dark; }
 body[data-scene="glass"]  { --bg: #5c80ea; --ink: #ffffff; --ink-soft: #dbe3fb; --line: rgba(255,255,255,.26); --panel: rgba(74,110,222,.92); --acc: #ffffff; --cursor: #1b2a6b; color-scheme: dark; }
-body[data-scene="jelly"]  { --bg: #e6e6e3; --ink: #1d3fa8; --ink-soft: #5d6f9e; --line: rgba(29,63,168,.15); --panel: rgba(243,243,241,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --panel: rgba(244,231,205,.9); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
 body[data-scene="soap"]   { --bg: #f3eee6; --ink: #1c1c1c; --ink-soft: #6d685f; --line: rgba(28,28,28,.13); --panel: rgba(249,246,241,.9); --acc: #1c1c1c; --cursor: #1c1c1c; color-scheme: light; }
 body[data-scene="snow"]   { --bg: #f6f8fd; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(246,248,253,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 
@@ -352,7 +352,7 @@ const SOUNDS = {
       crinkle(t + 0.003, 9, 0.07, { lo: 3200, hi: 8000, g: 0.5, q: 3 });
       hiss(t + 0.01, { type: 'lowpass', f: 1300, q: 0.9, a: 0.003, d: 0.04, g: 0.45 });
     } },
-  pudding: { name: 'Pudding', desc: 'Tap caramel puddings till they jiggle', scene: 'jelly',
+  pudding: { name: 'Pudding', desc: 'Tap soft jellies till they jiggle', scene: 'jelly',
     // a spoon tapping custard: a soft wet slap and a low wobble that shivers as the pudding jiggles
     down(k, t, j) {
       const f0 = (150 + k.seed * 70) * j, rate = rand(8, 11);
@@ -1029,67 +1029,77 @@ const SCENES = {
     }
   },
 
-  /* 07 Pudding: rows of caramel puddings, each on its own little plate. Every step taps one with a spoon: it squashes
-     flat, springs back taller and jiggles side to side, and the wobble ripples out through its neighbours a beat later,
-     weaker the farther they sit. The pudding under a resting cursor stays pressed in a little. */
+  /* 07 Pudding: a soft-focus field of green jelly rounds and red jelly squares on cream, every edge blurred as if seen
+     through frosted glass. Every step taps the jelly under it: it spreads flat, springs back and jiggles out of shape,
+     and the wobble ripples out through its neighbours a beat later, weaker the farther they sit. The jelly under a
+     resting cursor stays pressed in a little. */
   jelly: {
+    frame: 'full',
     init() {
-      const s = this.s = clamp(Math.round(Math.min(SW - BL * 2, SH - BL * 2) / 5), 40, 110), p = s * 1.75, m = BL + s * .3;
-      const cols = Math.max(1, Math.floor((SW - m * 2 - s * 1.3) / p) + 1), rows = Math.max(1, Math.floor((SH - m * 2 - s * 1.2) / p) + 1);
-      const x0 = (SW - (cols - 1) * p) / 2, y0 = (SH - (rows - 1) * p) / 2 + s * .55;
-      // each pudding is kept by the middle of its base, with a squash spring (sq), a sideways lean spring (ln) and
-      // its own caramel drips: [across, length, width]
+      const s = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 4.4), 60, 170), p = s * 1.04, ph = p * .88, bl = s * .067;
+      // each shape is blurred once into a sprite here, and only stretched and turned every frame
+      const sprite = (fill, path) => {
+        const c = document.createElement('canvas'), n = Math.ceil((s + bl * 6) * SDPR), x = c.getContext('2d');
+        c.width = c.height = n;
+        x.filter = `blur(${bl * SDPR}px)`; x.translate(n / 2, n / 2); x.scale(SDPR, SDPR); x.fillStyle = fill; x.fill(path);
+        return c;
+      };
+      const round = new Path2D(), box = new Path2D(), h = s * .4;
+      round.arc(0, 0, s / 2, 0, 6.283); roundPoly(box, [[-h, -h], [h, -h], [h, h], [-h, h]], s * .15);
+      this.img = [sprite('#1fa204', round), sprite('#f31802', box)];
+      // staggered rows with a little jitter, every shape whole between the header and the dock; odd rows sit in the gaps
+      // and hold one fewer. Each jelly keeps its kind (k: 0 round, 1 square), a turn (r), a size (g), a squash spring (sq)
+      // and a jiggle spring stored as a stretch (ex, ey)
       this.p = [];
-      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) this.p.push({ x: x0 + i * p, y: y0 + j * p, sq: 0, sv: 0, ln: 0, lv: 0,
-        drips: Array.from({ length: 5 }, (_, n) => [(n + rand(.25, .75)) / 5 - .5, rand(.04, .36), rand(.1, .16)]) });
+      const cols = Math.max(2, Math.floor((SW - s * 1.3 - 32) / p) + 1), rows = Math.max(1, Math.floor((ZB - ZT - s * 1.3 - 16) / ph) + 1);
+      const x0 = (SW - (cols - 1) * p) / 2, y0 = (ZT + ZB - (rows - 1) * ph) / 2;
+      for (let j = 0, prev = []; j < rows; j++) {
+        const row = [];
+        for (let i = 0; i < cols - (j & 1); i++) {
+          // squares and rounds mostly alternate: the more squares already sit beside and above, the likelier a round
+          const reds = [row[i - 1], ...(j & 1 ? [prev[i], prev[i + 1]] : [prev[i - 1], prev[i]])].filter(v => v === 1).length;
+          const k = Math.random() < [.8, .5, .2, .05][reds] ? 1 : 0;
+          row.push(k);
+          this.p.push({ x: x0 + (i + (j & 1) * .5) * p + rand(-.1, .1) * p, y: y0 + j * ph + rand(-.1, .1) * p, k, r: k ? rand(-.7, .7) : 0, g: rand(.96, 1.04),
+            sq: 0, sv: 0, ex: 0, evx: 0, ey: 0, evy: 0 });
+        }
+        prev = row;
+      }
       this.q = []; this.dir = [1, 0]; this.cur = { x: -999, y: -999, t: 0 };
-      paper(dc, '#e6e6e3', .06);
+      dc.fillStyle = '#eed9b1'; dc.fillRect(0, 0, SW, SH);
     },
     move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; this.cur = { x, y, t: performance.now() }; },
     hit(x, y, k, now) {
-      // the pudding under the step gets the full tap; the rest catch the wobble later and weaker, leaning away from it
-      const s = this.s, R = s * 3.2;
+      // the jelly under the step gets the full tap, stretched along the stroke; the rest catch the wobble later and
+      // weaker, stretched along the line from the step
+      const s = this.s, R = s * 2.4;
       for (const P of this.p) {
-        const dx = P.x - x, dy = P.y - s / 2 - y, d = Math.hypot(dx, dy);
+        const dx = P.x - x, dy = P.y - y, d = Math.hypot(dx, dy);
         if (d > R) continue;
-        const own = d < s * .8;
-        this.q.push({ P, t: now + (own ? 0 : d * 1.6), a: own ? 1 : .5 * (1 - d / R), lean: own ? this.dir[0] : dx / (d || 1) });
+        const own = d < s * .5, a = own ? Math.atan2(this.dir[1], this.dir[0]) : Math.atan2(dy, dx);
+        this.q.push({ P, t: now + (own ? 0 : d * 1.6), a: own ? 1 : .5 * (1 - d / R), c: Math.cos(2 * a), s: Math.sin(2 * a) });
       }
       if (this.q.length > 400) this.q.splice(0, this.q.length - 400);
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      this.q = this.q.filter(e => { if (now < e.t) return true; e.P.sv += .022 * e.a; e.P.lv += .016 * e.a * e.lean; return false; });
+      this.q = this.q.filter(e => { if (now < e.t) return true; e.P.sv += .022 * e.a; e.P.evx += .016 * e.a * e.c; e.P.evy += .016 * e.a * e.s; return false; });
       const s = this.s, cu = this.cur, rest = now - cu.t < 600;
       for (const P of this.p) {
-        const tg = rest && Math.abs(cu.x - P.x) < s * .6 && Math.abs(cu.y - P.y + s / 2) < s * .6 ? .14 : 0;
+        const tg = rest && Math.hypot(cu.x - P.x, cu.y - P.y) < s * .45 ? .14 : 0;
         for (let h = dt; h > 0; h -= 4) {
           const st = Math.min(4, h);
           P.sv += ((tg - P.sq) * .0026 - P.sv * .009) * st; P.sq += P.sv * st;
-          P.lv += (-P.ln * .0019 - P.lv * .006) * st; P.ln += P.lv * st;
+          P.evx += (-P.ex * .0019 - P.evx * .006) * st; P.ex += P.evx * st;
+          P.evy += (-P.ey * .0019 - P.evy * .006) * st; P.ey += P.evy * st;
         }
       }
       for (const P of this.p) {
-        // squash widens the base and lowers the top; lean slides the top sideways
-        const q = clamp(P.sq, -.45, .8), w = s * (1 + .45 * q), h = s * (1 - .55 * q), tw = w * .72, L = clamp(P.ln, -.6, .6) * s * .35, x = P.x, y = P.y;
-        // the plate
-        sc.fillStyle = 'rgba(28,28,28,.07)'; sc.beginPath(); sc.ellipse(x + s * .03, y + s * .05, s * .7, s * .15, 0, 0, 6.283); sc.fill();
-        sc.fillStyle = '#fbfaf7'; sc.beginPath(); sc.ellipse(x, y + s * .02, s * .68, s * .14, 0, 0, 6.283); sc.fill();
-        const body = new Path2D(); roundPoly(body, [[x - w / 2, y], [x - tw / 2 + L, y - h], [x + tw / 2 + L, y - h], [x + w / 2, y]], s * .14);
-        sc.fillStyle = '#becdf9'; sc.fill(body);
-        sc.save(); sc.clip(body);
-        // shade down the right side, a soft sheen down the left
-        sc.fillStyle = '#a9bcf4'; sc.beginPath(); sc.moveTo(x + tw * .2 + L, y - h); sc.lineTo(x + w, y - h); sc.lineTo(x + w, y); sc.lineTo(x + w * .24, y); sc.fill();
-        sc.fillStyle = 'rgba(255,255,255,.45)'; sc.beginPath(); sc.moveTo(x - tw * .36 + L, y - h); sc.lineTo(x - tw * .25 + L, y - h); sc.lineTo(x - w * .3, y); sc.lineTo(x - w * .42, y); sc.fill();
-        // the caramel: a cap over the top, running down the sides in drips
-        const top = y - h * .81, wc = lerp(tw, w, .25), lc = L * .8;
-        sc.fillStyle = '#2c62fb'; sc.fillRect(x - w + L, y - h - 4, w * 2, h * .19 + 4);
-        for (const [f, len, dw] of P.drips) {
-          const dx = x + lc + f * wc, r = dw * w / 2, bot = top + len * h;
-          sc.beginPath(); sc.moveTo(dx - r, top - 1); sc.lineTo(dx - r, bot - r); sc.arc(dx, bot - r, r, Math.PI, 0, true); sc.lineTo(dx + r, top - 1); sc.fill();
-        }
+        // squash spreads the whole jelly; the jiggle stretches it along one line and narrows it across
+        const img = this.img[P.k], n = img.width / SDPR, g = P.g * (1 + .25 * clamp(P.sq, -.45, .8)), u = clamp(P.ex, -.6, .6) * .3, v = clamp(P.ey, -.6, .6) * .3;
+        sc.save(); sc.translate(P.x, P.y); sc.transform(g * (1 + u), g * v, g * v, g * (1 - u), 0, 0); sc.rotate(P.r);
+        sc.drawImage(img, -n / 2, -n / 2, n, n);
         sc.restore();
-        sc.fillStyle = 'rgba(255,255,255,.85)'; sc.beginPath(); sc.ellipse(x - tw * .24 + L * .95, y - h * .9, s * .06, s * .035, -.15, 0, 6.283); sc.fill();
       }
     }
   },
@@ -1411,15 +1421,10 @@ function thumb(id) {
       return svg('#5c80ea', `<path d="M8 55L44 -5H58L22 55z" fill="#fff" opacity=".16"/><path d="${b}M27 21L36 25.5L45 26L56 32" fill="none" stroke="#fff" stroke-width=".7" stroke-linecap="round" stroke-linejoin="round"/>`);
     }
     case 'pudding':
-      for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) {
-        const x = 13 + i * 18, y = 22 + j * 20, q = i === 1 && !j ? .3 : 0, w = 12 * (1 + .45 * q), h = 12 * (1 - .55 * q), tw = w * .72, cw = lerp(tw, w, .19);
-        b += `<ellipse cx="${x}" cy="${y}" rx="${(w * .66).toFixed(1)}" ry="1.7" fill="#fbfaf7"/>`
-          + `<path d="M${x - w / 2} ${y}L${x - tw / 2} ${y - h}H${x + tw / 2}L${x + w / 2} ${y}z" fill="${C.peri}"/>`
-          + `<g fill="${C.cobalt}"><path d="M${x - tw / 2} ${y - h}H${x + tw / 2}L${x + cw / 2} ${y - h * .81}H${x - cw / 2}z"/>`
-          + `<rect x="${(x - tw * .24).toFixed(1)}" y="${y - h * .85}" width="1.4" height="${(h * .38).toFixed(1)}" rx=".7"/><rect x="${(x + tw * .12).toFixed(1)}" y="${y - h * .85}" width="1.4" height="${(h * .24).toFixed(1)}" rx=".7"/></g>`
-          + `<ellipse cx="${(x - tw * .22).toFixed(1)}" cy="${y - h * .91}" rx="1" ry=".55" fill="#fff"/>`;
-      }
-      return svg('#e6e6e3', b);
+      // the scene's reference picture: blurred green rounds and turned red squares packed on cream
+      for (const [x, y, rr] of [[8.7, 18.3, 10], [28.9, 6.9, 10], [67.1, 13.6, 10], [33.6, 37.8, 9.3], [53, 34.4, 9.6]]) b += `<circle cx="${x}" cy="${y}" r="${rr}" fill="#1fa204"/>`;
+      for (const [x, y, a] of [[60.4, .2, 20], [40.9, 21.6, -35], [15.8, 35.7, 24], [68.4, 29.7, -28]]) b += `<rect x="-7.7" y="-7.7" width="15.4" height="15.4" rx="2.9" fill="#f31802" transform="translate(${x} ${y}) rotate(${a})"/>`;
+      return svg('#eed9b1', `<filter id="jellyBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.3"/></filter><g filter="url(#jellyBlur)">${b}</g>`);
     case 'soap': {
       // a carved diagonal strip showing the core, and cubes tumbling off its end
       for (let j = 0; j < 10; j++) for (let i = 2; i < 14; i++) if (Math.abs(j - 7.5 + i * .42) < 1.1) b += `<rect x="${i * 5 + .5}" y="${j * 5 + .5}" width="4.5" height="4.5" fill="${C.peri}"/>`;
