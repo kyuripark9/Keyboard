@@ -23,7 +23,7 @@
   color-scheme: light;
 }
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
-body[data-scene="peaks"]  { --bg: #ffffff; --ink: #141414; --ink-soft: #6c6c6c; --line: rgba(20,20,20,.13); --panel: rgba(255,255,255,.9); --acc: #141414; --cursor: #141414; color-scheme: light; }
+body[data-scene="peaks"]  { --bg: #ffffff; --ink: #1f6b35; --ink-soft: #6c9a78; --line: rgba(31,107,53,.14); --panel: rgba(255,255,255,.9); --acc: #1f6b35; --cursor: #1f6b35; color-scheme: light; }
 body[data-scene="fizz"]   { --bg: #e45b5a; --ink: #fff7f5; --ink-soft: #ffd2cd; --line: rgba(255,247,245,.25); --panel: rgba(214,78,77,.9); --acc: #fff7f5; --cursor: #fff7f5; color-scheme: dark; }
 body[data-scene="rain"]   { --bg: #becdf9; --ink: #1c2c6b; --ink-soft: #55669e; --line: rgba(28,44,107,.15); --panel: rgba(226,233,252,.9); --acc: #2c62fb; --cursor: #1c2c6b; color-scheme: light; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
@@ -666,22 +666,23 @@ const SCENES = {
     }
   },
 
-  /* 03 Ink Mountains: a halftone ink-wash landscape. Every dot on a fixed grid grows with the ink beneath it.
-     Three ranges of peaks stand one behind another, dark along their ridges and fading into mist below. Moving the
-     cursor sifts ink onto the nearest range so its ridge slowly heaps up there, and a step drops a bigger pile, so
-     new peaks build wherever you play. Over time the peaks settle back down. */
+  /* 03 Ink Mountains: a landscape printed in short green bars on white, like a dithered screen print. Every cell
+     of a fine grid is either a bar or blank, so dense hillsides read as solid stripes and the sky breaks up into
+     scattered dashes. Three ranges stand one behind another, the back ones sparser. Moving the cursor sifts bars
+     onto the nearest range so its ridge slowly heaps up there, and a step drops a bigger pile, so new hills build
+     wherever you play. Over time they settle back down. */
   peaks: {
     init() {
-      const g = this.g = clamp(Math.round(Math.min(SW, SH) / 95), 7, 11), cols = this.cols = Math.ceil(SW / g) + 1, rows = this.rows = Math.ceil(SH / g) + 1;
+      const g = this.g = 5, rh = this.rh = 12, cols = this.cols = Math.ceil(SW / g) + 1, rows = this.rows = Math.ceil(SH / rh) + 1;
       // three ranges, back to front: where their foot sits and how dark their ridges are
-      this.L = [{ base: ZT + (ZB - ZT) * .62, tone: .5, fall: .5 }, { base: ZT + (ZB - ZT) * .8, tone: .72, fall: .4 }, { base: ZB + 10, tone: .95, fall: .32 }]
+      this.L = [{ base: ZT + (ZB - ZT) * .62, tone: .6 }, { base: ZT + (ZB - ZT) * .8, tone: .8 }, { base: ZB + 10, tone: 1 }]
         .map(l => ({ ...l, H: new Float32Array(cols), rest: new Float32Array(cols) }));
       // gentle foothills so no range starts from a flat line
       for (const l of this.L) { const ph = Math.random() * 9; for (let i = 0; i < cols; i++) l.H[i] = l.rest[i] = (ZB - ZT) * (.03 + .025 * Math.sin(i * g * .006 + ph) + .015 * Math.sin(i * g * .017 + ph * 2)); }
       const m = ZB - ZT;
       for (const l of this.L) for (let n = 0; n < 3; n++) this.pile(l, rand(0, SW), m * rand(.12, .32), SW * rand(.06, .14), true);
-      // a fixed brush texture so the wash looks hand-made rather than smooth
-      this.tex = Float32Array.from({ length: cols * rows }, (_, q) => { const i = q % cols, j = (q / cols) | 0; return .78 + .14 * Math.sin(i * .37 + j * .21) * Math.sin(j * .53 - i * .11) + .08 * Math.random(); });
+      // a fixed dither threshold per cell: a cell prints a bar when the ink there beats its threshold
+      this.tex = Float32Array.from({ length: cols * rows }, () => Math.random());
       this.last = 0;
     },
     // heap a soft cone of ink onto a range; with keep, it's part of the landscape the peaks settle back to
@@ -696,29 +697,29 @@ const SCENES = {
     move(x, y, dx, dy) {
       const now = performance.now(); if (now - this.last < 60) return; this.last = now;
       const l = this.layerAt(y), i = clamp(Math.round(x / this.g), 0, this.cols - 1), top = l.base - l.H[i];
-      if (y > top - 60) this.pile(l, x, Math.min((ZB - ZT) * .55, l.base - ZT - 60, l.H[i] + rand(1.5, 3)), this.g * rand(5, 8), false);
+      if (y > top - 60) this.pile(l, x, Math.min((ZB - ZT) * .55, l.base - ZT - 60, l.H[i] + rand(1.5, 3)), 9 * rand(5, 8), false);
     },
     hit(x, y) {
       const l = this.layerAt(y), i = clamp(Math.round(x / this.g), 0, this.cols - 1);
-      this.pile(l, x + rand(-6, 6), Math.min((ZB - ZT) * .55, l.base - ZT - 60, l.H[i] + rand(12, 22)), this.g * rand(7, 12), false);
+      this.pile(l, x + rand(-6, 6), Math.min((ZB - ZT) * .55, l.base - ZT - 60, l.H[i] + rand(12, 22)), 9 * rand(7, 12), false);
     },
     draw(now, dt) {
       sc.fillStyle = '#ffffff'; sc.fillRect(0, 0, SW, SH);
-      const { g, cols, rows, L, tex } = this, k = Math.min(1, dt * .00008), m = ZB - ZT;
+      const { g, rh, cols, rows, L, tex } = this, k = Math.min(1, dt * .00008), m = ZB - ZT;
       for (const l of L) for (let i = 0; i < cols; i++) if (l.H[i] > l.rest[i]) l.H[i] -= (l.H[i] - l.rest[i]) * k; // fresh piles slowly settle
-      sc.fillStyle = '#141414'; sc.beginPath();
+      sc.fillStyle = '#1f6b35'; sc.beginPath();
       for (let j = 0; j < rows; j++) {
-        const y = j * g;
+        const y = j * rh + rh / 2;
         for (let i = 0; i < cols; i++) {
-          // front ranges cover the ones behind; each range is darkest along its ridge and thins into mist below
-          let d = .05 + .05 * Math.sin(i * .09 + j * .05);
+          // sky: a drift of loose dashes, thicker in cloud bands; front ranges cover the ones behind, each solid in
+          // its body and a little broken along its ridge, and the more a hill has heaped up, the denser it prints
+          let d = .01 + .35 * Math.max(0, Math.sin(i * g * .006 + j * .05) * Math.sin(j * rh * .011 - i * g * .002 + 1.3) - .2);
           for (let n = L.length - 1; n >= 0; n--) {
             const l = L[n], top = l.base - l.H[i];
-            if (y >= top) { const z = (y - top) / (m * l.fall), tall = Math.min(1, l.H[i] / (m * .14)); d = Math.max(d * .4, l.tone * (.3 + .7 * tall) * (Math.exp(-z) * .8 + .2 * Math.exp(-z * .2))); break; }
-            d = Math.max(d, l.tone * .1 * Math.exp(-(top - y) / 24)); // a little haze above each ridge
+            if (y >= top) { const z = (y - top) / (m * .12), tall = Math.min(1, l.H[i] / (m * .14)); d = l.tone * (.84 + .16 * (1 - Math.exp(-z))) * (.88 + .12 * tall); break; }
+            d = Math.max(d, l.tone * .22 * Math.exp(-(top - y) / 16)); // loose dashes drifting above each ridge
           }
-          const r = g * .5 * Math.sqrt(Math.min(1, d * tex[j * cols + i]));
-          if (r > .35) { sc.moveTo(i * g + r, y); sc.arc(i * g, y, r, 0, 6.283); }
+          if (d * 1.12 > tex[j * cols + i]) sc.rect(i * g, j * rh, g - 1.5, rh - 1.5);
         }
       }
       sc.fill();
@@ -931,12 +932,11 @@ function thumb(id) {
       }
       return svg('#e6e6e6', b);
     case 'ink':
-      for (let j = 0; j < 17; j++) for (let i = 0; i < 27; i++) {
-        const x = i * 3, y = j * 3, top = Math.min(30 - 22 * Math.max(0, 1 - Math.abs(x - 34) / 18), 40 - 16 * Math.max(0, 1 - Math.abs(x - 62) / 12));
-        const d = y >= top ? .9 * Math.exp(-(y - top) / 10) + .1 : .08, rr = 1.5 * Math.sqrt(d);
-        if (rr > .2) b += `<circle cx="${x}" cy="${y}" r="${rr.toFixed(2)}"/>`;
+      for (let j = 0; j < 12; j++) for (let i = 0; i < 40; i++) {
+        const x = i * 2, y = j * 4.2, top = 34 - x * .3 + Math.sin(x * .3) * 2, d = y >= top ? .95 : .25 * Math.max(0, Math.sin(x * .15 + j * .6));
+        if (d > r()) b += `<rect x="${x}" y="${y.toFixed(1)}" width="1.3" height="3.6"/>`;
       }
-      return svg('#fff', `<g fill="#141414">${b}</g>`);
+      return svg('#fff', `<g fill="#1f6b35">${b}</g>`);
     case 'fizz':
       [[30, 18, 15], [50, 26, 13], [24, 36, 11], [44, 42, 9], [58, 10, 8]].forEach(([x, y, rr]) => b += `<circle cx="${x}" cy="${y}" r="${rr}" fill="url(#tfz)"/><path d="M${x - rr * .75} ${y - rr * .25}A${rr * .8} ${rr * .8} 0 0 1 ${x - rr * .1} ${y - rr * .8}" stroke="#fff" stroke-opacity=".6" stroke-width="1" fill="none"/>`);
       return svg('#e45b5a', '<defs><radialGradient id="tfz"><stop offset=".7" stop-color="#fff" stop-opacity=".08"/><stop offset=".95" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' + b);
