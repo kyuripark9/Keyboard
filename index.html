@@ -299,8 +299,8 @@ const rand = (a, b) => a + Math.random() * (b - a);
    All are tuned for ASMR: soft attacks, rounded filters, tiny crisp details and a little room tone.
 */
 function crinkle(t, n, spread, o = {}) {
-  const { lo = 2600, hi = 6000, g = 0.35, q = 2.5 } = o;
-  for (let i = 0; i < n; i++) { const at = t + Math.pow(Math.random(), 1.6) * spread; hiss(at, { f: rand(lo, hi), q, a: 0.0015, d: rand(0.004, 0.012), g: rand(0.4, 1) * g * (1 - (at - t) / spread * 0.6) }); }
+  const { lo = 2600, hi = 6000, g = 0.35, q = 2.5, a = 0.0015, d = 0.012 } = o;
+  for (let i = 0; i < n; i++) { const at = t + Math.pow(Math.random(), 1.6) * spread; hiss(at, { f: rand(lo, hi), q, a, d: rand(d / 3, d), g: rand(0.4, 1) * g * (1 - (at - t) / spread * 0.6) }); }
 }
 const SOUNDS = {
   bubble: { name: 'Bubble Wrap', desc: 'Pop pale rings on mint', scene: 'wrap', noTrail: true,
@@ -354,12 +354,13 @@ const SOUNDS = {
       tone('sine', 300 * j, at, { a: 0.001, d: 0.02, g: 0.1 });
     } },
   tanghulu: { name: 'Tanghulu', desc: 'Bite cracks into candy glass', scene: 'glass',
-    // a slow, close bite into the sugar shell: a muffled snap, a soft crunch of candy grains and the juicy give of the fruit
+    // a slow, gentle bite close to the ear: a soft tap of a tooth on the sugar shell, a fine fizz of tiny cracks spreading
+    // through the candy glass and a juicy hush as it gives onto the fruit; no tone or low snap, so a swipe melts into one tingle
     down(k, t, j) {
-      hiss(t, { type: 'lowpass', f: 1700 * j, q: 0.7, a: 0.002, d: 0.02, g: 0.8 });
-      tone('sine', (240 + k.seed * 60) * j, t, { f2: 170, ft: 0.04, a: 0.003, d: 0.06, g: 0.18 });
-      crinkle(t + 0.005, 9 + Math.floor(Math.random() * 4), 0.1, { lo: 1000, hi: 3000, g: 0.38, q: 1.3 });
-      hiss(t + 0.03, { f: 520 * j, f2: 340, ft: 0.1, q: 3, a: 0.03, d: 0.13, g: 0.3, wet: 0.12 });
+      const at = t + rand(0, 0.015);
+      hiss(at, { f: 2200 * j, q: 0.7, a: 0.006, d: 0.025, g: 0.12 });
+      crinkle(at + 0.006, 18 + Math.floor(Math.random() * 6), 0.26, { lo: 2400, hi: 6500, g: 0.065, q: 1.1, a: 0.003 });
+      hiss(at + 0.03, { f: 1300 * j, f2: 850, ft: 0.12, q: 0.9, a: 0.04, d: 0.14, g: 0.15, wet: 0.12 });
     } },
   pudding: { name: 'Pudding', desc: 'Tap soft jellies till they jiggle', scene: 'jelly',
     // a spoon tapping custard: a soft wet slap and a low wobble that shivers as the pudding jiggles
@@ -377,20 +378,22 @@ const SOUNDS = {
       crinkle(t + 0.03, 7, 0.16, { lo: 1600, hi: 4200, g: 0.45, q: 2 });
     } },
   snow: { name: 'Snow', desc: 'Crunch boot prints into fresh snow', scene: 'snow',
-    // boots in fresh snow: a soft compression, a dense dull crunch of crystals packing together and a faint cold squeak
+    // a slow step into powder snow: a soft hush as it gives, a fine, close creak of crystals packing together (뽀드득), like
+    // cornstarch squeezed in the hand, and a breath of cold air over the top
     down(k, t, j) {
-      hiss(t, { type: 'lowpass', f: 650 * j, q: 0.7, a: 0.012, d: 0.1, g: 0.7 });
-      crinkle(t + 0.004, 20 + Math.floor(Math.random() * 8), 0.13, { lo: 450, hi: 2300, g: 0.55, q: 1.1 });
-      crinkle(t + 0.02, 5, 0.08, { lo: 2600, hi: 4200, g: 0.12, q: 4 });
+      const at = t + rand(0, 0.02);
+      hiss(at, { type: 'lowpass', f: 1300 * j, q: 0.6, a: 0.03, d: 0.12, g: 0.16, wet: 0.06 });
+      crinkle(at + 0.015, 16 + Math.floor(Math.random() * 6), 0.18, { lo: 900, hi: 3200, g: 0.1, q: 1.2, a: 0.0025, d: 0.01 });
+      hiss(at + 0.01, { type: 'highpass', f: 5500, q: 0.5, a: 0.04, d: 0.09, g: 0.03 });
     } },
   sugar: { name: 'Sugar Slime', desc: 'Rake furrows through gritty slime', scene: 'grit',
-    // 서걱서걱: slime packed with sugar, kneaded close to the ear. A soft rasp as the fingers sink in (서), then a dry,
-    // sandy grind of grains rubbing past each other (걱), with a muted squish of the slime underneath
+    // 사각사각: slime packed with sugar, stroked slowly close to the ear. A soft sandy brush as the fingers sweep through,
+    // a fine trickle of sugar grains rolling past each other and a muted squish of the slime underneath
     down(k, t, j) {
-      hiss(t, { f: (3000 + k.seed * 600) * j, f2: 2200, ft: 0.05, q: 1.1, a: 0.018, d: 0.045, g: 0.22 });
-      crinkle(t + 0.03, 20 + Math.floor(Math.random() * 8), 0.08, { lo: 1300, hi: 4200, g: 0.42, q: 1.5 });
-      hiss(t + 0.03, { type: 'lowpass', f: 900 * j, q: 0.8, a: 0.003, d: 0.03, g: 0.3 });
-      hiss(t + 0.02, { f: 420 * j, f2: 300, ft: 0.08, q: 3, a: 0.02, d: 0.08, g: 0.22, wet: 0.05 });
+      const at = t + rand(0, 0.02);
+      hiss(at, { f: (3200 + k.seed * 500) * j, f2: 2500, ft: 0.08, q: 0.8, a: 0.03, d: 0.09, g: 0.12 });
+      crinkle(at + 0.01, 16 + Math.floor(Math.random() * 6), 0.15, { lo: 2200, hi: 6000, g: 0.095, q: 1.2 });
+      hiss(at + 0.02, { type: 'lowpass', f: 800 * j, q: 0.6, a: 0.03, d: 0.07, g: 0.12 });
     } },
 };
 
