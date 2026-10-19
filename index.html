@@ -663,19 +663,23 @@ const SCENES = {
 
   /* 03 Ink Mountains: a landscape printed in short green bars on white, like a dithered screen print. Every cell
      of a fine grid is either a bar or blank, so dense hillsides read as solid stripes and the sky breaks up into
-     scattered dashes. Three ranges stand one behind another, the back ones sparser. Moving the cursor sifts bars
-     onto the nearest range so its ridge slowly heaps up there, and a step drops a bigger pile, so new hills build
-     wherever you play. Over time they settle back down. */
+     scattered dashes. Three ranges stand one behind another, the back ones sparser. In front of them all, the
+     cursor draws its own hill: every column it crosses fills solid from the ground up to exactly where it passed,
+     so its path becomes a crisp new ridgeline, and a step heaps a small mound there. Over time it settles back down. */
   peaks: {
     init() {
       const g = this.g = 5, rh = this.rh = 12, cols = this.cols = Math.ceil(SW / g) + 1, rows = this.rows = Math.ceil(SH / rh) + 1;
       // three ranges, back to front: where their foot sits and how dark their ridges are
       this.L = [{ base: ZT + (ZB - ZT) * .62, tone: .6 }, { base: ZT + (ZB - ZT) * .8, tone: .8 }, { base: ZB + 10, tone: 1 }]
         .map(l => ({ ...l, H: new Float32Array(cols), rest: new Float32Array(cols) }));
+      // the cursor's own range, in front of everything, printed fully solid so its ridge follows the path exactly
+      this.D = { base: ZB + 10, tone: 1.3, H: new Float32Array(cols), rest: new Float32Array(cols), drawn: true };
+      this.prev = null;
       // gentle foothills so no range starts from a flat line
       for (const l of this.L) { const ph = Math.random() * 9; for (let i = 0; i < cols; i++) l.H[i] = l.rest[i] = (ZB - ZT) * (.03 + .025 * Math.sin(i * g * .006 + ph) + .015 * Math.sin(i * g * .017 + ph * 2)); }
       const m = ZB - ZT;
       for (const l of this.L) for (let n = 0; n < 3; n++) this.pile(l, rand(0, SW), m * rand(.12, .32), SW * rand(.06, .14), true);
+      this.L.push(this.D);
       // a fixed dither threshold per cell: a cell prints a bar when the ink there beats its threshold
       this.tex = Float32Array.from({ length: cols * rows }, () => Math.random());
       this.last = 0;
@@ -688,20 +692,29 @@ const SCENES = {
         l.H[i] = Math.max(l.H[i], l.H[i] * .35 + v); if (keep) l.rest[i] = Math.max(l.rest[i], l.H[i]);
       }
     },
-    layerAt(y) { for (const l of this.L) if (y < l.base - 20) return l; return this.L[2]; },
-    move(x, y, dx, dy) {
-      const now = performance.now(); if (now - this.last < 60) return; this.last = now;
-      const l = this.layerAt(y), i = clamp(Math.round(x / this.g), 0, this.cols - 1), top = l.base - l.H[i];
-      if (y > top - 60) this.pile(l, x, Math.min((ZB - ZT) * .55, l.base - ZT - 60, l.H[i] + rand(1.5, 3)), 9 * rand(5, 8), false);
+    // raise the cursor's range so every column between the last point and this one reaches the path
+    raise(x0, y0, x1, y1) {
+      const D = this.D, g = this.g, a = Math.max(0, Math.floor(Math.min(x0, x1) / g)), b = Math.min(this.cols - 1, Math.ceil(Math.max(x0, x1) / g));
+      for (let i = a; i <= b; i++) {
+        const t = x1 === x0 ? 1 : clamp((i * g - x0) / (x1 - x0), 0, 1), y = clamp(y0 + (y1 - y0) * t, ZT + 10, ZB);
+        D.H[i] = Math.max(D.H[i], D.base - y);
+      }
+    },
+    move(x, y) {
+      const p = this.prev; this.prev = { x, y };
+      this.raise(p ? p.x : x, p ? p.y : y, x, y);
     },
     hit(x, y) {
-      const l = this.layerAt(y), i = clamp(Math.round(x / this.g), 0, this.cols - 1);
-      this.pile(l, x + rand(-6, 6), Math.min((ZB - ZT) * .55, l.base - ZT - 60, l.H[i] + rand(12, 22)), 9 * rand(7, 12), false);
+      // a small heap right under the cursor
+      const D = this.D, g = this.g, w = 9 * rand(2.5, 4);
+      for (let i = Math.max(0, Math.floor((x - w) / g)); i <= Math.min(this.cols - 1, Math.ceil((x + w) / g)); i++) {
+        const u = Math.abs(i * g - x) / w; D.H[i] = Math.max(D.H[i], D.base - y + 14 * (1 - u * u));
+      }
     },
     draw(now, dt) {
       sc.fillStyle = '#ffffff'; sc.fillRect(0, 0, SW, SH);
       const { g, rh, cols, rows, L, tex } = this, k = Math.min(1, dt * .00008), m = ZB - ZT;
-      for (const l of L) for (let i = 0; i < cols; i++) if (l.H[i] > l.rest[i]) l.H[i] -= (l.H[i] - l.rest[i]) * k; // fresh piles slowly settle
+      for (const l of L) { const kk = l.drawn ? k * 1.5 : k; for (let i = 0; i < cols; i++) if (l.H[i] > l.rest[i]) l.H[i] -= (l.H[i] - l.rest[i]) * kk; } // fresh piles slowly settle
       sc.fillStyle = '#1f6b35'; sc.beginPath();
       for (let j = 0; j < rows; j++) {
         const y = j * rh + rh / 2;
@@ -712,7 +725,7 @@ const SCENES = {
           for (let n = L.length - 1; n >= 0; n--) {
             const l = L[n], top = l.base - l.H[i];
             if (y >= top) { const z = (y - top) / (m * .12), tall = Math.min(1, l.H[i] / (m * .14)); d = l.tone * (.84 + .16 * (1 - Math.exp(-z))) * (.88 + .12 * tall); break; }
-            d = Math.max(d, l.tone * .22 * Math.exp(-(top - y) / 16)); // loose dashes drifting above each ridge
+            if (!l.drawn) d = Math.max(d, l.tone * .22 * Math.exp(-(top - y) / 16)); // loose dashes drifting above each ridge
           }
           if (d * 1.12 > tex[j * cols + i]) sc.rect(i * g, j * rh, g - 1.5, rh - 1.5);
         }
