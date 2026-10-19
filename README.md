@@ -8,7 +8,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 |---|-------|---------|
 | 01 | Bubble Wrap | The sheet as a blue contour map on cream paper: each bubble is a hill of rings, and a pop flattens it and sends a ripple through its neighbours before it slowly refills |
 | 02 | Crunchy Slime | A sheet of + stitches that crumples like paper: each step folds it along a straight crease into flat, angular facets that slowly flatten out |
-| 03 | Soft Brush | A dry brush on warm paper: the cursor sweeps cobalt bristle strokes and a step presses a dab; the sound is a breathy close-mic brush sweep |
+| 03 | Ink Mountains | A halftone ink-wash landscape: three ranges of dotted peaks, dark on the ridges and fading into mist. The cursor sifts ink onto the nearest range and steps drop bigger piles, so peaks build where you play and slowly settle; the sound is a soft puff with a fine patter of grains |
 | 04 | Bubbles | Cobalt water: the cursor breathes out a stream of bubbles that wobble up and pop softly; the sound is a muffled underwater blup |
 | 05 | Rain on Glass | Drops on a misty periwinkle window: steps tap new drops, the cursor merges them, and heavy drops slide down leaving clear trails; the sound is a few soft, muffled taps |
 
