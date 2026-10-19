@@ -23,6 +23,9 @@
   color-scheme: light;
 }
 body[data-scene="wrap"]   { --bg: #eae8dc; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(245,244,237,.88); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="brush"]  { --bg: #f3eee6; --ink: #2c62fb; --ink-soft: #7d8fc6; --line: rgba(44,98,251,.14); --panel: rgba(250,247,242,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="fizz"]   { --bg: #2c62fb; --ink: #f4f6ff; --ink-soft: #becdf9; --line: rgba(244,246,255,.22); --panel: rgba(36,84,224,.9); --acc: #f4f6ff; --cursor: #f4f6ff; color-scheme: dark; }
+body[data-scene="rain"]   { --bg: #becdf9; --ink: #1c2c6b; --ink-soft: #55669e; --line: rgba(28,44,107,.15); --panel: rgba(226,233,252,.9); --acc: #2c62fb; --cursor: #1c2c6b; color-scheme: light; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 
 * { box-sizing: border-box; }
@@ -108,7 +111,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 .panel h2 + * { margin-bottom: 18px; }
 .panel > :last-child { margin-bottom: 0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
-#soundGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+#soundGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 640px) { #soundGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .opt {
   text-align: left; font: inherit; color: var(--ink); cursor: pointer;
@@ -172,7 +175,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
-      <h1>clack<sup>02</sup></h1>
+      <h1>clack<sup>05</sup></h1>
       <p id="hint">Move your cursor. Each sound draws its own picture</p>
     </div>
     <div class="tally" aria-live="off">
@@ -203,7 +206,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
     </nav>
 
     <section class="panel" id="panel-sound" hidden aria-label="Choose a sound">
-      <h2>2 SOUNDS, 2 PICTURES</h2>
+      <h2>5 SOUNDS, 5 PICTURES</h2>
       <div class="grid" id="soundGrid"></div>
     </section>
 
@@ -240,7 +243,7 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 const $ = id => document.getElementById(id);
 
 /* ---------- settings ---------- */
-const SOUND_IDS = ['bubble', 'slime'];
+const SOUND_IDS = ['bubble', 'slime', 'brush', 'fizz', 'rain'];
 const DEF = { mode: 'hover', sound: 'bubble', cur: 'ring', curColor: 'auto', curSize: 30, trail: true, volume: 0.7, muted: false, count: 0 };
 let S = { ...DEF };
 try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
@@ -327,9 +330,28 @@ const SOUNDS = {
     down(k, t, j) {
       hiss(t, { f: 380 * j, f2: 700, ft: 0.1, q: 6, a: 0.025, d: 0.14, g: 1, wet: 0.08 });
       crinkle(t + 0.01, 12 + Math.floor(Math.random() * 6), 0.18, { lo: 2800, hi: 7000, g: 0.6, q: 3 });
-      if (Math.random() < 0.5) tone('sine', rand(1800, 2600), t + rand(0.02, 0.1), { a: 0.002, d: 0.02, g: 0.04, wet: 0.3 });
     },
     up(k, t, j) { hiss(t, { f: 700 * j, f2: 1500, ft: 0.08, q: 8, a: 0.01, d: 0.08, g: 0.4 }); crinkle(t, 4, 0.06, { g: 0.2 }); } },
+  brush: { name: 'Soft Brush', desc: 'Sweep a dry brush across paper', scene: 'brush',
+    // a fluffy makeup brush on a close mic: a breathy sweep that rises and settles, with a whisper of bristle ticks
+    down(k, t, j) {
+      hiss(t, { f: 1500 * j, f2: 2800 * j, ft: 0.14, q: 0.9, a: 0.045, d: 0.16, g: 0.22 });
+      hiss(t + 0.03, { type: 'lowpass', f: 900, q: 0.7, a: 0.04, d: 0.12, g: 0.08 });
+      crinkle(t + 0.02, 3, 0.12, { lo: 3200, hi: 5200, g: 0.05, q: 1.2 });
+    } },
+  fizz: { name: 'Bubbles', desc: 'Breathe bubbles up through water', scene: 'fizz',
+    // a soft underwater blup: a low, rounded pitch slide, muffled like it's heard through water
+    down(k, t, j) {
+      const f0 = (240 + k.seed * 140) * j;
+      tone('sine', f0, t, { f2: f0 * 2.2, ft: 0.05, a: 0.006, d: 0.075, g: 0.26, wet: 0.18 });
+      hiss(t, { type: 'lowpass', f: 450, q: 1, a: 0.004, d: 0.05, g: 0.5 });
+    } },
+  rain: { name: 'Rain on Glass', desc: 'Tap drops onto a misty window', scene: 'rain',
+    // tiny drops landing on a window: a few soft, muffled taps scattered over a moment, with a trace of room
+    down(k, t, j) {
+      for (let i = 0; i < 3; i++) hiss(t + Math.random() * 0.09, { f: rand(1400, 2600), q: 5, a: 0.001, d: rand(0.012, 0.022), g: rand(0.35, 0.6), wet: 0.12 });
+      hiss(t, { type: 'lowpass', f: 700, q: 0.8, a: 0.002, d: 0.025, g: 0.35 });
+    } },
 };
 
 function playKey(k, phase) {
@@ -645,6 +667,101 @@ const SCENES = {
     }
   },
 
+  /* 03 Soft Brush: a dry brush on warm paper. The cursor sweeps cobalt bristle strokes, broad when slow and
+     feathery when fast, and a step presses a round dab. The paint fades back into the paper after a while. */
+  brush: {
+    init() {
+      this.lv = this.lv || document.createElement('canvas'); this.lv.width = SW * SDPR; this.lv.height = SH * SDPR;
+      this.lc = this.lv.getContext('2d'); this.lc.setTransform(SDPR, 0, 0, SDPR, 0, 0); this.lc.lineCap = 'round';
+      this.last = null; this.bristles = Array.from({ length: 22 }, () => ({ o: rand(-1, 1), a: rand(.07, .3), w: rand(.6, 2), gap: Math.random() })); this.fadeT = 0;
+      paper(dc, C.paper, .06);
+    },
+    move(x, y) {
+      const l = this.last; this.last = { x, y };
+      if (!l) return;
+      const dx = x - l.x, dy = y - l.y, d = Math.hypot(dx, dy); if (d < .5) return;
+      const nx = -dy / d, ny = dx / d, W = clamp(30 - d * .5, 12, 30), g = this.lc;
+      for (const b of this.bristles) {
+        if (Math.random() < .12 + b.gap * .1) continue; // dry brush: some bristles skip
+        g.strokeStyle = `rgba(44,98,251,${b.a})`; g.lineWidth = b.w; g.beginPath();
+        g.moveTo(l.x + nx * b.o * W, l.y + ny * b.o * W); g.lineTo(x + nx * b.o * W, y + ny * b.o * W); g.stroke();
+      }
+    },
+    hit(x, y) {
+      const g = this.lc;
+      for (let i = 0; i < 40; i++) { const a = Math.random() * 6.283, r = rand(4, 18); g.strokeStyle = `rgba(44,98,251,${rand(.05, .16)})`; g.lineWidth = rand(.6, 1.6); g.beginPath(); g.moveTo(x + Math.cos(a) * 2, y + Math.sin(a) * 2); g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); g.stroke(); }
+    },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      this.fadeT += dt;
+      if (this.fadeT > 100) { this.fadeT = 0; const g = this.lc; g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-out'; g.fillStyle = 'rgba(0,0,0,.012)'; g.fillRect(0, 0, this.lv.width, this.lv.height); g.restore(); }
+      sc.drawImage(this.lv, 0, 0, SW, SH);
+    }
+  },
+
+  /* 04 Bubbles: cobalt water. The cursor breathes out a stream of small bubbles and a step lets go a cluster;
+     they wobble up, swell a little and pop softly into a ring near the surface. */
+  fizz: {
+    init() { this.b = []; this.pops = []; this.acc = 0; paper(dc, C.cobalt, .07); },
+    add(x, y, r, now) { this.b.push({ x, y, r, ph: Math.random() * 6.283, vy: rand(.5, 1) * (1.3 - r / 20), t0: now, top: rand(ZT + 20, ZT + (ZB - ZT) * .35) }); if (this.b.length > 320) this.b.shift(); },
+    move(x, y, dx, dy) { this.acc += Math.hypot(dx, dy); while (this.acc > 22) { this.acc -= 22; this.add(x + rand(-4, 4), y + rand(-4, 4), rand(2, 5), performance.now()); } },
+    hit(x, y, k, now) { for (let i = 0, n = 4 + Math.floor(Math.random() * 4); i < n; i++) this.add(x + rand(-14, 14), y + rand(-10, 10), rand(3, 11), now); },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const k = dt / 16;
+      this.b = this.b.filter(b => { if (b.y < b.top || now - b.t0 > 9000) { this.pops.push({ x: b.x, y: b.y, r: b.r, t0: now }); return false; } return true; });
+      sc.lineWidth = 1.2;
+      for (const b of this.b) {
+        b.y -= b.vy * k * (1 + (now - b.t0) / 3000); b.x += Math.sin(now / 260 + b.ph) * .35 * k; b.r += .004 * k;
+        sc.strokeStyle = 'rgba(244,246,255,.85)'; sc.beginPath(); sc.arc(b.x, b.y, b.r, 0, 6.283); sc.stroke();
+        sc.strokeStyle = 'rgba(244,246,255,.6)'; sc.beginPath(); sc.arc(b.x - b.r * .2, b.y - b.r * .2, b.r * .55, 3.6, 4.6); sc.stroke();
+      }
+      this.pops = this.pops.filter(p => now - p.t0 < 400);
+      for (const p of this.pops) { const a = (now - p.t0) / 400; sc.strokeStyle = `rgba(244,246,255,${.6 * (1 - a)})`; sc.beginPath(); sc.arc(p.x, p.y, p.r * (1 + a * 1.4), 0, 6.283); sc.stroke(); }
+    }
+  },
+
+  /* 05 Rain on Glass: a misty periwinkle window covered in drops. A step taps new drops onto the glass; drops the
+     cursor touches merge, and once a drop is heavy enough it slides down, leaving a clear trail that mists over again. */
+  rain: {
+    init() {
+      this.d = []; this.trails = [];
+      for (let i = 0, n = Math.round(SW * SH / 2600); i < n; i++) this.d.push({ x: rand(0, SW), y: rand(ZT, ZB), r: Math.pow(Math.random(), 2.2) * 5 + 1, vy: 0 });
+      paper(dc, C.peri, .1);
+    },
+    move(x, y) {
+      // drops under the finger merge into the nearest big one
+      let host = null;
+      for (const d of this.d) { if (Math.hypot(d.x - x, d.y - y) < 16) { if (!host || d.r > host.r) host = d; } }
+      if (!host) return;
+      for (const d of this.d) if (d !== host && !d.dead && Math.hypot(d.x - x, d.y - y) < 16) { host.r = Math.sqrt(host.r * host.r + d.r * d.r); d.dead = true; }
+      this.d = this.d.filter(d => !d.dead);
+    },
+    hit(x, y) { for (let i = 0; i < 4; i++) this.d.push({ x: x + rand(-18, 18), y: y + rand(-14, 14), r: rand(1.2, 3.6), vy: 0 }); if (this.d.length > 1400) this.d.splice(0, 200); },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const k = dt / 16;
+      // trails: clear glass where a drop slid, misting over again
+      this.trails = this.trails.filter(t => now - t.t0 < 5000);
+      sc.lineCap = 'round';
+      for (const t of this.trails) { sc.strokeStyle = `rgba(150,172,236,${.5 * (1 - (now - t.t0) / 5000)})`; sc.lineWidth = t.w; sc.beginPath(); sc.moveTo(t.x0, t.y0); sc.lineTo(t.x1, t.y1); sc.stroke(); }
+      for (const d of this.d) {
+        if (d.r > 5.5) { // heavy enough to slide
+          const y0 = d.y; d.vy = Math.min(d.vy + .04 * k, 3.2); d.y += d.vy * k; d.x += Math.sin(d.y * .05) * .2;
+          this.trails.push({ x0: d.x, y0, x1: d.x, y1: d.y, w: d.r * .9, t0: now });
+          for (const e of this.d) if (e !== d && !e.dead && Math.abs(e.x - d.x) < d.r && e.y > d.y - d.r && e.y < d.y + d.r) { d.r = Math.sqrt(d.r * d.r + e.r * e.r * .5); e.dead = true; }
+          if (d.y > SH + 10) d.dead = true;
+        }
+        // each drop: a darker rim at the bottom, a bright catch-light at the top
+        sc.fillStyle = 'rgba(44,98,251,.18)'; sc.beginPath(); sc.arc(d.x, d.y, d.r, 0, 6.283); sc.fill();
+        sc.strokeStyle = 'rgba(28,44,107,.45)'; sc.lineWidth = Math.max(.6, d.r * .22); sc.beginPath(); sc.arc(d.x, d.y, d.r * .92, .3, 2.84); sc.stroke();
+        sc.fillStyle = 'rgba(255,255,255,.85)'; sc.beginPath(); sc.arc(d.x - d.r * .3, d.y - d.r * .35, d.r * .28, 0, 6.283); sc.fill();
+      }
+      this.d = this.d.filter(d => !d.dead);
+      if (this.trails.length > 900) this.trails.splice(0, this.trails.length - 900);
+    }
+  },
+
 };
 
 function sceneHit(k) {
@@ -756,6 +873,15 @@ function thumb(id) {
         b += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(a * 57).toFixed(0)})"><path d="M${-l} 0H${l}M0 ${-l}V${l}" stroke="#1a1a1a" stroke-width=".6"/></g>`;
       }
       return svg('#e6e6e6', b);
+    case 'brush':
+      for (let i = 0; i < 26; i++) { const o = (r() - .5) * 16; b += `<path d="M6 ${30 + o} C24 ${14 + o} 48 ${40 + o} 74 ${18 + o}" stroke="#2c62fb" stroke-opacity="${(.08 + r() * .2).toFixed(2)}" stroke-width="${(.3 + r() * .8).toFixed(2)}" fill="none"/>`; }
+      return svg(C.paper, b);
+    case 'fizz':
+      for (let i = 0; i < 16; i++) { const x = 30 + (r() - .5) * 30 + i, y = 46 - i * 2.8, rr = 1 + r() * 3.4; b += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rr.toFixed(1)}" fill="none" stroke="#f4f6ff" stroke-width=".6"/>`; }
+      return svg(C.cobalt, b);
+    case 'rain':
+      for (let i = 0; i < 46; i++) { const x = r() * 80, y = r() * 50, rr = .5 + Math.pow(r(), 2) * 2.6; b += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rr.toFixed(1)}" fill="#2c62fb" fill-opacity=".25" stroke="#1c2c6b" stroke-opacity=".4" stroke-width=".3"/><circle cx="${(x - rr * .3).toFixed(1)}" cy="${(y - rr * .35).toFixed(1)}" r="${(rr * .28).toFixed(2)}" fill="#fff"/>`; }
+      return svg(C.peri, '<path d="M52 0V50" stroke="#96acec" stroke-width="2.4"/>' + b);
   }
   return svg('#eee', '');
 }
