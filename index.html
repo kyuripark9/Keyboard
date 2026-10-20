@@ -1670,7 +1670,7 @@ const SCENES = {
     }
   },
 
-  /* 08 Soap Cutting: a bar of soap crusted all over with tiny sky blue beads, after a photo of loose blue beads. Every
+  /* 08 Soap Cutting: a bar of soap crusted all over with tiny flat sky blue beads, after a photo of loose blue beads. Every
      step sweeps a path along the way the cursor travels: its middle comes away clean down to the white soap, and toward
      its edges fewer and fewer beads come loose, so it fades out into scattered beads. The loose beads tumble off and
      fall off the screen. After a while the path closes in from its edges, and each bead pops back as an edge reaches it. */
@@ -1679,13 +1679,11 @@ const SCENES = {
     HOLD: 6000, CLOSE: 4000, POP: 380, BASE: '#a9caed',
     init() {
       const R = this.R = clamp(Math.min(SW, SH) / 200, 3.2, 5);
-      // every shade is drawn once into a sprite: a round bead lit from the top left, its rim a little darker
+      // every shade is drawn once into a sprite: a flat round bead in one even colour, with no light or shadow on it
       const sprite = col => {
         const cv = document.createElement('canvas'), s = Math.ceil(R * 2.4 * SDPR), x = cv.getContext('2d'), k = s / (R * 2.4);
         cv.width = cv.height = s; x.setTransform(k, 0, 0, k, s / 2, s / 2);
-        const g = x.createRadialGradient(-R * .3, -R * .35, 0, 0, 0, R);
-        g.addColorStop(0, mix(col, '#ffffff', .6)); g.addColorStop(.55, col); g.addColorStop(.82, mix(col, '#3f76c0', .22)); g.addColorStop(1, mix(col, '#3f76c0', .55));
-        x.fillStyle = g; x.beginPath(); x.arc(0, 0, R, 0, 6.283); x.fill();
+        x.fillStyle = col; x.beginPath(); x.arc(0, 0, R, 0, 6.283); x.fill();
         return cv;
       };
       this.spr = ['#a8ccf0', '#9ac3ec', '#8cbae8', '#7fb1e4'].map(sprite);
@@ -1712,19 +1710,14 @@ const SCENES = {
       for (let c = 1; c <= gw * gh; c++) gs[c] += gs[c - 1];
       const fill = gs.slice();
       for (let q = 0; q < n; q++) items[fill[at(q)]++] = q;
-      // the soap, each bead's faint shadow, then the beads in their order
+      // the soap, then the beads in their order
       dc.fillStyle = this.BASE; dc.fillRect(0, 0, SW, SH);
       this.beads(dc, Array.from(X.keys()));
       this.cut = new Uint8Array(n); this.back = new Float64Array(n); this.seen = new Uint32Array(n); this.stamp = 0;
       this.open = []; this.cuts = []; this.bits = []; this.dir = [1, 0]; this.last = null;
     },
     put(ctx, img, x, y, r) { ctx.drawImage(img, x - r * 1.2, y - r * 1.2, r * 2.4, r * 2.4); },
-    beads(ctx, list) {
-      const { bx, by, br, bk } = this, sh = new Path2D();
-      for (const q of list) { const r = br[q], x = bx[q] + r * .12, y = by[q] + r * .2; sh.moveTo(x + r, y); sh.arc(x, y, r, 0, 6.283); }
-      ctx.fillStyle = 'rgba(64,116,186,.14)'; ctx.fill(sh);
-      for (const q of list) this.put(ctx, this.spr[bk[q]], bx[q], by[q], br[q]);
-    },
+    beads(ctx, list) { for (const q of list) this.put(ctx, this.spr[this.bk[q]], this.bx[q], this.by[q], this.br[q]); },
     // calls f with every bead in the buckets within d of (x, y)
     each(x, y, d, f) {
       const B = this.B, gw = this.gw, gs = this.gs, items = this.items;
@@ -1801,16 +1794,12 @@ const SCENES = {
         const t = (now - back[q]) / POP - 1;
         this.put(sc, this.spr[this.bk[q]], bx[q], by[q], this.br[q] * (1 + 2.7 * t * t * t + 1.7 * t * t));
       }
-      // the loose beads tumble down out of the frame, each with its shadow on the bar
+      // the loose beads tumble down out of the frame
       this.bits = this.bits.filter(p => p.y < SH + 30);
-      const drop = new Path2D();
       for (const p of this.bits) {
         p.vy += .0016 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
-        const x = p.x + p.r * .5, y = p.y + p.r * .8;
-        drop.moveTo(x + p.r, y); drop.arc(x, y, p.r, 0, 6.283);
+        this.put(sc, this.spr[p.k], p.x, p.y, p.r);
       }
-      sc.fillStyle = 'rgba(52,100,168,.16)'; sc.fill(drop);
-      for (const p of this.bits) this.put(sc, this.spr[p.k], p.x, p.y, p.r);
     }
   },
 
@@ -2171,9 +2160,9 @@ function thumb(id) {
       return svg('#eed9b1', `<filter id="jellyBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.3"/></filter><g filter="url(#jellyBlur)">${b}</g>`);
     case 'soap': {
       // sky blue beads all over and a diagonal path swept clean down to white soap that thins out into scattered beads
-      // at its edges. Each bead is a darker disc with a lighter one nudged up and to the left
+      // at its edges. Each bead is a flat disc in one of two shades
       let dark = '', lite = '';
-      const bead = (x, y) => { dark += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.15"/>`; lite += `<circle cx="${(x - .22).toFixed(1)}" cy="${(y - .26).toFixed(1)}" r=".75"/>`; };
+      const bead = (x, y) => { const c = `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.15"/>`; if (r() < .5) dark += c; else lite += c; };
       for (let j = 0; j < 31; j++) for (let i = 0; i < 42; i++) {
         const x = (i + (j & 1) * .5 + r() * .9 - .45) * 2 - 1, y = (j + r() * .9 - .45) * 1.73 - 1;
         const u = clamp(((x - 5) * 63 - (y - 37.9) * 26.5) / 4671, 0, 1), t = clamp((Math.hypot(x - 5 - u * 63, y - 37.9 + u * 26.5) / 6.5 - .35) / .6, 0, 1);
@@ -2181,7 +2170,7 @@ function thumb(id) {
       }
       return svg('#a9caed', `<filter id="soapGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.8"/></filter>` +
         `<path d="M5 37.9L68 11.4" stroke="#f5f9fd" stroke-width="7" stroke-linecap="round" filter="url(#soapGlow)"/>` +
-        `<g fill="#7fb1e4">${dark}</g><g fill="#a8ccf0">${lite}</g>`);
+        `<g fill="#7fb1e4">${dark}</g><g fill="#94c0ea">${lite}</g>`);
     }
     case 'snow':
       // a trail of boot prints, left and right along a gentle curve
@@ -2291,7 +2280,7 @@ const STORY = {
   thock: { try: 'Your cursor is a laser: holes burn open with an orange rim and cool to a soft glow.', look: 'Light through a perforated steel sheet, after a photo', hear: 'A deep, muffled thock and a light tick as the key springs back' },
   gummy: { try: 'Drag a gummy into its neighbors, then pull them apart until the jelly snaps.', look: 'Sugar-dusted fruit gummies packed so tight they stick together', hear: 'A round, chewy squish (쫀득) and a tacky peel (쩍)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
-  soap: { try: 'Shave a clean path through the beads. They tumble off, and the cut slowly closes.', look: 'A bar of soap crusted with sky blue beads, after a photo', hear: 'A crisp, rising shave and the patter of falling beads' },
+  soap: { try: 'Shave a clean path through the beads. They tumble off, and the cut slowly closes.', look: 'A bar of soap crusted with flat sky blue beads, after a photo', hear: 'A crisp, rising shave and the patter of falling beads' },
   snow: { try: 'Walk across fresh snow and leave a trail of boot prints.', look: 'Fresh snow with wind-packed drifts and a twinkle of glitter', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
   sugar: { try: 'Rake three fingertips through sugary slime and watch the grains heap up.', look: 'Periwinkle slime printed as a stipple of sugar grains', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
