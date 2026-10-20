@@ -713,9 +713,10 @@ const SCENES = {
      scattered on lavender, each in a thin rim of mint green that bleeds out through lime into a pale yellow haze, and
      where bubbles sit close their hazes run together. It is all stippled: every pixel of a rim is either green or near
      white, and a fine grain mottles the lavender and the haze but hardly touches the white. The screen's edges hold the
-     bubbles like a membrane, so one that reaches an edge squashes flat against it. The bubbles drift a little and give
-     under the cursor; a pop collapses one into a small lime spot and sends a wave of haze through its neighbours that
-     bounces back off the membrane, and the bubble slowly fills back up. With WebGL2 the stipple is drawn on the
+     bubbles like a membrane, so one that reaches an edge squashes flat against it. The picture swells like water, so the
+     bubbles wobble gently out of round, and they give under the cursor; a pop collapses one into a small lime spot and
+     sends water rings through its neighbours that bend them and bounce back off the membrane, and the bubble slowly
+     fills back up. With WebGL2 the stipple is drawn on the
      screen's own pixels on the GPU; without it, on pixels twice the size in JS. */
   wrap: {
     frame: 'full',
@@ -751,6 +752,9 @@ const SCENES = {
       // bubbles themselves stay round
       const c = this.c = Math.max(4, Math.ceil(Math.sqrt(SW * SH / 75000))), fw = this.fw = Math.ceil(SW / c) + 2, fh = this.fh = Math.ceil(SH / c) + 2;
       this.M1 = new Float32Array(fw * fh); this.ST = new Float32Array(fw * fh); this.MT = new Float32Array(fw * fh); this.V = new Float32Array(fw * fh);
+      // DX/DY: how far the swell and the ripples shift each point of the picture; H: the ripples' glow. wp: where the
+      // swell's four waves start
+      this.DX = new Float32Array(fw * fh); this.DY = new Float32Array(fw * fh); this.H = new Float32Array(fw * fh); this.wp = Array.from({ length: 4 }, () => rand(0, 6.283));
       // a membrane runs along the screen's edges: the glow presses flat against it, so a bubble that reaches an edge
       // squashes there, its rim running along the edge instead of being cut off
       const wall = (n, S) => Float32Array.from({ length: n }, (_, i) => { const e = clamp(Math.min(i * c, S - i * c) / (48 * U), 0, 1); return 1 - (1 - e) * (1 - e); });
@@ -845,9 +849,46 @@ void main() {
       if (this.rip.length > 24) this.rip.shift();
     },
     draw(now, dt) {
-      const { U, c, fw, fh, M1, ST, MT, V, prof, mx, my } = this, t = now / 1000, cu = this.cur;
+      const { U, c, fw, fh, M1, ST, MT, V, DX, DY, H, prof, mx, my, wp } = this, t = now / 1000, cu = this.cur;
       // the cursor presses the bubbles under it in a little, and they swell back once it rests
       cu.a += (clamp(1 - (now - cu.t - 300) / 800, 0, 1) - cu.a) * Math.min(1, dt * .01);
+      // the sheet swells like water: every point of the picture is read from a little way off, shifted by two slow waves
+      // along each axis, so the bubbles wobble gently out of round as the swell runs through them, as if seen through
+      // moving water. Each wave is split into a part along x and a part along y, so no sine is worked out per point
+      const A = 11 * U, k1 = 1 / (110 * U), k2 = 1 / (70 * U);
+      const row = f => Float32Array.from({ length: fh }, (_, j) => f(j * c)), col = f => Float32Array.from({ length: fw }, (_, i) => f(i * c));
+      const a1 = row(y => Math.sin(y * k1 + t * .6 + wp[0])), b1 = col(x => Math.sin(x * k1 - t * .5 + wp[1]));
+      const sY2 = row(y => Math.sin(y * k2 - t * .45 + wp[2])), cY2 = row(y => Math.cos(y * k2 - t * .45 + wp[2]));
+      const sX2 = col(x => Math.sin(x * k2 * .5)), cX2 = col(x => Math.cos(x * k2 * .5));
+      const sX3 = col(x => Math.sin(x * k2 + t * .4 + wp[3])), cX3 = col(x => Math.cos(x * k2 + t * .4 + wp[3]));
+      const sY3 = row(y => -Math.sin(y * k2 * .4)), cY3 = row(y => Math.cos(y * k2 * .4));
+      for (let j = 0, p = 0; j < fh; j++) for (let i = 0; i < fw; i++, p++) {
+        DX[p] = A * (a1[j] + .6 * (sX2[i] * cY2[j] + cX2[i] * sY2[j]));
+        DY[p] = A * (b1[i] + .6 * (sX3[i] * cY3[j] + cX3[i] * sY3[j]));
+      }
+      // ripples: water rings that run out from each pop, a few crests and troughs deep. They push the picture out and
+      // back as they pass, so the bubbles they cross bend, and the crests glow yellow while the troughs dip toward
+      // lavender. A ring bounces off the screen's edges like water off a wall: each edge sends it back as a ring from the
+      // pop's mirror image beyond it, and a corner from the image beyond both. Only the band the ring covers is visited,
+      // skipping the hole inside it (h0 to h1 on each row)
+      H.fill(0);
+      this.rip = this.rip.filter(r => now - r.t0 < 2600);
+      for (const r of this.rip) {
+        const age = (now - r.t0) / 1000, front = age * 520 * U, f = r.a * Math.pow(1 - age / 2.6, 2), Ad = 20 * U * f, Ah = .24 * f, W = 60 * U;
+        const R = front + W * 2.6, R0 = Math.max(0, front - W * 2.6);
+        for (const x of [r.x, -r.x, SW * 2 - r.x]) for (const y of [r.y, -r.y, SH * 2 - r.y]) {
+          const j0 = Math.max(0, Math.ceil((y - R) / c)), j1 = Math.min(fh - 1, Math.floor((y + R) / c));
+          for (let j = j0; j <= j1; j++) {
+            const dy = j * c - y, hw = Math.sqrt(Math.max(0, R * R - dy * dy)), hi = Math.sqrt(Math.max(0, R0 * R0 - dy * dy));
+            const i0 = Math.max(0, Math.ceil((x - hw) / c)), i1 = Math.min(fw - 1, Math.floor((x + hw) / c)), h0 = Math.floor((x - hi) / c) + 1, h1 = Math.ceil((x + hi) / c) - 1;
+            for (let i = i0; i <= i1; i++) {
+              if (i >= h0 && i <= h1) { i = h1; continue; }
+              const dx = i * c - x, d = Math.sqrt(dx * dx + dy * dy) + 1e-3, z = (d - front) / W, e = Math.exp(-z * z / 2.2), p = j * fw + i, k = e * Math.sin(z * 2.6) * Ad / d;
+              DX[p] += dx * k; DY[p] += dy * k; H[p] += Ah * e * Math.cos(z * 2.6);
+            }
+          }
+        }
+      }
       M1.fill(0); ST.fill(0); MT.fill(0);
       for (const o of this.b) {
         // a popped bubble collapses fast and refills slowly; every bubble drifts a little and breathes
@@ -857,13 +898,14 @@ void main() {
         let re = o.r * (.55 + .45 * o.k) * (1 + .015 * Math.sin(t * .5 + o.p3));
         if (cu.a > .01) { const d = Math.hypot(cu.x - x, cu.y - y) / (re * 1.3); if (d < 2) re *= 1 - .08 * cu.a * Math.exp(-d * d * 2); }
         o.re = re;
-        const a = .42 + .58 * o.k, S = .35 * re + 100 * U, iO = 1 / S, iI = 1 / Math.min(re * .9, S), R = re + S;
+        // its reach, plus the furthest the swell and a ripple can shift a point (1.6 A + Ad)
+        const a = .42 + .58 * o.k, S = .35 * re + 100 * U, iO = 1 / S, iI = 1 / Math.min(re * .9, S), R = re + S + 38 * U;
         const j0 = Math.max(0, Math.ceil((y - R) / c)), j1 = Math.min(fh - 1, Math.floor((y + R) / c));
         for (let j = j0; j <= j1; j++) {
-          const dy = j * c - y, hw = Math.sqrt(Math.max(0, R * R - dy * dy));
+          const yj = j * c, hw = Math.sqrt(Math.max(0, R * R - (yj - y) * (yj - y)));
           const i0 = Math.max(0, Math.ceil((x - hw) / c)), i1 = Math.min(fw - 1, Math.floor((x + hw) / c));
           for (let i = i0, p = j * fw + i0; i <= i1; i++, p++) {
-            const dx = i * c - x, d = Math.sqrt(dx * dx + dy * dy) - re, ix = (d * (d < 0 ? iI : iO) + 1) * 256 | 0;
+            const dx = i * c + DX[p] - x, dy = yj + DY[p] - y, d = Math.sqrt(dx * dx + dy * dy) - re, ix = (d * (d < 0 ? iI : iO) + 1) * 256 | 0;
             const P = a * (ix <= 0 ? 1.25 : ix > 511 ? 0 : prof[ix]), tl = P < .22 ? P : .22;
             if (P > M1[p]) M1[p] = P;
             ST[p] += tl; if (tl > MT[p]) MT[p] = tl;
@@ -872,26 +914,8 @@ void main() {
       }
       // the brightest bubble at each point plus its neighbours' tails, which saturate before they reach the lime, so
       // where hazes meet they deepen to butter yellow and no further; pressed flat against the membrane at the edges.
-      // Ripples come after, so one that hits the membrane shakes it
-      for (let j = 0, p = 0; j < fh; j++) for (let i = 0; i < fw; i++, p++) V[p] = (M1[p] + .13 * (1 - Math.exp((MT[p] - ST[p]) / .13))) * my[j] * mx[i];
-      // ripples: a wave of haze that runs out from each pop. It bounces off the screen's edges like water off a wall:
-      // each edge sends it back as a ring from the pop's mirror image beyond it, and a corner from the image beyond both.
-      // Only the band the ring covers is visited, skipping the hole inside it (h0 to h1 on each row)
-      this.rip = this.rip.filter(r => now - r.t0 < 2600);
-      for (const r of this.rip) {
-        const age = (now - r.t0) / 1000, front = age * 520 * U, A = .22 * r.a * Math.pow(1 - age / 2.6, 2), W = 60 * U, R = front + W * 2.2, R0 = Math.max(0, front - W * 2.2);
-        for (const x of [r.x, -r.x, SW * 2 - r.x]) for (const y of [r.y, -r.y, SH * 2 - r.y]) {
-          const j0 = Math.max(0, Math.ceil((y - R) / c)), j1 = Math.min(fh - 1, Math.floor((y + R) / c));
-          for (let j = j0; j <= j1; j++) {
-            const dy = j * c - y, hw = Math.sqrt(Math.max(0, R * R - dy * dy)), hi = Math.sqrt(Math.max(0, R0 * R0 - dy * dy));
-            const i0 = Math.max(0, Math.ceil((x - hw) / c)), i1 = Math.min(fw - 1, Math.floor((x + hw) / c)), h0 = Math.floor((x - hi) / c) + 1, h1 = Math.ceil((x + hi) / c) - 1;
-            for (let i = i0; i <= i1; i++) {
-              if (i >= h0 && i <= h1) { i = h1; continue; }
-              const dx = i * c - x, z = (Math.sqrt(dx * dx + dy * dy) - front) / W; V[j * fw + i] += A * Math.exp(-z * z);
-            }
-          }
-        }
-      }
+      // The ripples' glow comes after, so one that hits the membrane shakes it
+      for (let j = 0, p = 0; j < fh; j++) for (let i = 0; i < fw; i++, p++) V[p] = (M1[p] + .13 * (1 - Math.exp((MT[p] - ST[p]) / .13))) * my[j] * mx[i] + H[p];
       sc.imageSmoothingEnabled = true;
       if (this.gl) {
         const { gl, c: cv } = this.gl;
