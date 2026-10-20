@@ -33,7 +33,7 @@ body[data-scene="gummy"]  { --bg: #e8ecea; --ink: #8c1f4f; --ink-soft: #a5486f; 
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
 body[data-scene="soap"]   { --bg: #ebead6; --ink: #4f1534; --ink-soft: #7d3d5f; --line: rgba(79,21,52,.18); --acc: #bd4885; --cursor: #4f1534; color-scheme: light; }
 body[data-scene="snow"]   { --bg: #9ca6e2; --ink: #252a5e; --ink-soft: #4a5088; --line: rgba(37,42,94,.18); --acc: #e8dcb2; --cursor: #252a5e; color-scheme: light; }
-body[data-scene="grit"]   { --bg: #becdf9; --ink: #1d3fae; --ink-soft: #4f68b8; --line: rgba(29,63,174,.18); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="grit"]   { --bg: #3ea6ec; --ink: #183c94; --ink-soft: #2d5aac; --line: rgba(24,60,148,.18); --acc: #183c94; --cursor: #183c94; color-scheme: light; }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -316,7 +316,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
         <div><b>No audio files</b><p>Every sound is synthesized live with the Web Audio API, with a little randomness, so no two steps sound exactly alike.</p></div>
         <div><b>Your keys play too</b><p>Letters, digits, space and enter play the current material, and the arrow keys switch between materials.</p></div>
         <div><b>Made for touch</b><p>On phones and tablets, drag a finger across the screen, and tap the arrows on either side of the logo to switch materials.</p></div>
-        <div><b>One moodboard</b><p>Cobalt, periwinkle, grey and warm paper, and ink. Six materials borrow their colors from their own reference images instead.</p></div>
+        <div><b>One moodboard</b><p>Cobalt, periwinkle, grey and warm paper, and ink. Eight materials borrow their colors from their own reference images instead.</p></div>
         <div><b>One file</b><p>The whole toy is a single HTML page: no build step, no install, nothing to load but fonts.</p></div>
       </div>
     </section>
@@ -2066,58 +2066,127 @@ void main() {
     }
   },
 
-  /* 10 Sugar Slime: periwinkle slime packed with sugar, printed as a stipple of fine grains. The cursor drags three
-     fingertips through it: each leaves a furrow with the slime it pushed aside heaped along its walls, cobalt grains
-     crowd into the creases and shaded walls, white crystals catch the light on the lit ones, and the slime slowly
-     settles flat again. */
+  /* 10 Sugar Slime: slime packed with sugar, after a grainy gradient print. Soft fields of colour run through it in a
+     grain as fine as the screen's pixels: blue in the top left, a lime glow from the top right that settles into a band
+     across the middle under a haze of pale sky, a lavender disc rising from the bottom edge and a strip of sky down the
+     right. The cursor drags three fingertips through it: each leaves a furrow with the slime it pushed aside heaped
+     along its walls. Walls facing the glow light up lime, shaded walls and creases sink to a deeper blue, all in the
+     same grain, and the slime slowly settles flat again. */
   grit: {
     frame: 'full',
     init() {
-      const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
+      // the grain is one screen pixel, so the picture is worked out per device pixel (Q of them to a CSS px, fewer on a
+      // very large screen); the slime's surface H lies on a grid of G CSS px
+      const Q = this.Q = Math.min(SDPR, Math.sqrt(6e6 / (SW * SH))), w = this.w = Math.ceil(SW * Q), h = this.h = Math.ceil(SH * Q);
+      const G = this.G = 2, gw = this.gw = Math.ceil(SW / G) + 1, gh = this.gh = Math.ceil(SH / G) + 1;
       this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
-      this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
-      // B is the slime at rest, softly lumpy, and H the surface now, both in px; T is a fixed threshold per grain so
-      // the stipple holds still instead of shimmering
-      this.B = new Float32Array(w * h); this.T = new Float32Array(w * h);
-      const p0 = rand(0, 6.283), p1 = rand(0, 6.283), p2 = rand(0, 6.283);
-      for (let j = 0, o = 0; j < h; j++) for (let i = 0; i < w; i++, o++) {
-        const x = i * G, y = j * G;
-        this.B[o] = 4 * Math.sin(x / 90 + p0 + 1.3 * Math.sin(y / 120 + p1)) + 2.5 * Math.sin(y / 55 - x / 80 + p2);
-        this.T[o] = Math.random();
+      this.oc = this.off.getContext('2d');
+      // fixed per pixel: A is the colour under the lime, grain and all, with a dither for the shade in its top byte, and
+      // Y how far it turns lime (with the grain's jitter, stored as Y * 100 + 60); kept from the last time if they fit
+      if (!this.img || this.img.width !== w || this.img.height !== h) {
+        this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer); this.A = new Uint32Array(w * h); this.Y = new Uint8Array(w * h);
       }
-      this.H = Float32Array.from(this.B);
-      this.wg = clamp(CELL * .2, 5, 9); this.dir = [1, 0]; this.last = null; this.mt = 0; this.at = 0; this.still = false;
+      const P = this.px, A = this.A, Y = this.Y;
+      const W = Math.max(w * .7, Math.min(w, h * .73)), cR = Math.min(h * .37, w * .49), cx = w * .58, cy = h * .985, sx = w - cR * .27, hz = .06 * h;
+      // per column: how far across the page it is (u) and where the band's top edge runs (yb)
+      const U = new Float32Array(w), YB = new Float32Array(w);
+      for (let i = 0; i < w; i++) { U[i] = Math.max(0, 1 - (w - i) / W); YB[i] = h * (.525 - .11 * Math.min(U[i], .5)); }
+      let s = Math.random() * 4294967295 + 1 | 0;
+      // the lime and lilac grains clump into specks two or three pixels across while the light and dark speckle under
+      // them is single pixels, so the mix's jitter N is white noise softened by a small binomial blur
+      // (the outermost two pixels all round keep theirs unblurred, scaled to match). Both are worked out in the memory
+      // of A and of the picture, which the loop below then fills, each pixel only after reading its own N
+      const N = new Float32Array(A.buffer), T = new Float32Array(P.buffer), n = w * h, w2 = 2 * w;
+      for (let o = 0; o < n; o++) { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; N[o] = s / 4294967296; }
+      for (let o = 0; o < n; o++) T[o] = N[o] * 8.37;
+      for (let j = 0; j < h; j++) for (let o = j * w + 2, e = o + w - 4; o < e; o++) T[o] = N[o - 2] + 4 * N[o - 1] + 6 * N[o] + 4 * N[o + 1] + N[o + 2];
+      for (let o = 0; o < n; o++) N[o] = T[o] * .0558;
+      for (let o = w2, e = n - w2; o < e; o++) N[o] = (T[o - w2] + 4 * T[o - w] + 6 * T[o] + 4 * T[o + w] + T[o + w2]) / 150;
+      for (let j = 0, o = 0; j < h; j++) {
+        const v = j / h, es = (v - .36) / .19, dy = j - cy;
+        for (let i = 0; i < w; i++, o++) {
+          // two steps of a quick xorshift give each grain eight random bytes, and nz is its share of the clumped jitter
+          s ^= s << 13; s ^= s >>> 17; s ^= s << 5; const n0 = s >>> 0;
+          s ^= s << 13; s ^= s >>> 17; s ^= s << 5; const n1 = s >>> 0, nz = N[o];
+          const u = U[i], yb = YB[i], gl = clamp(.85 * (.854 * u + .52 * v - .17), 0, .62), eb = (j - yb) / (8 * Q) + .5;
+          // blue under a lime glow from the top right, and the band across the middle with a haze of pale sky just
+          // above it; the edges are dithered so they break up into grain
+          let r = 62, g = 166, b = 236, y = gl;
+          if (eb >= 1 || eb > 0 && (n0 & 255) < eb * 256) y = Math.max(gl, .34 + .3 * u);
+          else if (j < yb && j > yb - 5 * hz && gl < .45) {
+            const m = .3 * Math.exp((j - yb) / hz) * (1 - gl / .45), p = clamp(m + nz * 1.4 * Math.min(1, m * 3), 0, 1);
+            r += 118 * p; g += 62 * p; b += 10 * p;
+          }
+          // the disc: blue and lilac grains, pinker to the right, with the glow bleeding in round its rim
+          const dx = i - cx, d = Math.sqrt(dx * dx + dy * dy), ed = (cR - d) / (5 * Q) + .5;
+          if (ed >= 1 || ed > 0 && (n0 >>> 8 & 255) < ed * 256) {
+            const p = clamp(.5 + nz * 1.6, 0, 1), k = clamp(.5 + dx / cR * .6, 0, 1);
+            r = 104 + (56 + 22 * k) * p; g = 173 + (23 - 6 * k) * p; b = 218 + (20 - 6 * k) * p;
+            y = gl > .45 && d > .6 * cR ? (1 - (cR - d) / (.4 * cR)) * Math.min(.3, (gl - .45) * 1.6) : 0;
+          }
+          // the strip of sky down the right, coming in below the glow
+          const ex = (i - sx) / Q;
+          if (es > 0 && ex > -2 && (ex >= 2 || ex >= (n1 & 255) / 64 - 2) && (es >= 1 || (n1 >>> 8 & 255) < es * 256)) {
+            r = 107; g = 204; b = 242; y = gl * clamp((.6 - v) / .25, 0, 1) * .5;
+          }
+          const ln = ((n1 >>> 16 & 255) + (n1 >>> 24) - 255) * .0824;
+          r = clamp(r + ln, 0, 255); g = clamp(g + ln, 0, 255); b = clamp(b + ln, 0, 255);
+          A[o] = (n0 >>> 16 & 255) << 24 | b << 16 | g << 8 | r;
+          if (y) y += nz * Math.min(1, y * 3);
+          const q = Y[o] = clamp(y * 100 + 60.5 | 0, 0, 255), t = clamp((q - 60) / 100, 0, 1);
+          P[o] = 0xff000000 | (b + (116 - b) * t) << 16 | (g + (250 - g) * t) << 8 | (r + (228 - r) * t);
+        }
+      }
+      this.oc.putImageData(this.img, 0, 0);
+      // the device pixels between the centres of neighbouring cells of the surface: columns CX[i] to CX[i + 1] lie
+      // between cells i and i + 1, FX is how far across that span each column lies, and the same for rows
+      const GQ = G * Q, CX = this.CX = new Int32Array(gw), CY = this.CY = new Int32Array(gh), FX = this.FX = new Float32Array(w), FY = this.FY = new Float32Array(h);
+      for (let i = 0; i < gw; i++) CX[i] = clamp(Math.ceil(i * GQ - .5), 0, w);
+      for (let j = 0; j < gh; j++) CY[j] = clamp(Math.ceil(j * GQ - .5), 0, h);
+      for (let x = 0; x < w; x++) FX[x] = (x + .5) / GQ % 1;
+      for (let y = 0; y < h; y++) FY[y] = (y + .5) / GQ % 1;
+      // per cell: the surface, how far it turned lime (LD) or sank into shade (SD) when it was last drawn, and a flag (F)
+      // for one drawn anew this frame; box is the part of the grid still moving
+      const gn = gw * gh;
+      this.H = new Float32Array(gn); this.LD = new Float32Array(gn); this.SD = new Float32Array(gn); this.F = new Uint8Array(gn);
+      this.box = null;
+      this.wg = clamp(CELL * .25, 6, 12); this.dir = [1, 0]; this.last = null; this.mt = 0;
     },
     // three fingertips side by side drag a furrow each from (x0, y0) to (x1, y1) and heap the slime they push aside
     // into ridges along the walls; a press without a drag sinks in three dimples, each with a ring around it
-    carve(x0, y0, x1, y1) {
-      const G = this.G, w = this.w, H = this.H, B = this.B, wg = this.wg, sp = wg * 2.9, D = wg * .9, Rm = wg * .4;
+    carve(x0, y0, x1, y1, fresh) {
+      const G = this.G, gw = this.gw, gh = this.gh, H = this.H, wg = this.wg, sp = wg * 2.9, D = wg * .9, Rm = wg * .4;
       let ux = x1 - x0, uy = y1 - y0;
       const L = Math.hypot(ux, uy), drag = L > .5;
       if (drag) { ux /= L; uy /= L; } else [ux, uy] = this.dir;
       const reach = sp + wg * 2.4;
-      const i0 = Math.max(0, Math.floor((Math.min(x0, x1) - reach) / G)), i1 = Math.min(w - 1, Math.ceil((Math.max(x0, x1) + reach) / G));
-      const j0 = Math.max(0, Math.floor((Math.min(y0, y1) - reach) / G)), j1 = Math.min(this.h - 1, Math.ceil((Math.max(y0, y1) + reach) / G));
-      for (let j = j0; j <= j1; j++) for (let i = i0, o = j * w + i0; i <= i1; i++, o++) {
+      const i0 = Math.max(0, Math.floor((Math.min(x0, x1) - reach) / G)), i1 = Math.min(gw - 1, Math.ceil((Math.max(x0, x1) + reach) / G));
+      const j0 = Math.max(0, Math.floor((Math.min(y0, y1) - reach) / G)), j1 = Math.min(gh - 1, Math.ceil((Math.max(y0, y1) + reach) / G));
+      if (i0 > i1 || j0 > j1) return;
+      for (let j = j0; j <= j1; j++) for (let i = i0, o = j * gw + i0; i <= i1; i++, o++) {
         const px = i * G - x0, py = j * G - y0, a = px * ux + py * uy, u = py * ux - px * uy, da = a < 0 ? -a : a > L ? a - L : 0;
         let hi = 0, lo = 0;
         for (let f = -1; f <= 1; f++) {
           const du = Math.abs(u - f * sp), d = Math.hypot(da, du) / wg;
           if (d < 1) lo = Math.min(lo, -D * (1 - d * d) ** 2);
-          // the heaped ridge runs only beside the stroke, so where one step's stroke meets the next it doesn't fill the furrow
-          const r = drag ? (da ? 9 : (du / wg - 1.55) / .75) : (d - 1.55) / .75;
-          if (r > -1 && r < 1) hi = Math.max(hi, Rm * (1 - r * r) ** 2);
+          // the heaped ridge runs beside the stroke and tapers off past its end, but behind it only when the stroke has
+          // just begun, so where one step's stroke meets the last it doesn't fill that one's furrow
+          const r = (drag ? du / wg - 1.55 : d - 1.55) / .75;
+          if (r > -1 && r < 1 && (!drag || !da || da < wg && (a > L || fresh))) hi = Math.max(hi, Rm * (1 - r * r) ** 2 * (drag ? 1 - da / wg : 1));
         }
-        if (hi) H[o] = Math.max(H[o], B[o] + hi);
-        if (lo) H[o] = Math.min(H[o], B[o] + lo);
+        // a ridge heaps up onto slime that was flat or already heaped, and adds to an older furrow it crosses, filling it
+        // in by as much; a furrow cuts into slime the same way, so a stroke over an old one blends into it without a seam
+        if (hi) H[o] = H[o] < 0 ? H[o] + hi : Math.max(H[o], hi);
+        if (lo) H[o] = H[o] > 0 ? H[o] + lo : Math.min(H[o], lo);
       }
-      this.at = performance.now(); this.still = false;
+      const b = this.box, a = [Math.max(0, i0 - 1), Math.max(0, j0 - 1), Math.min(gw - 1, i1 + 1), Math.min(gh - 1, j1 + 1)];
+      this.box = b ? [Math.min(b[0], a[0]), Math.min(b[1], a[1]), Math.max(b[2], a[2]), Math.max(b[3], a[3])] : a;
     },
     move(x, y, dx, dy) {
-      const l = Math.hypot(dx, dy);
+      const l = Math.hypot(dx, dy), now = performance.now(), fresh = now - this.mt > 120;
       if (l > .5) this.dir = [dx / l, dy / l];
-      this.mt = performance.now();
-      if (l < 300) this.carve(x - dx, y - dy, x, y);
+      this.mt = now;
+      if (l < 300) this.carve(x - dx, y - dy, x, y, fresh);
     },
     hit(x, y, k, now) {
       // a drag carves as the cursor moves; keys, taps and the preview swipe have none, so a press soon after the last one
@@ -2125,31 +2194,71 @@ void main() {
       if (now - this.mt < 150) return;
       const L = this.last, d = L ? Math.hypot(x - L.x, y - L.y) : 0, near = L && now - L.t < 400 && d < 220;
       if (near && d > .5) this.dir = [(x - L.x) / d, (y - L.y) / d];
-      this.carve(near ? L.x : x, near ? L.y : y, x, y);
+      this.carve(near ? L.x : x, near ? L.y : y, x, y, !near);
       this.last = { x, y, t: now };
     },
     draw(now, dt) {
-      const G = this.G, w = this.w, h = this.h, H = this.H, B = this.B, T = this.T, P = this.px, D = this.wg * .9;
-      // once the slime has settled the last picture is kept and only drawn again
-      const idle = now - this.at > 16000;
-      if (!idle || !this.still) {
+      const b = this.box;
+      // only the part of the slime still moving is worked out again, and of that only where the colour has visibly
+      // changed is drawn again; once it has all settled the picture is just drawn
+      if (b) {
+        const G = this.G, gw = this.gw, gh = this.gh, w = this.w, H = this.H, LD = this.LD, SD = this.SD, F = this.F;
+        const CX = this.CX, CY = this.CY, FX = this.FX, FY = this.FY, A = this.A, Y = this.Y, P = this.px, D = this.wg * .9;
+        // the slime settles, and a furrow that has nearly closed is let go
         const k = 1 - Math.exp(-dt / 4500);
-        for (let o = 0; o < H.length; o++) H[o] += (B[o] - H[o]) * k;
-        // light from the top left: walls facing it shed their grains for white crystals, walls facing away crowd with
-        // cobalt; creases darken and ridge crests brighten, so a furrow shows whichever way it runs
-        for (let j = 0; j < h; j++) {
-          const up = j ? -w : 0, dn = j < h - 1 ? w : 0;
-          for (let i = 0, o = j * w; i < w; i++, o++) {
-            const l = H[i ? o - 1 : o], r = H[i < w - 1 ? o + 1 : o], t0 = H[o + up], b = H[o + dn], c = H[o];
-            const lit = .7 * (r - l + b - t0) / (2 * G), lap = l + r + t0 + b - 4 * c, dip = clamp((B[o] - c) / D, 0, 1), t = T[o];
-            const ink = .07 - .6 * lit + .14 * lap + .3 * dip;
-            P[o] = t < ink ? (t < ink * .45 ? 0xfffb622c : 0xffeea68f) : t > .975 - .8 * lit + .1 * lap ? 0xffffffff : 0xfff9cdbe;
+        let i0 = gw, i1 = -1, j0 = gh, j1 = -1;
+        for (let j = b[1]; j <= b[3]; j++) for (let i = b[0], o = j * gw + i; i <= b[2]; i++, o++) {
+          const v = H[o] * (1 - k);
+          if (v > -.2 && v < .2) { H[o] = 0; continue; }
+          H[o] = v;
+          if (i < i0) i0 = i; if (i > i1) i1 = i; if (j < j0) j0 = j; if (j > j1) j1 = j;
+        }
+        // light from the top right, where the glow comes from: walls facing it turn lime and ridge crests brighten,
+        // walls facing away and the creases sink into blue. A cell whose colour has visibly changed since it was last
+        // drawn takes the new one and is flagged
+        for (let j = b[1]; j <= b[3]; j++) {
+          const up = j ? -gw : 0, dn = j < gh - 1 ? gw : 0;
+          for (let i = b[0], o = j * gw + i; i <= b[2]; i++, o++) {
+            const l = H[i ? o - 1 : o], r = H[i < gw - 1 ? o + 1 : o], t = H[o + up], bt = H[o + dn], c = H[o];
+            let lt = 0, sd = 0;
+            if (l || r || t || bt || c) {
+              const ax = (r - l) / (2 * G), ay = (bt - t) / (2 * G), lit = .7 * (ay - ax), lap = l + r + t + bt - 4 * c;
+              lt = .4 * lit - .06 * lap; sd = clamp(-.35 * lit + .07 * lap - .25 * c / D, 0, 1);
+            }
+            const ol = LD[o], os = SD[o];
+            if (Math.abs(lt - ol) < .01 && Math.abs(sd - os) < .01 && (lt || sd || !ol && !os)) continue;
+            LD[o] = lt; SD[o] = sd; F[o] = 1;
           }
         }
-        this.oc.putImageData(this.img, 0, 0);
-        this.still = idle;
+        // each pixel blends the colour of the four cells round it, so every span between cells next to a flagged one
+        // is drawn again
+        let x0 = w, x1 = 0, y0 = this.h, y1 = 0;
+        for (let j = Math.max(0, b[1] - 1), je = Math.min(gh - 2, b[3]); j <= je; j++) {
+          for (let i = Math.max(0, b[0] - 1), ie = Math.min(gw - 2, b[2]), o = j * gw + i; i <= ie; i++, o++) {
+            if (!(F[o] | F[o + 1] | F[o + gw] | F[o + gw + 1])) continue;
+            const px0 = CX[i], px1 = CX[i + 1], py0 = CY[j], py1 = CY[j + 1];
+            if (px0 < x0) x0 = px0; if (px1 > x1) x1 = px1; if (py0 < y0) y0 = py0; if (py1 > y1) y1 = py1;
+            const l0 = LD[o], l1 = LD[o + 1], l2 = LD[o + gw], l3 = LD[o + gw + 1], s0 = SD[o], s1 = SD[o + 1], s2 = SD[o + gw], s3 = SD[o + gw + 1];
+            for (let py = py0; py < py1; py++) {
+              const fy = FY[py], la = l0 + (l2 - l0) * fy, lb = l1 + (l3 - l1) * fy, sa = s0 + (s2 - s0) * fy, sb = s1 + (s3 - s1) * fy;
+              for (let px = px0, q = py * w + px0; px < px1; px++, q++) {
+                const fx = FX[px], lt = la + (lb - la) * fx, sd = sa + (sb - sa) * fx;
+                const a = A[q], ar = a & 255, ag = a >> 8 & 255, ab = a >> 16 & 255, tl = clamp((Y[q] - 60) / 100 + lt, 0, 1);
+                let rr = ar + (228 - ar) * tl, gg = ag + (250 - ag) * tl, bb = ab + (116 - ab) * tl;
+                if (sd) {
+                  const f = clamp(sd + ((a >>> 24) - 128) / 512 * Math.min(1, sd * 3), 0, 1);
+                  rr += (63 - rr) * f; gg += (125 - gg) * f; bb += (230 - bb) * f;
+                }
+                P[q] = 0xff000000 | bb << 16 | gg << 8 | rr;
+              }
+            }
+          }
+        }
+        for (let j = b[1]; j <= b[3]; j++) F.fill(0, j * gw + b[0], j * gw + b[2] + 1);
+        if (x1 > x0) this.oc.putImageData(this.img, 0, 0, x0, y0, x1 - x0, y1 - y0);
+        this.box = i1 < 0 ? null : [Math.max(0, i0 - 1), Math.max(0, j0 - 1), Math.min(gw - 1, i1 + 1), Math.min(gh - 1, j1 + 1)];
       }
-      sc.imageSmoothingEnabled = false; sc.drawImage(this.off, 0, 0, w * G, h * G); sc.imageSmoothingEnabled = true;
+      sc.imageSmoothingEnabled = false; sc.drawImage(this.off, 0, 0, this.w / this.Q, this.h / this.Q); sc.imageSmoothingEnabled = true;
     }
   },
 };
@@ -2385,24 +2494,36 @@ function thumb(id) {
         `<g fill="#9ca6e2" filter="url(#snowBand)"><ellipse cx="30" cy="31" rx="4.2" ry="3" transform="rotate(-30 30 31)"/><ellipse cx="24" cy="35" rx="3" ry="2.3"/></g>`);
     }
     case 'sugar': {
-      // three furrows raked through the grains, lit from the top left like the scene: cobalt on the shaded walls,
-      // white crystals on the lit ones and a sparse speckle of both on the flat slime
+      // the scene's grainy print in small, grain by grain: blue in the top left under a lime glow, the band with a haze
+      // of pale sky above it, the lavender disc and the strip of sky, and three furrows raked across, lit from the top
+      // right like the scene. Grains are 1.25 units, drawn on a grid scaled down by that much
       const hf = (x, y) => {
+        if (x < 5 || x > 58) return 0;
         let hi = 0, lo = 0;
         for (let f = -1; f <= 1; f++) {
-          const a = Math.abs(y - 25 - f * 8 - Math.sin(x * .06 + .4) * 6) / 2.6, q = (a - 1.55) / .75;
-          if (a < 1) lo = Math.min(lo, -.9 * (1 - a * a) ** 2);
-          if (q > -1 && q < 1) hi = Math.max(hi, .4 * (1 - q * q) ** 2);
+          const a = Math.abs(y - 15 - f * 5.8 - Math.sin(x * .07 + .4) * 4) / 2, q = (a - 1.55) / .75;
+          if (a < 1) lo = Math.min(lo, -1.8 * (1 - a * a) ** 2);
+          if (q > -1 && q < 1) hi = Math.max(hi, .8 * (1 - q * q) ** 2);
         }
         return lo || hi;
       };
-      const d = ['', '', ''];   // cobalt, soft blue and white grains
-      for (let y = .2; y < 50; y += 1.25) for (let x = .2; x < 80; x += 1.25) {
-        const lit = .7 * 2.6 * (hf(x + .6, y) - hf(x - .6, y) + hf(x, y + .6) - hf(x, y - .6)) / 1.2, v = .07 - .6 * lit + .3 * Math.max(0, -hf(x, y) / .9), t = r();
-        const g = `M${x.toFixed(2)} ${y.toFixed(2)}h1v1h-1z`;
-        if (t < v) d[t < v * .45 ? 0 : 1] += g; else if (t > .975 - .8 * lit) d[2] += g;
+      const n = () => r() + r() - 1, mix = (c, d, t) => c.map((v, i) => v + (d[i] - v) * t), grains = {};
+      for (let j = 0; j < 40; j++) for (let i = 0; i < 64; i++) {
+        const x = (i + .5) * 1.25, y = (j + .5) * 1.25, u = Math.max(0, 1 - (80 - x) / 56), v = y / 50;
+        const gl = clamp(.85 * (.854 * u + .52 * v - .17), 0, .62), yb = 50 * (.525 - .11 * Math.min(u, .5));
+        let c = [62, 166, 236], t = y >= yb ? Math.max(gl, .34 + .3 * u) : gl;
+        if (y < yb) { const m = .3 * Math.exp((y - yb) / 3) * Math.max(0, 1 - gl / .45); c = mix(c, [180, 228, 246], clamp(m + n() * .4 * Math.min(1, m * 3), 0, 1)); }
+        if (Math.hypot(x - 46.4, y - 49.3) < 18.5) {
+          const k = clamp(.5 + (x - 46.4) / 18.5 * .6, 0, 1);
+          c = mix([104, 173, 218], [160 + 22 * k, 196 - 6 * k, 238 - 6 * k], clamp(.5 + n() * .6, 0, 1)); t = 0;
+        }
+        if (x > 75 && r() < (v - .36) / .19) { c = [107, 204, 242]; t = 0; }
+        const lit = .7 * (hf(x, y + .6) - hf(x, y - .6) - hf(x + .6, y) + hf(x - .6, y)) / 1.2, s = clamp(-.35 * lit - .14 * hf(x, y), 0, 1);
+        c = mix(mix(c, [228, 250, 116], clamp(t + (t ? n() * .4 * Math.min(1, t * 3) : 0) + .4 * lit, 0, 1)), [63, 125, 230], s);
+        const key = '#' + c.map(v => clamp(Math.round(v / 17), 0, 15).toString(16)).join('');
+        grains[key] = (grains[key] || '') + `M${i} ${j}h1v1h-1z`;
       }
-      return svg('#becdf9', `<path d="${d[1]}" fill="#8fa6ee"/><path d="${d[0]}" fill="${C.cobalt}"/><path d="${d[2]}" fill="#fff"/>`);
+      return svg('#3ea6ec', `<g transform="scale(1.25)">${Object.keys(grains).map(k => `<path d="${grains[k]}" fill="${k}"/>`).join('')}</g>`);
     }
   }
   return svg('#eee', '');
@@ -2454,7 +2575,7 @@ const STORY = {
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a path down to the paper. The shaved soap heaps up along its edges, and the cut slowly closes.', look: 'A bar of soap as a magenta halftone on cream, after a halftone print', hear: 'A crisp, rising shave and the patter of falling flakes' },
   snow: { try: 'Walk across it like still water: each step washes out a print and sends ripples that sweep the moiré bands across the lines.', look: 'Snow seen through a lenticular print, after a reference: fine olive and cream lines in wide arcs on periwinkle, beating into wavy moiré bands', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
-  sugar: { try: 'Rake three fingertips through sugary slime and watch the grains heap up.', look: 'Periwinkle slime printed as a stipple of sugar grains', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
+  sugar: { try: 'Rake three fingertips through the slime. Walls facing the glow light up lime and the creases sink to blue.', look: 'Slime in soft, grainy fields of blue, lime, lavender and sky, after a grainy gradient print', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
 const storyEl = $('story');
 let storyFrom = null;
