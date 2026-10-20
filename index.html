@@ -958,9 +958,13 @@ const SCENES = {
       this.x0 = (SW - cols * s + s) / 2; this.y0 = (SH - rows * s + s) / 2;
       this.E = new Float32Array(n); this.T = new Float64Array(n); this.on = new Uint8Array(n); this.a0 = new Float64Array(n).fill(-1e4);
       this.ig = new Float64Array(n).fill(-1e5); this.fl = new Float32Array(n); this.sk = [];
-      // only about three grid points in five are cut through, and each hole lets the light in at its own level, so the
-      // lit band comes out ragged at its edges
-      this.th = Float32Array.from({ length: n }, () => Math.random() < .6 ? rand(.35, 1.15) : 99);
+      // about one grid point in five is left uncut, never two side by side, so wherever the cursor goes there is a hole
+      // close enough to light; each hole lets the light in at its own level, so the lit band comes out ragged at its edges
+      const th = this.th = new Float32Array(n);
+      for (let q = 0; q < n; q++) {
+        const free = (q % cols === 0 || th[q - 1] < 9) && (q < cols || th[q - cols] < 9);
+        th[q] = free && Math.random() < .35 ? 99 : rand(.35, 1.15);
+      }
       // a lit hole is a white disc with a soft edge and a halo that tails off into the sheet, and the flash a wider
       // bloom; while it is hot its rim glows orange over a warm glow on the sheet, and it leaves a bronze scorch ring
       const sprite = (R, stops) => {
@@ -1008,7 +1012,12 @@ const SCENES = {
         if (on[q] && d < s * .5 && now - a0[q] > 900) { a0[q] = ig[q] = now; fl[q] = .5; if (Math.random() < .35) this.spark(hx, hy, 1, now); }
       }
     },
-    move(x, y) { this.paint(x, y, 2.4, performance.now()); },
+    // a quick flick reports the pointer far apart, so the laser sweeps the whole stretch since the last move, not just
+    // the point it lands on
+    move(x, y, dx, dy) {
+      const now = performance.now(), n = Math.min(60, Math.ceil(Math.hypot(dx, dy) / (this.s * .4)));
+      for (let i = n; i >= 0; i--) this.paint(x - dx * i / (n || 1), y - dy * i / (n || 1), 2.4, now);
+    },
     hit(x, y, k, now) { this.paint(x, y, k.code === 'Cell' ? 2.4 : 2.7, now); },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
