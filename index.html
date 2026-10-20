@@ -91,7 +91,7 @@ body[data-scene="wax"] .cursor { mix-blend-mode: difference; filter: none; }
    into the picture with no edge, --fx and --fy past it on each side. On the black and white halftone a pale frost
    reads as a grey smudge, so there --frost is dark, like the pools under the logo */
 .brand, .tally { position: relative; isolation: isolate; --fx: 40px; --fy: 22px; }
-.brand::before, .tally::before, .pick::before, .vol::before, .caption::before {
+.brand::before, .tally::before, .pick::before, .vol::before {
   content: ""; position: absolute; z-index: -1; pointer-events: none;
   inset: calc(-1 * var(--fy, 30px)) calc(-1 * var(--fx, 64px));
   background: color-mix(in srgb, var(--bg) var(--frost), transparent);
@@ -173,21 +173,10 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
   .dock { padding-block: 4px; }
   .seg button, .dbtn { padding: 7px 10px; }
 }
-/* The story: what clack is for and how it came to be. The About button in the header and the intro open it, and a
-   caption over the sound's corner names each material and what to try, in a frost like the dock's, then fades so the
-   picture is left alone. The story keeps one palette of its own, warm paper and cobalt ink from the moodboard */
+/* The story: what clack is for and how it came to be. The About button in the header and the intro open it. The
+   story keeps one palette of its own, warm paper and cobalt ink from the moodboard */
 .about { display: inline-block; align-self: center; padding: 7px 11px; margin: -7px 0 -7px -4px; font-size: 12px; color: var(--ink-soft); }
 .about:hover { color: var(--ink); }
-.caption {
-  position: absolute; bottom: calc(100% + 2px); left: 0; isolation: isolate; --fx: 44px; --fy: 20px;
-  width: max-content; max-width: min(540px, calc(100vw - 48px)); margin: 0;
-  font-size: 13px; line-height: 1.45; color: var(--ink-soft); text-wrap: balance;
-  pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity .4s, transform .4s;
-}
-.caption.on { opacity: 1; transform: none; }
-.caption em { font: 500 11px/1 var(--font-mono); font-style: normal; margin-right: 4px; }
-.caption b { font-weight: 700; color: var(--ink); margin-right: 6px; }
-.dock-wrap:has(.panel:not([hidden])) .caption { opacity: 0; }
 
 .howto { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: 13px; color: var(--ink-soft); }
 .howto li { display: flex; align-items: center; gap: 7px; }
@@ -289,7 +278,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
   .st-sec { padding-top: 64px; }
 }
 @media (max-width: 720px) { .about span { display: none; } }
-@media (prefers-reduced-motion: reduce) { .panel, .story { animation: none; } .caption, .mat { transition: none; } .mat:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .panel, .story { animation: none; } .mat { transition: none; } .mat:hover { transform: none; } }
 </style>
 </head>
 <body>
@@ -309,7 +298,6 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
   <main class="stage" id="stage"></main>
 
   <div class="dock-wrap" id="dockWrap">
-    <p class="caption" id="caption" aria-live="polite"><em id="capNum"></em><b id="capName"></b><span id="capTry"></span></p>
     <nav class="dock" id="dock" aria-label="Settings">
       <div class="pick">
         <button class="dbtn step" id="prev" type="button" aria-label="Previous sound"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
@@ -2240,7 +2228,7 @@ function set(patch) {
 
 buildOptions($('soundGrid'), SOUNDS, pickSound,
   (id, s) => `<span class="thumb">${thumb(id)}</span><b><em>${num(id)}</em>${s.name}</b><span>${s.desc}</span>`);
-function pickSound(id) { set({ sound: id }); demo(); caption(); }
+function pickSound(id) { set({ sound: id }); demo(); }
 function step(d) { const i = SOUND_IDS.indexOf(S.sound); pickSound(SOUND_IDS[(i + d + SOUND_IDS.length) % SOUND_IDS.length]); }
 
 $('prev').addEventListener('click', () => step(-1));
@@ -2285,7 +2273,7 @@ const STORY = {
   sugar: { try: 'Rake three fingertips through sugary slime and watch the grains heap up.', look: 'Periwinkle slime printed as a stipple of sugar grains', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
 const storyEl = $('story');
-let storyFrom = null, capT = 0;
+let storyFrom = null;
 // thumbnails carry their own gradient and filter ids, so each copy gets a suffix or it would point at the picker's
 const thumbAs = (id, k) => thumb(id).replace(/(id="|url\(#)([\w-]+)/g, `$1$2-${k}`);
 $('storyStrip').innerHTML = SOUND_IDS.map(id => `<span class="thumb">${thumbAs(id, 'h')}</span>`).join('');
@@ -2338,12 +2326,6 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   e.preventDefault();
   $(a.getAttribute('href').slice(1)).scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }));
-// names the material over the dock and what to try with it, then fades out
-function caption() {
-  const s = SOUNDS[S.sound], c = $('caption');
-  $('capNum').textContent = num(S.sound); $('capName').textContent = s.name; $('capTry').textContent = (STORY[S.sound] || { try: s.desc }).try;
-  c.classList.add('on'); clearTimeout(capT); capT = setTimeout(() => c.classList.remove('on'), 4500);
-}
 
 /* ---------- start ---------- */
 let started = false;
@@ -2352,7 +2334,6 @@ function start() {
   started = true;
   initAudio();
   $('intro').hidden = true;
-  caption();
 }
 $('go').addEventListener('click', e => { e.stopPropagation(); start(); });
 $('intro').addEventListener('pointerdown', e => { if (!e.target.closest('#go, #introStory')) start(); });
