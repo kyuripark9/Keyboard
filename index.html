@@ -11,28 +11,28 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: a full-screen canvas scene framed by its four corners: the logo and the tally on top, the sound and the
-   volume below, each set in a soft frost with no edge, so the middle of the picture is left clear.
+/* Layout: a full-screen canvas scene with only a few marks on it, set right on the picture in its own ink: the logo
+   with the page number top left, the tally top right, and an arrow at the middle of each side to turn the page.
    Every sound has its own scene and its own palette, most drawn from one moodboard:
    cobalt, periwinkle, grey paper, warm paper and ink. */
 :root {
   --cobalt: #2c62fb; --peri: #becdf9; --mid: #5c80ea; --paper: #f3eee6; --grey-paper: #e6e6e3; --ink-black: #1c1c1c;
-  --bg: #f4f5f7; --ink: #1b2a6b; --ink-soft: #5a6890; --line: rgba(27,42,107,.14); --panel: rgba(255,255,255,.84);
-  --acc: var(--cobalt); --cursor: var(--cobalt); --frost: 60%;
+  --bg: #f4f5f7; --ink: #1b2a6b; --ink-soft: #5a6890; --line: rgba(27,42,107,.14);
+  --acc: var(--cobalt); --cursor: var(--cobalt);
   --font-ui: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   color-scheme: light;
 }
-body[data-scene="wrap"]   { --bg: #69bca9; --ink: #164a3f; --ink-soft: #2a6156; --line: rgba(22,74,63,.16); --panel: rgba(236,242,239,.9); --acc: #eef2ef; --cursor: #164a3f; color-scheme: light; }
-body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --panel: rgba(40,70,150,.9); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
-body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="wax"]    { --bg: #181818; --ink: #f4f4f0; --ink-soft: #a5a5a0; --line: rgba(244,244,240,.2); --panel: rgba(30,30,30,.9); --acc: #f4f4f0; --cursor: #ffffff; --frost: 90%; color-scheme: dark; }
-body[data-scene="laser"]  { --bg: #adc1de; --ink: #2c4166; --ink-soft: #566c92; --line: rgba(44,65,102,.15); --panel: rgba(246,240,218,.9); --acc: #f5ecc9; --cursor: #2c4166; color-scheme: light; }
-body[data-scene="gummy"]  { --bg: #efe6d8; --ink: #8f1029; --ink-soft: #8a6f5c; --line: rgba(143,16,41,.15); --panel: rgba(247,241,232,.9); --acc: #e8344e; --cursor: #8f1029; color-scheme: light; }
-body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --panel: rgba(244,231,205,.9); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
-body[data-scene="soap"]   { --bg: #a9caed; --ink: #2b5f9f; --ink-soft: #6f8fb8; --line: rgba(43,95,159,.15); --panel: rgba(244,248,253,.9); --acc: #2b5f9f; --cursor: #2b5f9f; color-scheme: light; }
-body[data-scene="snow"]   { --bg: #f6f8fd; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --panel: rgba(246,248,253,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
-body[data-scene="grit"]   { --bg: #becdf9; --ink: #1d3fae; --ink-soft: #4f68b8; --line: rgba(29,63,174,.18); --panel: rgba(222,230,252,.9); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="wrap"]   { --bg: #69bca9; --ink: #164a3f; --ink-soft: #2a6156; --line: rgba(22,74,63,.16); --acc: #eef2ef; --cursor: #164a3f; color-scheme: light; }
+body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
+body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
+body[data-scene="wax"]    { --bg: #181818; --ink: #f4f4f0; --ink-soft: #a5a5a0; --line: rgba(244,244,240,.2); --acc: #f4f4f0; --cursor: #ffffff; color-scheme: dark; }
+body[data-scene="laser"]  { --bg: #adc1de; --ink: #2c4166; --ink-soft: #566c92; --line: rgba(44,65,102,.15); --acc: #f5ecc9; --cursor: #2c4166; color-scheme: light; }
+body[data-scene="gummy"]  { --bg: #efe6d8; --ink: #8f1029; --ink-soft: #8a6f5c; --line: rgba(143,16,41,.15); --acc: #e8344e; --cursor: #8f1029; color-scheme: light; }
+body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
+body[data-scene="soap"]   { --bg: #a9caed; --ink: #2b5f9f; --ink-soft: #6f8fb8; --line: rgba(43,95,159,.15); --acc: #2b5f9f; --cursor: #2b5f9f; color-scheme: light; }
+body[data-scene="snow"]   { --bg: #f6f8fd; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="grit"]   { --bg: #becdf9; --ink: #1d3fae; --ink-soft: #4f68b8; --line: rgba(29,63,174,.18); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -48,12 +48,12 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 
 .app {
   position: relative; z-index: 1; height: 100%;
-  display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr);
+  display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  pointer-events: none; overflow: clip; /* the frosts at the screen's edges don't widen the page */
+  pointer-events: none;
 }
-.top, .dock-wrap { pointer-events: auto; }
+.top, .edge { pointer-events: auto; }
 
 /* Header */
 .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-block: 16px 6px; }
@@ -79,68 +79,19 @@ body[data-scene="wax"] .cursor { mix-blend-mode: difference; filter: none; }
 .cursor svg { width: 100%; height: 100%; display: block; transition: transform 90ms ease-out; }
 .cursor.press svg { transform: scale(.78); transition-duration: 30ms; }
 
-/* Dock */
-.dock-wrap { position: relative; z-index: 20; display: flex; justify-content: center; padding-bottom: max(14px, env(safe-area-inset-bottom, 0px)); padding-top: 6px; }
-.dock { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 6px; pointer-events: none; }
-/* the dock mirrors the header: the sound sits bottom left under the logo, the volume bottom right under the tally.
-   The row between them lets the cursor through, so it still plays the picture there */
-.pick, .vol { position: relative; isolation: isolate; display: flex; align-items: center; pointer-events: auto; flex: none; }
-.pick { gap: 2px; margin-left: -10px; }
-.pick [data-panel] { font-size: 15px; font-weight: 600; }
-/* the logo, the tally and the two corners below have no panel: each sits in a frost of the page colour that fades out
-   into the picture with no edge, --fx and --fy past it on each side. On the black and white halftone a pale frost
-   reads as a grey smudge, so there --frost is dark, like the pools under the logo */
-.brand, .tally { position: relative; isolation: isolate; --fx: 40px; --fy: 22px; }
-.brand::before, .tally::before, .pick::before, .vol::before {
-  content: ""; position: absolute; z-index: -1; pointer-events: none;
-  inset: calc(-1 * var(--fy, 30px)) calc(-1 * var(--fx, 64px));
-  background: color-mix(in srgb, var(--bg) var(--frost), transparent);
-  backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  --m: linear-gradient(to right, transparent, #000 var(--fx, 64px), #000 calc(100% - var(--fx, 64px)), transparent),
-       linear-gradient(transparent, #000 var(--fy, 30px), #000 calc(100% - var(--fy, 30px)), transparent);
-  -webkit-mask-image: var(--m); -webkit-mask-composite: source-in; mask-image: var(--m); mask-composite: intersect;
+/* Side arrows: the previous and the next material, at the middle of each edge, in the picture's own ink */
+.edge {
+  position: fixed; top: 50%; z-index: 20; width: 56px; height: 96px; margin-top: -48px; padding: 0;
+  display: grid; place-items: center; border: 0; background: none; color: var(--ink); cursor: pointer;
+  transition: transform .15s;
 }
-.seg { display: flex; background: var(--line); border-radius: 999px; padding: 3px; flex: none; }
-.seg button, .dbtn {
-  font: 500 13px/1 var(--font-ui); color: var(--ink); background: transparent; border: 0;
-  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; flex: none;
-  padding: 9px 13px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s;
-}
-.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
-.dbtn:hover, .dbtn[aria-expanded="true"] { background: var(--line); }
-.dbtn em { font: 500 11px/1 var(--font-mono); font-style: normal; color: var(--ink-soft); }
-.dbtn.step { padding: 9px 10px; }
-.dbtn svg, .seg svg { width: 16px; height: 16px; flex: none; }
-button:focus-visible, input:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
-.vol { gap: 6px; }
-input[type="range"] { accent-color: var(--ink); width: 92px; }
+.edge svg { width: 32px; height: 32px; }
+.edge.prev { left: max(4px, env(safe-area-inset-left, 0px)); }
+.edge.next { right: max(4px, env(safe-area-inset-right, 0px)); }
+.edge.prev:hover { transform: translateX(-3px); }
+.edge.next:hover { transform: translateX(3px); }
+button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 
-/* Panels */
-.panel {
-  position: absolute; bottom: calc(100% + 4px); left: 0;
-  width: min(760px, calc(100vw - 32px)); max-height: min(78vh, 700px); overflow: auto;
-  padding: 18px; border-radius: 22px; background: var(--panel); border: 1px solid var(--line);
-  backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3);
-  box-shadow: 0 20px 50px rgba(10,20,60,.2); animation: rise .18s ease-out;
-}
-@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
-.panel h2 { margin: 0 0 12px; font: 500 11px/1 var(--font-mono); letter-spacing: .12em; color: var(--ink-soft); }
-.panel h2 + * { margin-bottom: 18px; }
-.panel > :last-child { margin-bottom: 0; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
-#soundGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
-#soundGrid .thumb { aspect-ratio: 2 / 1; }
-@media (max-width: 640px) { #soundGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.opt {
-  text-align: left; font: inherit; color: var(--ink); cursor: pointer;
-  padding: 8px; border-radius: 14px; border: 1px solid var(--line); background: transparent;
-  display: flex; flex-direction: column; gap: 4px; transition: border-color .15s, background .15s;
-}
-.opt:hover { background: var(--line); }
-.opt[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.opt b { font-size: 13px; font-weight: 600; display: flex; gap: 6px; align-items: baseline; padding: 2px 2px 0; }
-.opt b em { font: 500 10px/1 var(--font-mono); font-style: normal; color: var(--ink-soft); }
-.opt > span:last-child { font-size: 11px; line-height: 1.35; color: var(--ink-soft); padding: 0 2px 2px; }
 .thumb { display: block; border-radius: 9px; overflow: hidden; aspect-ratio: 8 / 5; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
 .thumb svg { width: 100%; height: 100%; display: block; }
 
@@ -160,23 +111,15 @@ input[type="range"] { accent-color: var(--ink); width: 92px; }
 
 @media (max-width: 720px) {
   .brand p { display: none; }
-  .seg button { padding: 9px 11px; }
-  input[type="range"] { width: 64px; }
   .tally b { font-size: 18px; }
   .brand h1 { font-size: 24px; }
 }
-@media (max-width: 520px) { .vol input, .dbtn.step { display: none; } }
 @media (max-height: 520px) {
   .top { padding-block: 8px 2px; }
   .brand p { display: none; }
-  .dock-wrap { padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); padding-top: 4px; }
-  .dock { padding-block: 4px; }
-  .seg button, .dbtn { padding: 7px 10px; }
 }
-/* The story: what clack is for and how it came to be. The About button in the header and the intro open it. The
-   story keeps one palette of its own, warm paper and cobalt ink from the moodboard */
-.about { display: inline-block; align-self: center; padding: 7px 11px; margin: -7px 0 -7px -4px; font-size: 12px; color: var(--ink-soft); }
-.about:hover { color: var(--ink); }
+/* The story: what clack is for and how it came to be. The intro opens it. The story keeps one palette of its own,
+   warm paper and cobalt ink from the moodboard */
 
 .howto { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: 13px; color: var(--ink-soft); }
 .howto li { display: flex; align-items: center; gap: 7px; }
@@ -277,8 +220,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
   .st-mats { grid-template-columns: minmax(0, 1fr); }
   .st-sec { padding-top: 64px; }
 }
-@media (max-width: 720px) { .about span { display: none; } }
-@media (prefers-reduced-motion: reduce) { .panel, .story { animation: none; } .mat { transition: none; } .mat:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .edge { transition: none; } .story { animation: none; } .mat { transition: none; } .mat:hover { transform: none; } }
 </style>
 </head>
 <body>
@@ -286,8 +228,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
-      <h1>clack<sup>10</sup></h1>
-      <button class="dbtn about" id="about" type="button" aria-haspopup="dialog">About<span> the project</span></button>
+      <h1>clack<sup id="page">1</sup></h1>
     </div>
     <div class="tally" aria-live="off">
       <b id="count">0</b>
@@ -297,26 +238,8 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
 
   <main class="stage" id="stage"></main>
 
-  <div class="dock-wrap" id="dockWrap">
-    <nav class="dock" id="dock" aria-label="Settings">
-      <div class="pick">
-        <button class="dbtn step" id="prev" type="button" aria-label="Previous sound"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
-        <button class="dbtn" type="button" data-panel="sound" aria-expanded="false">
-          <em id="soundNum">01</em><span id="soundName"></span>
-        </button>
-        <button class="dbtn step" id="next" type="button" aria-label="Next sound"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
-      </div>
-      <div class="vol">
-        <button class="dbtn" id="mute" type="button" aria-label="Mute" style="padding:9px"></button>
-        <input id="volume" type="range" min="0" max="1" step="0.01" aria-label="Volume">
-      </div>
-    </nav>
-
-    <section class="panel" id="panel-sound" hidden aria-label="Choose a sound">
-      <h2>10 SOUNDS, 10 PICTURES</h2>
-      <div class="grid" id="soundGrid"></div>
-    </section>
-  </div>
+  <button class="edge prev" id="prev" type="button" aria-label="Previous material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+  <button class="edge next" id="next" type="button" aria-label="Next material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
 </div>
 
 <canvas id="fx" aria-hidden="true"></canvas>
@@ -420,7 +343,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
         <div><b>A cursor that belongs</b><p>The ring takes each picture's own color. On Wax Ball's halftone it inverts whatever is under it, so it shows on black and white alike.</p></div>
         <div><b>No audio files</b><p>Every sound is synthesized live with the Web Audio API, with a little randomness, so no two steps sound exactly alike.</p></div>
         <div><b>Your keys play too</b><p>Letters, digits, space and enter play the current material, and the arrow keys switch between materials.</p></div>
-        <div><b>Made for touch</b><p>On phones and tablets, drag a finger across the screen.</p></div>
+        <div><b>Made for touch</b><p>On phones and tablets, drag a finger across the screen, and tap the arrows at its sides to switch materials.</p></div>
         <div><b>One moodboard</b><p>Cobalt, periwinkle, grey and warm paper, and ink. Six materials borrow their colors from their own reference images instead.</p></div>
         <div><b>One file</b><p>The whole toy is a single HTML page: no build step, no install, nothing to load but fonts.</p></div>
       </div>
@@ -446,6 +369,7 @@ let S = { ...DEF };
 try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
 S.sound = DEF.sound; // every visit opens on 01 Bubble Wrap; the other settings are remembered
 S.mode = 'hover'; // Tap mode was removed: sounds always play as the cursor moves (touch screens still drag)
+S.muted = false; S.volume = DEF.volume; // the volume control was removed, so a mute or volume saved before can't stick
 let saveT = 0;
 function save() {
   clearTimeout(saveT);
@@ -697,7 +621,7 @@ const lastPt = new Map();
 const pressed = new Set();
 function keyAt(x, y) {
   const el = document.elementFromPoint(x, y);
-  return el && el.closest('.dock-wrap, .intro, .top, .story') ? null : cellAt(x, y);
+  return el && el.closest('.edge, .intro, .top, .story') ? null : cellAt(x, y);
 }
 function enter(id, k) {
   const cur = active.get(id);
@@ -715,12 +639,11 @@ function travel(id, x1, y1) {
   for (let i = 1; i <= n; i++) enter(id, keyAt(p[0] + dx * i / n, p[1] + dy * i / n));
 }
 const glides = e => e.pointerType !== 'mouse' && e.pointerType !== 'pen' ? pressed.has(e.pointerId) : (S.mode === 'hover' || pressed.has(e.pointerId));
-const inUI = t => t && t.closest && t.closest('.dock, .panel, .intro, .story'); // the empty ends of the dock's row are still stage
+const inUI = t => t && t.closest && t.closest('.edge, .intro, .story');
 
 addEventListener('pointerdown', e => {
   moveCursor(e);
   if (inUI(e.target)) return;
-  closePanels();
   pressed.add(e.pointerId);
   lastPt.set(e.pointerId, [e.clientX, e.clientY]);
   const k = keyAt(e.clientX, e.clientY);
@@ -752,7 +675,6 @@ addEventListener('keydown', e => {
   if (document.body.classList.contains('story-open')) { if (e.code === 'Escape') closeStory(); return; } // keys scroll the story
   const t = e.target;
   if (t && t.tagName === 'INPUT' && t.type !== 'range') return;
-  if (e.code === 'Escape') return closePanels();
   if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') { if (!t || t.tagName !== 'INPUT') { e.preventDefault(); step(e.code === 'ArrowLeft' ? -1 : 1); } return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = physKey(e.code);
@@ -836,10 +758,10 @@ const SCENES = {
       this.M = new Float32Array(w * h); this.mk = ''; this.mt = 0;
       paper(dc, '#69bca9', .07);
     },
-    // the sheet flattens around the logo, the tally and the two corners below, so the rings close into rounded ends and
-    // part around them instead of running under the text. Rebuilt whenever one of them moves or grows (the tally gains digits)
+    // the sheet flattens around the logo, the tally and the side arrows, so the rings close into rounded ends and part
+    // around them instead of running under them. Rebuilt whenever one of them moves or grows (the tally gains digits)
     ui() {
-      const rs = [...document.querySelectorAll('.brand, .tally, .pick, .vol')].map(e => e.getBoundingClientRect()).filter(r => r.width);
+      const rs = [...document.querySelectorAll('.brand, .tally, .edge svg')].map(e => e.getBoundingClientRect()).filter(r => r.width);
       const key = rs.map(r => [r.left, r.top, r.right, r.bottom].map(Math.round).join()).join('|');
       if (key === this.mk) return;
       this.mk = key;
@@ -1108,10 +1030,9 @@ const SCENES = {
       const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
       return lerp(lerp(G[c + a], G[c + b], sx), lerp(G[d + a], G[d + b], sx), sy);
     },
-    // the squares shrink to dots around the logo and the tally, so their text sits in a dark pool; the dock has a frost
-    // of its own, so the print runs right up under it and plays there like anywhere else
+    // the squares shrink to dots around the logo, the tally and the side arrows, so each sits in a dark pool and shows
     ui() {
-      const rs = [...document.querySelectorAll('.brand, .tally')].map(e => e.getBoundingClientRect()).filter(r => r.width);
+      const rs = [...document.querySelectorAll('.brand, .tally, .edge svg')].map(e => e.getBoundingClientRect()).filter(r => r.width);
       const key = rs.map(r => [r.left, r.top, r.right, r.bottom].map(Math.round).join()).join('|');
       if (key === this.mk) return;
       this.mk = key; this.M.fill(1);
@@ -2203,30 +2124,11 @@ function thumb(id) {
 }
 
 /* ---------- UI ---------- */
-const ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
-const ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>';
 const num = id => String(SOUND_IDS.indexOf(id) + 1).padStart(2, '0');
-function pressedAttr(el, on) { el.setAttribute('aria-pressed', on ? 'true' : 'false'); }
-function buildOptions(host, items, onPick, render) {
-  host.innerHTML = '';
-  Object.entries(items).forEach(([id, it]) => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'opt'; b.dataset.id = id;
-    b.innerHTML = render(id, it);
-    b.addEventListener('click', () => onPick(id));
-    host.appendChild(b);
-  });
-}
-function syncOptions(host, cur) { host.querySelectorAll('[data-id]').forEach(b => pressedAttr(b, b.dataset.id === cur)); }
 
 function renderAll() {
   setScene();
-  $('soundNum').textContent = num(S.sound);
-  $('soundName').textContent = SOUNDS[S.sound].name;
-  syncOptions($('soundGrid'), S.sound);
-  $('mute').innerHTML = S.muted ? ICON_OFF : ICON_ON;
-  $('mute').setAttribute('aria-label', S.muted ? 'Unmute' : 'Mute');
-  $('volume').value = S.volume;
+  $('page').textContent = SOUND_IDS.indexOf(S.sound) + 1; // the logo counts the pages: clack¹ to clack¹⁰
   renderCount();
   requestAnimationFrame(() => { curCache = curColor(); });
 }
@@ -2237,25 +2139,11 @@ function set(patch) {
   renderAll();
 }
 
-buildOptions($('soundGrid'), SOUNDS, pickSound,
-  (id, s) => `<span class="thumb">${thumb(id)}</span><b><em>${num(id)}</em>${s.name}</b><span>${s.desc}</span>`);
 function pickSound(id) { set({ sound: id }); demo(); }
 function step(d) { const i = SOUND_IDS.indexOf(S.sound); pickSound(SOUND_IDS[(i + d + SOUND_IDS.length) % SOUND_IDS.length]); }
 
 $('prev').addEventListener('click', () => step(-1));
 $('next').addEventListener('click', () => step(1));
-$('mute').addEventListener('click', () => { initAudio(); set({ muted: !S.muted }); });
-$('volume').addEventListener('input', e => set({ volume: +e.target.value, muted: false }));
-
-document.querySelectorAll('[data-panel]').forEach(b => b.addEventListener('click', () => {
-  const p = $('panel-' + b.dataset.panel), open = p.hidden;
-  closePanels();
-  if (open) { p.hidden = false; b.setAttribute('aria-expanded', 'true'); }
-}));
-function closePanels() {
-  document.querySelectorAll('.panel').forEach(p => p.hidden = true);
-  document.querySelectorAll('[data-panel]').forEach(b => b.setAttribute('aria-expanded', 'false'));
-}
 
 /* a little preview swipe across the middle when a sound is picked */
 function demo() {
@@ -2314,7 +2202,7 @@ $('storyDiagram').innerHTML = (() => {
 })();
 function openStory() {
   if (!storyEl.hidden) return;
-  closePanels(); releaseAll('p');
+  releaseAll('p');
   storyFrom = document.activeElement;
   storyEl.hidden = false; storyEl.scrollTop = 0;
   document.body.classList.add('story-open');
@@ -2328,7 +2216,6 @@ function closeStory() {
   $('app').inert = $('intro').inert = false;
   if (storyFrom && storyFrom.focus) storyFrom.focus({ preventScroll: true });
 }
-$('about').addEventListener('click', openStory);
 $('introStory').addEventListener('click', openStory);
 $('storyClose').addEventListener('click', closeStory);
 $('storyGo').addEventListener('click', () => { closeStory(); start(); });
