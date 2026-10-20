@@ -19,9 +19,9 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 
 Sounds 04–09 follow the trend of Roblox ASMR tower obbies such as 왁뿌볼 타워 and Keyboard ASMR Towers, where every step lands on a different satisfying material.
 
-- **Just move**: sounds play as your cursor moves. On touch screens, drag a finger. The page always opens on 01 Bubble Wrap.
+- **Just move**: there is no start screen. The picture plays as your cursor moves, and the sound joins in after your first click, tap or key press, since browsers keep a page quiet until then. On touch screens, drag a finger. The page always opens on 01 Bubble Wrap.
 - **Turn the page**: the arrows at the middle of each side of the screen go to the previous and next material, and the number by the logo (clack¹ to clack¹⁰) shows which one you're on. Nothing else sits on the picture: the logo, that number, the clack count and the arrows are drawn right on it in its own ink.
-- **The story**: the intro says what the toy is for and how to play, and "Read the story behind it" on the intro opens a case study for portfolio visitors: why it exists, how the cursor plays the screen, the ten materials with what each one looks and sounds like, the process from a clicking keyboard to ten materials (with the ideas that were cut), and the small details. Picking a material there plays it. The copy lives in the `story` markup and the `STORY` table in `index.html`.
+- **The story**: a case study for portfolio visitors, which nothing on the page opens for now: why it exists, how the cursor plays the screen, the ten materials with what each one looks and sounds like, the process from a clicking keyboard to ten materials (with the ideas that were cut), and the small details. Picking a material there plays it. The copy lives in the `story` markup and the `STORY` table in `index.html`.
 - **Matching cursor**: a ring cursor that takes on each picture's own color.
 - Your real keyboard plays too (letters, digits, space, enter), and the left and right arrow keys switch sounds. Your clack count is saved in the browser.
 

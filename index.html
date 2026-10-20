@@ -88,22 +88,11 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 .edge.next { right: max(4px, env(safe-area-inset-right, 0px)); }
 .edge.prev:hover { transform: translateX(-3px); }
 .edge.next:hover { transform: translateX(3px); }
-body:has(> .intro:not([hidden])) .edge { visibility: hidden; } /* the start card covers them, and on a phone they'd cross its text */
 button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 
 .thumb { display: block; border-radius: 9px; overflow: hidden; aspect-ratio: 8 / 5; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
 .thumb svg { width: 100%; height: 100%; display: block; }
 
-/* Intro: the start card sits right on the picture with nothing behind it, like the logo; Bubble Wrap, which every
-   visit opens on, flattens its rings around the card */
-.intro {
-  position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; text-align: center;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-}
-.intro-card { max-width: 520px; display: grid; justify-items: center; gap: 14px; }
-.intro h2 { margin: 0; font: 800 clamp(72px, 16vw, 132px)/.9 var(--font-ui); letter-spacing: -.05em; color: var(--ink); }
-.intro small { font: 500 11px/1 var(--font-mono); letter-spacing: .14em; color: var(--ink-soft); }
-.intro p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink-soft); text-wrap: balance; }
 .go { margin-top: 6px; font: 600 16px/1 var(--font-ui); padding: 16px 28px; border-radius: 999px; border: 0; background: var(--ink); color: var(--bg); cursor: pointer; box-shadow: 0 10px 24px rgba(10,20,60,.22); }
 
 @media (max-width: 720px) {
@@ -115,16 +104,10 @@ button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
   .top { padding-block: 8px 2px; }
   .brand p { display: none; }
 }
-/* The story: what clack is for and how it came to be. The intro opens it. The story keeps one palette of its own,
+/* The story: what clack is for and how it came to be. Nothing on the page opens it for now. It keeps one palette of its own,
    warm paper and cobalt ink from the moodboard */
 
-.howto { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: 13px; color: var(--ink-soft); }
-.howto li { display: flex; align-items: center; gap: 7px; }
-.howto kbd { font: 600 11px/1 var(--font-mono); color: var(--ink); padding: 5px 7px 4px; border-radius: 6px; border: 1px solid var(--line); border-bottom-width: 2px; }
-.howto .coarse { display: none; }
-@media (pointer: coarse) { .howto .coarse { display: flex; } .howto .fine, .st-close kbd { display: none; } }
-.intro .link { font: 500 14px/1 var(--font-ui); color: var(--ink-soft); background: none; border: 0; padding: 6px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
-.intro .link:hover { color: var(--ink); }
+@media (pointer: coarse) { .st-close kbd { display: none; } }
 
 .story {
   --s-bg: #f3eee6; --s-ink: #1b2a6b; --s-soft: #5a6890; --s-line: rgba(27,42,107,.14); --s-card: rgba(255,255,255,.55); --s-acc: #2c62fb;
@@ -241,22 +224,6 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
 
 <canvas id="fx" aria-hidden="true"></canvas>
 <div class="cursor" id="cursor" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg></div>
-
-<div class="intro" id="intro">
-  <div class="intro-card">
-    <small>A TOY ABOUT DOING NOTHING</small>
-    <h2>clack</h2>
-    <p>A small break for restless hands. Move your cursor and every step clicks, pops or squishes, across ten satisfying materials from bubble wrap to fresh snow.</p>
-    <ul class="howto" aria-label="How to play">
-      <li class="fine"><kbd>Move</kbd>to play, no clicking</li>
-      <li class="coarse"><kbd>Drag</kbd>a finger to play</li>
-      <li class="fine"><kbd>&larr; &rarr;</kbd>switch materials</li>
-      <li class="fine"><kbd>A–Z</kbd>your keys play too</li>
-    </ul>
-    <button class="go" id="go" type="button">Turn on sound &amp; start</button>
-    <button class="link" id="introStory" type="button">Read the story behind it</button>
-  </div>
-</div>
 
 <div class="story" id="story" role="dialog" aria-modal="true" aria-labelledby="storyTitle" hidden>
   <div class="st-bar">
@@ -590,7 +557,6 @@ function physKey(code) {
 /* ---------- press / release ---------- */
 const countEl = $('count');
 function press(k, src) {
-  if (!started) start();
   const was = k.holders.size;
   k.holders.add(src);
   if (was) return;
@@ -618,7 +584,7 @@ const lastPt = new Map();
 const pressed = new Set();
 function keyAt(x, y) {
   const el = document.elementFromPoint(x, y);
-  return el && el.closest('.edge, .intro, .top, .story') ? null : cellAt(x, y);
+  return el && el.closest('.edge, .top, .story') ? null : cellAt(x, y);
 }
 function enter(id, k) {
   const cur = active.get(id);
@@ -636,7 +602,7 @@ function travel(id, x1, y1) {
   for (let i = 1; i <= n; i++) enter(id, keyAt(p[0] + dx * i / n, p[1] + dy * i / n));
 }
 const glides = e => e.pointerType !== 'mouse' && e.pointerType !== 'pen' ? pressed.has(e.pointerId) : (S.mode === 'hover' || pressed.has(e.pointerId));
-const inUI = t => t && t.closest && t.closest('.edge, .intro, .story');
+const inUI = t => t && t.closest && t.closest('.edge, .story');
 
 addEventListener('pointerdown', e => {
   moveCursor(e);
@@ -755,11 +721,10 @@ const SCENES = {
       this.M = new Float32Array(w * h); this.mk = ''; this.mt = 0;
       paper(dc, '#69bca9', .07);
     },
-    // the sheet flattens around the logo, the tally, the side arrows and each line of the intro while it shows, so the rings
-    // close into rounded ends and part around them instead of running under them. Rebuilt whenever one of them moves,
-    // grows (the tally gains digits) or goes (the intro)
+    // the sheet flattens around the logo, the tally and the side arrows, so the rings close into rounded ends and part
+    // around them instead of running under them. Rebuilt whenever one of them moves or grows (the tally gains digits)
     ui() {
-      const rs = [...document.querySelectorAll('.brand, .tally, .edge svg, .intro-card > *')].map(e => e.getBoundingClientRect()).filter(r => r.width);
+      const rs = [...document.querySelectorAll('.brand, .tally, .edge svg')].map(e => e.getBoundingClientRect()).filter(r => r.width);
       const key = rs.map(r => [r.left, r.top, r.right, r.bottom].map(Math.round).join()).join('|');
       if (key === this.mk) return;
       this.mk = key;
@@ -2230,7 +2195,7 @@ function demo() {
   }, i * gap);
 }
 
-/* ---------- the story: what clack is for and how it came to be, opened from the header or the intro ---------- */
+/* ---------- the story: what clack is for and how it came to be. Nothing on the page opens it for now ---------- */
 // what each material asks you to try, what its picture is after and what it sounds like. A sound without an entry
 // falls back to its picker line
 const STORY = {
@@ -2280,35 +2245,28 @@ function openStory() {
   storyFrom = document.activeElement;
   storyEl.hidden = false; storyEl.scrollTop = 0;
   document.body.classList.add('story-open');
-  $('app').inert = $('intro').inert = true;
+  $('app').inert = true;
   $('storyClose').focus({ preventScroll: true });
 }
 function closeStory() {
   if (storyEl.hidden) return;
   storyEl.hidden = true;
   document.body.classList.remove('story-open');
-  $('app').inert = $('intro').inert = false;
+  $('app').inert = false;
   if (storyFrom && storyFrom.focus) storyFrom.focus({ preventScroll: true });
 }
-$('introStory').addEventListener('click', openStory);
 $('storyClose').addEventListener('click', closeStory);
-$('storyGo').addEventListener('click', () => { closeStory(); start(); });
-$('storyMaterials').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b) { closeStory(); start(); pickSound(b.dataset.id); } });
+$('storyGo').addEventListener('click', () => { closeStory(); initAudio(); });
+$('storyMaterials').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b) { closeStory(); initAudio(); pickSound(b.dataset.id); } });
 storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e => {
   e.preventDefault();
   $(a.getAttribute('href').slice(1)).scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }));
 
 /* ---------- start ---------- */
-let started = false;
-function start() {
-  if (started) return;
-  started = true;
-  initAudio();
-  $('intro').hidden = true;
-}
-$('go').addEventListener('click', e => { e.stopPropagation(); start(); });
-$('intro').addEventListener('pointerdown', e => { if (!e.target.closest('#go, #introStory')) start(); });
+// there's no start screen: the picture plays from the first move, and as browsers keep a page quiet until it's clicked,
+// tapped or typed on, the first of those turns the sound on
+['pointerdown', 'pointerup', 'keydown'].forEach(t => addEventListener(t, () => initAudio(), true));
 
 addEventListener('resize', () => { fxResize(); sceneResize(); });
 applyCursor(); renderAll(); fxResize(); sceneResize();
