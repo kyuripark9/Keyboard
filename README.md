@@ -21,7 +21,7 @@ Sounds 04–09 follow the trend of Roblox ASMR tower obbies such as 왁뿌볼 �
 
 - **Just move**: sounds play as your cursor moves. On touch screens, drag a finger. The page always opens on 01 Bubble Wrap.
 - **The story**: the intro says what the toy is for and how to play, and "About the project" in the header (or "Read the story behind it" on the intro) opens a case study for portfolio visitors: why it exists, how the cursor plays the screen, the ten materials with what each one looks and sounds like, the process from a clicking keyboard to ten materials (with the ideas that were cut), and the small details. Picking a material there plays it. The copy lives in the `story` markup and the `STORY` table in `index.html`.
-- **Captions**: each time you switch sounds, a short caption over the dock names the material and what to try with it, then fades out.
+- **Captions**: each time you switch sounds, a short caption above the sound name, bottom left, names the material and what to try with it, then fades out.
 - **Matching cursor**: a ring cursor that takes on each picture's own color. On 04 Wax Ball's black and white halftone it inverts whatever is under it instead.
 - Your real keyboard plays too (letters, digits, space, enter), and the left and right arrows switch sounds. Settings and your clack count are saved in the browser.
 
