@@ -302,7 +302,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
       <p>Seventeen materials were built, played and cut along the way.</p>
       <h4>Three iterations</h4>
       <div class="st-iters">
-        <div class="st-card"><em>06 Chewy Jellies</em><p class="chain">Tanghulu <i>&rarr;</i> Sugar Gummies <i>&rarr;</i> <b>Chewy Jellies</b></p><p>Rubbing the sugar off a gummy wasn't the feeling. Squeezing gummies together, feeling them stick and peeling them apart was. Later the fruit colors and sugar gave way to one soft pink, out of focus, after a blurry reference.</p></div>
+        <div class="st-card"><em>06 Chewy Jellies</em><p class="chain">Tanghulu <i>&rarr;</i> Sugar Gummies <i>&rarr;</i> <b>Chewy Jellies</b></p><p>Rubbing the sugar off a gummy wasn't the feeling. Squeezing gummies together, feeling them stick and peeling them apart was. Later the fruit colors and sugar gave way to one flat, clear pink, after a pink and white reference.</p></div>
         <div class="st-card"><em>03 Cyanotype</em><p class="chain">Ringing twinkle <i>&rarr;</i> bubble blips <i>&rarr;</i> soft blips <i>&rarr;</i> <b>a breath of foam</b></p><p>Each try was softer, and each still sounded like shooting under a fast cursor. Filtered noise with slow attacks fixed it, and became the recipe for the calmer sounds that followed.</p></div>
         <div class="st-card"><em>04 Wax Ball</em><p class="chain">Cell foam <i>&rarr;</i> pebbles <i>&rarr;</i> line print <i>&rarr;</i> towers <i>&rarr;</i> halftone <i>&rarr;</i> <b>lime on lavender</b></p><p>Wax Ball went through eight looks and was cut once along the way. It came back as a black and white halftone of squares that the cursor presses into diamonds, then took the lime, lavender and fine grain of a second reference.</p></div>
       </div>
@@ -419,6 +419,19 @@ function crinkle(t, n, spread, o = {}) {
   const { lo = 2600, hi = 6000, g = 0.35, q = 2.5, a = 0.0015, d = 0.012 } = o;
   for (let i = 0; i < n; i++) { const at = t + Math.pow(Math.random(), 1.6) * spread; hiss(at, { f: rand(lo, hi), q, a, d: rand(d / 3, d), g: rand(0.4, 1) * g * (1 - (at - t) / spread * 0.6) }); }
 }
+// a rubbery stick-slip creak, as firm jelly grips and slides against jelly: a run of tiny clicks at a rough, jittery
+// rate that swells in and fades, so it reads as grain rather than a note
+function creak(t, o = {}) {
+  const { rate = 180, jit = .45, dur = .12, f = 1100, q = 2.2, g = .3, a = .03, wet = 0 } = o;
+  const C = A.ctx, sr = C.sampleRate, n = Math.ceil((dur + .01) * sr), b = C.createBuffer(1, n, sr), d = b.getChannelData(0);
+  for (let x = rand(0, 1 / rate); x < dur; x += (1 + (Math.random() * 2 - 1) * jit) / rate) {
+    const i0 = Math.floor(x * sr), e = Math.min(1, x / a) * (1 - x / dur) ** .7 * rand(.4, 1);
+    for (let k = 0; k < sr * .0012 && i0 + k < n; k++) d[i0 + k] += (Math.random() * 2 - 1) * e * Math.exp(-k / (sr * .0003));
+  }
+  const s = C.createBufferSource(), fl = C.createBiquadFilter(), v = C.createGain();
+  s.buffer = b; fl.type = 'bandpass'; fl.frequency.value = f; fl.Q.value = q; v.gain.value = g;
+  s.connect(fl); fl.connect(v); out(v, wet); s.start(t);
+}
 const SOUNDS = {
   bubble: { name: 'Bubble Wrap', desc: 'Pop pale rings on mint', scene: 'wrap', noTrail: true,
     // a gentle, muffled pop that sounds like a drop of water: its note swoops up as the bubble bursts (the bloop), and
@@ -470,18 +483,31 @@ const SOUNDS = {
       hiss(at, { f: 1300 * j, q: 3, a: 0.0008, d: 0.012, g: 0.3 });
       tone('sine', 300 * j, at, { a: 0.001, d: 0.02, g: 0.1 });
     } },
-  gummy: { name: 'Chewy Jellies', desc: 'Squish gummies and peel them apart', scene: 'gummy', noTrail: true,
-    // firm, chewy gummies pressed together close to the ear: a soft, round squish as the jelly is squeezed into its
-    // neighbours, with a faint tacky crackle as the two surfaces grip and slip (쫀득); no tone or thump
+  gummy: { name: 'Chewy Jellies', desc: 'Squish jellies and peel them apart', scene: 'gummy', noTrail: true,
+    // firm, hard jelly close to the ear, all filtered noise and tiny clicks with no tone or thump. Each step is a small,
+    // dense squish as the cursor presses into the jelly, with a faint tacky grip
     down(k, t, j) {
-      const at = t + rand(0, 0.015);
-      hiss(at, { f: 420 * j, f2: 640, ft: 0.1, q: 1.6, a: 0.025, d: 0.12, g: 0.5, wet: 0.06 });
-      crinkle(at + 0.02, 6 + Math.floor(Math.random() * 4), 0.12, { lo: 900, hi: 2600, g: 0.05, q: 1.2, a: 0.004, d: 0.014 });
+      const at = t + rand(0, 0.012);
+      hiss(at, { f: 520 * j, f2: 380, ft: 0.06, q: 1.3, a: 0.012, d: 0.06, g: 0.32, wet: 0.04 });
+      crinkle(at + 0.01, 2 + Math.floor(Math.random() * 3), 0.05, { lo: 1400, hi: 3200, g: 0.035, q: 1.4, a: 0.001, d: 0.006 });
     },
-    // played by the scene when a stuck pair pulls apart: the neck of jelly lets go in a soft, tacky peel (쩍)
+    // the rest is played by the scene as the jellies move. Squeezed hard into a neighbour: the two surfaces grip and
+    // slide with a rubbery creak over a dense squelch (쫀득)
+    squeeze(k, t, j) {
+      creak(t, { rate: rand(150, 210), dur: rand(0.1, 0.16), f: rand(900, 1300) * j, q: 2.4, g: 0.42, wet: 0.05 });
+      hiss(t, { f: 460 * j, f2: 300, ft: 0.12, q: 1.5, a: 0.03, d: 0.14, g: 0.48, wet: 0.06 });
+    },
+    // a stretched string of jelly snaps: the tacky surfaces unzip in a quick crackle, let go with a wet smack (쩍) and
+    // the jelly springs back with a soft squelch
     peel(k, t, j) {
-      crinkle(t, 3 + Math.floor(Math.random() * 3), 0.03, { lo: 1200, hi: 2800, g: 0.045, q: 1.1, a: 0.004, d: 0.012 });
-      hiss(t + 0.02, { f: 1300 * j, f2: 600, ft: 0.05, q: 1.2, a: 0.008, d: 0.06, g: 0.2, wet: 0.06 });
+      crinkle(t, 5 + Math.floor(Math.random() * 4), 0.03, { lo: 1800, hi: 4200, g: 0.08, q: 1.6, a: 0.0008, d: 0.006 });
+      hiss(t + 0.028, { f: 1500 * j, q: 0.9, a: 0.0015, d: 0.035, g: 0.3, wet: 0.06 });
+      hiss(t + 0.032, { type: 'lowpass', f: 650 * j, q: 0.8, a: 0.006, d: 0.07, g: 0.2 });
+    },
+    // two touch again and stick with a soft, tacky tap
+    stick(k, t, j) {
+      hiss(t, { f: 900 * j, q: 1.1, a: 0.004, d: 0.03, g: 0.15 });
+      crinkle(t + 0.004, 2, 0.02, { lo: 1500, hi: 3000, g: 0.045, q: 1.4, a: 0.001, d: 0.005 });
     } },
   pudding: { name: 'Pudding', desc: 'Tap soft jellies till they jiggle', scene: 'jelly',
     // a spoon tapping custard: a soft wet slap and a low wobble that shivers as the pudding jiggles
@@ -1248,27 +1274,21 @@ const SCENES = {
     }
   },
 
-  /* 06 Chewy Jellies: soft pink jelly cut into cubes on a pale grey tray, seen out of focus after a blurry reference:
-     one flat pink on one flat off-white, every edge soft. The cubes sit in clusters, packed so tight that they press
-     flat against each other and run together into one pink mass, with the tray peeking through only where their
-     rounded corners meet and in soft white glints on the jelly; between the clusters the tray shows. The cursor
-     catches the gummy under it and drags it along: it squeezes into the one ahead, which flattens and shoves its own
-     neighbours, and it pulls away from the one behind, the two stretching a short, chewy neck of jelly between them
-     that thins until it lets go (쩍) and both spring back with a wobble. Dragged too far, a gummy slips off the cursor
-     and bounces home, where it sticks again to whatever it touches. Every step also presses down on the gummy under it,
-     so it spreads and squeezes its neighbours, and leaves a white glint in the dent that fades as it fills back in. */
+  /* 06 Chewy Jellies: firm pink jelly cut into cubes and packed edge to edge into a tray that fills the screen, drawn
+     flat after a pink and white reference: one clear pink, a deeper pink for the outline and the thick lower edge, and
+     a white glint on each. The cubes press flat against each other and stick where they touch. The cursor catches the
+     jelly under it and drags it along: it squeezes into the one ahead, which flattens, bulges out sideways and shoves
+     its own neighbours, and it pulls away from the one behind: their faces draw out toward each other and a string of
+     jelly stretches between them, thinning until it snaps (쩍) and each half springs back into its cube with a wobble.
+     Dragged too far, a jelly slips off the cursor and bounces home, where it sticks again to whatever it touches. Every
+     step also presses down on the jelly under it, so it spreads into its neighbours and keeps a dent that fills back
+     in. The squeezes, snaps and re-sticks play sounds of their own. */
   gummy: {
     frame: 'full',
     init() {
       const s = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 5.6), 64, 150), N = this.N = 64;
-      // the picture is drawn small into lo, blurred into lb and stretched back over the screen, so every edge goes soft
-      // as in the reference. q is how many screen pixels one small pixel covers, M a margin of small pixels around the
-      // screen so the blur doesn't fade out at its edges
-      const q = this.q = s / 40, M = this.M = 8;
-      for (const k of ['lo', 'lb']) { const c = this[k] || (this[k] = document.createElement('canvas')); c.width = Math.ceil(SW / q) + M * 2; c.height = Math.ceil(SH / q) + M * 2; }
-      this.lx = this.lo.getContext('2d'); this.bx = this.lb.getContext('2d');
-      // a gummy's outline is N points around its middle, one for each direction on screen, so it can be pressed flat on
-      // one side and pulled out into a neck on another
+      // a jelly's outline is N points around its middle, one for each direction on screen, so it can be pressed flat on
+      // one side and drawn out toward a neighbour on another
       this.cs = Float32Array.from({ length: N }, (_, k) => Math.cos(k / N * 6.2832));
       this.sn = Float32Array.from({ length: N }, (_, k) => Math.sin(k / N * 6.2832));
       // three cuts of cube: rounded squares, one a touch wide and one a touch tall
@@ -1282,43 +1302,46 @@ const SCENES = {
         const B = ax * c + ay * n;
         return B + Math.sqrt(Math.max(0, B * B - ax * ax - ay * ay + cr * cr));
       };
-      // a centred grid of gummies that runs off every edge, packed a little tighter than they are wide, each turned and
-      // sized a little its own way and its cut nudged well out of true, so the edges of the jelly wander. The tray isn't
-      // full: about a quarter of the places are left empty, alone or a few together, so the tray shows through the jelly
-      // in holes and bays. R0 is a gummy's outline at rest, hl its glints, flat ovals in units of s
+      // a centred grid of jellies that fills the screen and runs off every edge, packed a little tighter than they are
+      // wide, each turned and sized a little its own way and its cut nudged out of true. R0 is its outline at rest, gl
+      // its glint (a flat oval up on the lit side), in units of s
       const p = s * .96, cx = SW / 2, cy = (ZT + ZB) / 2, nx = Math.ceil((cx + s * .6) / p), ny = Math.ceil((Math.max(cy, SH - cy) + s * .6) / p);
       this.g = []; const at = {};
       for (let j = -ny; j <= ny; j++) for (let i = -nx; i <= nx; i++) {
-        if (Math.random() < .25) continue;
-        const [hw, hh] = SHP[Math.floor(Math.random() * SHP.length)], r = rand(-.18, .18), k = rand(.94, 1.04), w2 = rand(0, 6.28), w3 = rand(0, 6.28);
+        const [hw, hh] = SHP[Math.floor(Math.random() * SHP.length)], r = rand(-.1, .1), k = rand(.96, 1.03), w2 = rand(0, 6.28), w3 = rand(0, 6.28);
         const R0 = new Float32Array(N);
-        for (let n = 0; n < N; n++) { const a = n / N * 6.2832 - r; R0[n] = reach(hw, hh, Math.cos(a), Math.sin(a)) * k * (1 + .04 * Math.sin(2 * a + w2) + .035 * Math.sin(3 * a + w3)); }
-        const hx = cx + i * p + rand(-.06, .06) * s, hy = cy + j * p + rand(-.06, .06) * s;
-        const hl = Array.from({ length: Math.floor(rand(0, 2.2)) }, () => { const rx = rand(.09, .24); return [rand(-.26, .26), rand(-.26, .26), rx, Math.max(.06, rx * rand(.4, .65)), rand(-.35, .35)]; });
-        this.g.push(at[i + ',' + j] = { hx, hy, x: hx, y: hy, vx: 0, vy: 0, fx: 0, fy: 0, tx: 0, ty: 0, gx: 0, gy: 0, cool: 0, hl,
+        for (let n = 0; n < N; n++) { const a = n / N * 6.2832 - r; R0[n] = reach(hw, hh, Math.cos(a), Math.sin(a)) * k * (1 + .015 * Math.sin(2 * a + w2) + .012 * Math.sin(3 * a + w3)); }
+        const hx = cx + i * p + rand(-.03, .03) * s, hy = cy + j * p + rand(-.03, .03) * s;
+        const gl = [rand(-.24, -.17), rand(-.27, -.21), rand(.1, .14), rand(.04, .055), rand(-.5, -.25)];
+        this.g.push(at[i + ',' + j] = { hx, hy, x: hx, y: hy, vx: 0, vy: 0, fx: 0, fy: 0, tx: 0, ty: 0, gx: 0, gy: 0, cool: 0, gl,
           R0, t: new Float32Array(N), rr: new Float32Array(N), rv: new Float32Array(N), cm: new Float32Array(N), ex: new Float32Array(N),
-          sq: 0, sv: 0, sz: 1, dn: [], necks: [] });
+          sq: 0, sv: 0, sz: 1, dn: [] });
       }
       // every pair of neighbours, with how far each reaches toward the other and how much they overlap at rest (o0) or
       // stand apart (g0); side by side ones start out stuck together, bridging any small gap between them
       this.pairs = [];
       for (let j = -ny; j <= ny; j++) for (let i = -nx; i <= nx; i++) for (const [di, dj] of [[1, 0], [0, 1], [1, 1], [-1, 1]]) {
         const A = at[i + ',' + j], B = at[(i + di) + ',' + (j + dj)];
-        if (!A || !B) continue;
+        if (!B) continue;
         const a = Math.atan2(B.hy - A.hy, B.hx - A.hx), ra = this.rest(A, a), rb = this.rest(B, a + Math.PI), o0 = ra + rb - Math.hypot(B.hx - A.hx, B.hy - A.hy);
         const can = !(di && dj) && o0 > -s * .08;
-        this.pairs.push({ A, B, ra, rb, o0: Math.max(o0, 0), g0: Math.max(-o0, 0), can, on: can, h0: s * .24 });
+        this.pairs.push({ A, B, ra, rb, o0: Math.max(o0, 0), g0: Math.max(-o0, 0), can, on: can, h0: s * .24, sq: 0 });
       }
-      this.hold = null; this.peelT = 0;
+      this.hold = null; this.snaps = []; this.T = {};
       this.shape();
       for (const g of this.g) g.rr.set(g.t);
     },
-    // how far gummy g reaches from its middle toward angle a, at rest
+    // how far jelly g reaches from its middle toward angle a, at rest
     rest(g, a) {
       const N = this.N, f = ((a / 6.2832 * N) % N + N) % N, i = Math.floor(f) % N, u = f - Math.floor(f);
       return g.R0[i] * (1 - u) + g.R0[(i + 1) % N] * u;
     },
-    // the gummy whose outline the point (x, y) is inside
+    // how far jelly g's outline reaches from its middle toward (ux, uy) right now
+    edge(g, ux, uy) {
+      const N = this.N, f = ((Math.atan2(uy, ux) / 6.2832 * N) % N + N) % N, i = Math.floor(f) % N, u = f - Math.floor(f);
+      return g.rr[i] * (1 - u) + g.rr[(i + 1) % N] * u;
+    },
+    // the jelly whose outline the point (x, y) is inside
     under(x, y) {
       const N = this.N; let best = null, bd = Infinity;
       for (const g of this.g) {
@@ -1330,27 +1353,27 @@ const SCENES = {
       return best;
     },
     move(x, y, dx, dy) {
-      // the cursor catches the gummy under it and drags it along, a little behind; pulled too far, it slips off
+      // the cursor catches the jelly under it and drags it along, a little behind; pulled too far, it slips off
       const now = performance.now(), s = this.s, g = Math.hypot(dx, dy) > 300 ? null : this.under(x, y), H = this.hold;
       if (H && H !== g) { H.tx = H.ty = 0; this.hold = null; }
       if (!g || (!this.hold && now < g.cool)) return;
       if (!this.hold) { this.hold = g; g.gx = x; g.gy = y; }
-      const tx = (x - g.gx) * .8, ty = (y - g.gy) * .8;
-      if (Math.hypot(tx, ty) > s * .34) { g.tx = g.ty = 0; g.cool = now + 160; this.hold = null; return; }
+      const tx = (x - g.gx) * .85, ty = (y - g.gy) * .85;
+      if (Math.hypot(tx, ty) > s * .55) { g.tx = g.ty = 0; g.cool = now + 160; this.hold = null; return; }
       g.tx = tx; g.ty = ty;
     },
     hit(x, y, k, now) {
-      // the step presses down on the gummy under it: it spreads into its neighbours and keeps a dent that fills back in
+      // the step presses down on the jelly under it: it spreads into its neighbours and keeps a dent that fills back in
       const g = this.under(x, y);
       if (!g) return;
       g.sv += .025; g.dn.push({ x: x - g.x, y: y - g.y, a: rand(-.4, .4), t0: now }); if (g.dn.length > 4) g.dn.shift();
     },
-    // a neck of jelly lets go; close snaps share one sound
-    peel(now) {
-      if (now - this.peelT < 40) return;
-      this.peelT = now; playKey({ code: 'Peel', seed: Math.random() }, 'peel');
+    // plays one of the scene's own sounds (squeeze, peel or stick); close ones of a kind share one
+    snd(kind, now, gap) {
+      if (now - (this.T[kind] || 0) < gap) return;
+      this.T[kind] = now; playKey({ code: kind, seed: Math.random() }, kind);
     },
-    // presses gummy g flat against a plane p out from its middle toward (ux, uy)
+    // presses jelly g flat against a plane p out from its middle toward (ux, uy)
     flat(g, ux, uy, p) {
       const N = this.N, cs = this.cs, sn = this.sn, i0 = Math.round(Math.atan2(uy, ux) / 6.2832 * N);
       for (let j = -N / 4; j <= N / 4; j++) {
@@ -1358,9 +1381,9 @@ const SCENES = {
         if (cd > .05) g.cm[k] = Math.min(g.cm[k], p / cd);
       }
     },
-    // pulls gummy g out into a neck of half width w that reaches a plane p out from its middle toward (ux, uy), easing
-    // into its side with a soft fillet
-    neck(g, ux, uy, b, p, w) {
+    // draws jelly g's face out to a plane p from its middle toward (ux, uy), w to either side of the middle line,
+    // easing into its sides with a soft fillet
+    pull(g, ux, uy, p, w) {
       const N = this.N, cs = this.cs, sn = this.sn, i0 = Math.round(Math.atan2(uy, ux) / 6.2832 * N), f = this.s * .25;
       for (let j = -N / 4; j <= N / 4; j++) {
         const k = ((i0 + j) % N + N) % N, cd = cs[k] * ux + sn[k] * uy;
@@ -1368,58 +1391,98 @@ const SCENES = {
         const lat = p * Math.sqrt(1 - cd * cd) / cd, wt = lat <= w ? 1 : lat < w + f ? (1 - (lat - w) / f) ** 2 : 0;
         if (wt) g.ex[k] = Math.max(g.ex[k], lerp(g.R0[k] * g.sz, p / cd, wt));
       }
-      g.necks.push(ux, uy, b, p, w);
     },
-    // where every outline wants to be: pressed flat where gummies push into each other, bulging out elsewhere to keep its
-    // size, and drawn out into a neck where a stuck pair is pulling apart
+    // where every outline wants to be: pressed flat where jellies push into each other, bulging out elsewhere to keep its
+    // size, and drawn out toward a stuck neighbour that is pulling away
     shape() {
-      const N = this.N, s = this.s, gmax = s * .16;
-      for (const g of this.g) { g.cm.fill(Infinity); g.ex.fill(0); g.necks.length = 0; }
+      const N = this.N, s = this.s;
+      for (const g of this.g) { g.cm.fill(Infinity); g.ex.fill(0); }
       for (const P of this.pairs) {
         const { A, B } = P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, ux = dx / D, uy = dy / D;
         const ba = P.ra * A.sz, bb = P.rb * B.sz, ov = ba + bb - D;
         if (ov > 0) { this.flat(A, ux, uy, ba - ov / 2); this.flat(B, -ux, -uy, bb - ov / 2); }
-        else if (P.on) {
-          const gp = -ov, w = P.h0 * (1 - .55 * Math.max(0, gp - P.g0) / gmax), e = s * .01;
-          this.neck(A, ux, uy, ba, ba + gp / 2 + e, w); this.neck(B, -ux, -uy, bb, bb + gp / 2 + e, w);
-        }
+        else if (P.on) { const d = Math.min(-ov * .2 + s * .005, s * .03); this.pull(A, ux, uy, ba + d, P.h0); this.pull(B, -ux, -uy, bb + d, P.h0); }
       }
       for (const g of this.g) {
         let lost = 0, free = 0;
         for (let k = 0; k < N; k++) { const b = g.R0[k] * g.sz, m = g.cm[k]; if (m < b) lost += b * b - m * m; else free += b * b; }
-        const f = Math.min(1.08, Math.sqrt(1 + lost / Math.max(free, 1)));
+        const f = Math.min(1.14, Math.sqrt(1 + lost / Math.max(free, 1)));
         const t = g.t;
         for (let k = 0; k < N; k++) t[k] = Math.max(Math.min(g.R0[k] * g.sz * f, g.cm[k]), g.ex[k]);
         // a corner where two flattened sides meet stays rounded: it is pulled in, never pushed out
         for (let n = 0; n < 2; n++) { let a = t[N - 1], b = t[0]; const c0 = b; for (let k = 0; k < N; k++) { const c = k < N - 1 ? t[k + 1] : c0; t[k] = Math.min(b, (a + b + c) / 3); a = b; b = c; } }
       }
     },
+    // a string of jelly from the face at (ax, ay) to the one at (bx, by), along (ux, uy): w0 to either side where it
+    // meets them and wm at its waist, flaring into both. Its fill reaches just into each cube to cover the outline where
+    // it joins; its sides are outlined, and so is its waist, where the two faces are still stuck together: while they
+    // have barely parted that is the seam between them, and it shortens as the string thins
+    string(ax, ay, bx, by, ux, uy, w0, wm) {
+      const nx = -uy, ny = ux, L = Math.hypot(bx - ax, by - ay) * .35, wc = (wm - w0 * .25) / .75, e = this.s * .02, mx = (ax + bx) / 2, my = (ay + by) / 2;
+      const side = q => [ax + nx * w0 * q, ay + ny * w0 * q, ax + ux * L + nx * wc * q, ay + uy * L + ny * wc * q,
+        bx - ux * L + nx * wc * q, by - uy * L + ny * wc * q, bx + nx * w0 * q, by + ny * w0 * q];
+      const [a1, a2, c1, c2, d1, d2, b1, b2] = side(1), [A1, A2, C1, C2, D1, D2, B1, B2] = side(-1);
+      const f = new Path2D(), o = new Path2D();
+      f.moveTo(a1 - ux * e, a2 - uy * e); f.lineTo(a1, a2); f.bezierCurveTo(c1, c2, d1, d2, b1, b2); f.lineTo(b1 + ux * e, b2 + uy * e);
+      f.lineTo(B1 + ux * e, B2 + uy * e); f.lineTo(B1, B2); f.bezierCurveTo(D1, D2, C1, C2, A1, A2); f.lineTo(A1 - ux * e, A2 - uy * e); f.closePath();
+      o.moveTo(a1, a2); o.bezierCurveTo(c1, c2, d1, d2, b1, b2); o.moveTo(A1, A2); o.bezierCurveTo(C1, C2, D1, D2, B1, B2);
+      o.moveTo(mx + nx * wm, my + ny * wm); o.lineTo(mx - nx * wm, my - ny * wm);
+      sc.fill(f); sc.stroke(o);
+    },
+    // half of a string that just snapped, springing back into the face at (ax, ay): l long, w0 wide where it meets the
+    // face and ending in a round tip w wide
+    stub(ax, ay, ux, uy, l, w0, w) {
+      const nx = -uy, ny = ux, tx = ax + ux * l, ty = ay + uy * l, e = this.s * .02, a = Math.atan2(uy, ux);
+      const f = new Path2D(), o = new Path2D();
+      f.moveTo(ax - ux * e + nx * w0, ay - uy * e + ny * w0); f.lineTo(ax + nx * w0, ay + ny * w0);
+      f.quadraticCurveTo(ax + ux * l * .3 + nx * w, ay + uy * l * .3 + ny * w, tx + nx * w, ty + ny * w);
+      f.arc(tx, ty, w, a + Math.PI / 2, a - Math.PI / 2, true);
+      f.quadraticCurveTo(ax + ux * l * .3 - nx * w, ay + uy * l * .3 - ny * w, ax - nx * w0, ay - ny * w0);
+      f.lineTo(ax - ux * e - nx * w0, ay - uy * e - ny * w0); f.closePath();
+      o.moveTo(ax + nx * w0, ay + ny * w0); o.quadraticCurveTo(ax + ux * l * .3 + nx * w, ay + uy * l * .3 + ny * w, tx + nx * w, ty + ny * w);
+      o.arc(tx, ty, w, a + Math.PI / 2, a - Math.PI / 2, true);
+      o.quadraticCurveTo(ax + ux * l * .3 - nx * w, ay + uy * l * .3 - ny * w, ax - nx * w0, ay - ny * w0);
+      sc.fill(f); sc.stroke(o);
+    },
     draw(now, dt) {
-      const s = this.s, N = this.N, G = this.g, cs = this.cs, sn = this.sn, gmax = s * .16, H = this.hold;
-      // firm but chewy: every gummy springs back to its place (the one on the cursor to where the cursor drags it), the
+      const s = this.s, N = this.N, G = this.g, cs = this.cs, sn = this.sn, gmax = s * .24, H = this.hold;
+      // firm but chewy: every jelly springs back to its place (the one on the cursor to where the cursor drags it), the
       // ones pressed together push apart, and stuck ones pull back together until they're stretched too far
       for (let h = dt; h > 0; h -= 4) {
         const st = Math.min(4, h);
         for (const g of G) {
           g.sv += (-g.sq * .003 - g.sv * .05) * st; g.sq += g.sv * st; g.sz = 1 + .12 * clamp(g.sq, -.5, 1);
-          const kk = g === H ? .005 : .0016;
+          const kk = g === H ? .012 : .0016;
           g.fx = -(g.x - g.hx - g.tx) * kk - g.vx * .03; g.fy = -(g.y - g.hy - g.ty) * kk - g.vy * .03;
         }
         for (const P of this.pairs) {
           const { A, B } = P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, ov = P.ra * A.sz + P.rb * B.sz - D;
           let f = 0;
-          if (P.can && !P.on && ov > s * .005) P.on = true;
-          if (ov > P.o0) f = -(ov - P.o0) * .0022;
-          else if (P.on && -ov > P.g0) { const gp = -ov - P.g0; if (gp > gmax) { P.on = false; this.peel(now); } else f = gp * .0005; }
+          // two that touch again stick together with a soft tacky tap
+          if (P.can && !P.on && ov > s * .005) { P.on = true; this.snd('stick', now, 90); }
+          if (ov > P.o0) {
+            f = -(ov - P.o0) * .0022;
+            // squeezed hard into each other, they squish with a rubbery creak (쫀득)
+            if (ov - P.o0 > s * .09) { if (!P.sq) { P.sq = 1; this.snd('squeeze', now, 110); } }
+            else if (ov - P.o0 < s * .03) P.sq = 0;
+          }
+          else if (P.on && -ov > P.g0) {
+            const gp = -ov - P.g0;
+            // stretched too far, the string of jelly between them snaps (쩍) and each half springs back into its cube
+            if (gp > gmax) {
+              P.on = false; this.snd('peel', now, 40);
+              this.snaps.push({ P, t0: now, l: -ov / 2, w: P.h0 * .22 });
+            } else f = gp * .0005;
+          }
           if (f) { const fx = f * dx / D, fy = f * dy / D; A.fx += fx; A.fy += fy; B.fx -= fx; B.fy -= fy; }
         }
         for (const g of G) {
           g.vx += g.fx * st; g.vy += g.fy * st; g.x += g.vx * st; g.y += g.vy * st;
-          const ox = g.x - g.hx, oy = g.y - g.hy, m = Math.hypot(ox, oy), cap = s * .4;
+          const ox = g.x - g.hx, oy = g.y - g.hy, m = Math.hypot(ox, oy), cap = s * .6;
           if (m > cap) { g.x = g.hx + ox * cap / m; g.y = g.hy + oy * cap / m; }
         }
       }
-      // the outlines follow on their own springs, so a flattened side or a let-go neck wobbles back into shape
+      // the outlines follow on their own springs, so a flattened side or a let-go face wobbles back into shape
       this.shape();
       const paths = [];
       for (const g of G) {
@@ -1437,30 +1500,51 @@ const SCENES = {
         }
         paths.push(p);
       }
-      // flat pink jelly on the off-white tray, drawn small: gummies pressed together run into one pink mass
-      const lx = this.lx, bx = this.bx, q = this.q, M = this.M, W = this.lo.width, Hh = this.lo.height;
-      lx.setTransform(1, 0, 0, 1, 0, 0); lx.fillStyle = '#e8ecea'; lx.fillRect(0, 0, W, Hh);
-      lx.fillStyle = '#fc94bc';
-      for (let n = 0; n < G.length; n++) { lx.setTransform(1 / q, 0, 0, 1 / q, M + G[n].x / q, M + G[n].y / q); lx.fill(paths[n]); }
-      // the tray shows through in soft white glints on the jelly, and in a dent under each step that sinks in quickly
-      // and fills back in slowly, its glint fading as it goes
-      lx.fillStyle = '#e8ecea';
-      for (const g of G) {
-        lx.setTransform(1 / q, 0, 0, 1 / q, M + g.x / q, M + g.y / q);
-        lx.beginPath();
-        for (const [x, y, rx, ry, a] of g.hl) { const X = x * s * g.sz, Y = y * s * g.sz; lx.moveTo(X + rx * s * Math.cos(a), Y + rx * s * Math.sin(a)); lx.ellipse(X, Y, rx * s, ry * s, a, 0, 6.283); }
-        lx.fill();
+      // flat pink jellies on the pale tray: each cube is one clear pink with a deeper pink crescent along its lower right,
+      // where the jelly is thickest, a white glint up on the lit side and a deeper pink outline
+      sc.fillStyle = '#e8ecea'; sc.fillRect(0, 0, SW, SH);
+      sc.lineJoin = 'round'; sc.lineWidth = s * .028; sc.strokeStyle = '#d95a8c';
+      const ox = -s * .045, oy = -s * .055;
+      for (let n = 0; n < G.length; n++) {
+        const g = G[n], P = paths[n];
+        sc.save(); sc.translate(g.x, g.y);
+        sc.fillStyle = '#f07aab'; sc.fill(P);
+        sc.save(); sc.clip(P);
+        sc.translate(ox, oy); sc.fillStyle = '#fc94bc'; sc.fill(P); sc.translate(-ox, -oy);
+        // dents sink in quickly and fill back in slowly
         g.dn = g.dn.filter(d => now - d.t0 < 2600);
-        for (const d of g.dn) {
-          const age = now - d.t0, dp = (1 - Math.exp(-age / 45)) * Math.exp(-age / 800);
-          lx.globalAlpha = Math.min(1, dp * 1.1); lx.beginPath(); lx.ellipse(d.x, d.y, s * .12, s * .065, d.a, 0, 6.283); lx.fill();
+        if (g.dn.length) {
+          sc.fillStyle = '#f07aab';
+          for (const d of g.dn) {
+            const age = now - d.t0, dp = (1 - Math.exp(-age / 45)) * Math.exp(-age / 800);
+            sc.globalAlpha = Math.min(1, dp * .9); sc.beginPath(); sc.ellipse(d.x, d.y, s * .1 * (.6 + .4 * dp), s * .06 * (.6 + .4 * dp), d.a, 0, 6.283); sc.fill();
+          }
+          sc.globalAlpha = 1;
         }
-        lx.globalAlpha = 1;
+        const [x, y, rx, ry, a] = g.gl;
+        sc.fillStyle = 'rgba(255,255,255,.85)'; sc.beginPath(); sc.ellipse(x * s * g.sz, y * s * g.sz, rx * s, ry * s, a, 0, 6.283); sc.fill();
+        sc.restore();
+        sc.stroke(P);
+        sc.restore();
       }
-      // blurred and stretched back over the screen
-      bx.clearRect(0, 0, W, Hh); bx.filter = `blur(${(s * .065 / q).toFixed(2)}px)`; bx.drawImage(this.lo, 0, 0); bx.filter = 'none';
-      sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
-      sc.drawImage(this.lb, M, M, SW / q, SH / q, 0, 0, SW, SH);
+      // strings of jelly between stuck pairs pulling apart, thinning as they stretch, then the halves of the ones that
+      // just snapped, springing back into their cubes
+      sc.fillStyle = '#fc94bc';
+      for (const P of this.pairs) {
+        if (!P.on) continue;
+        const { A, B } = P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, ux = dx / D, uy = dy / D;
+        // until they're further apart than an outline is wide, their two outlines just read as one seam
+        const ra = this.edge(A, ux, uy), rb = this.edge(B, -ux, -uy);
+        if (D - ra - rb < s * .03) continue;
+        const x = clamp((D - P.ra * A.sz - P.rb * B.sz - P.g0) / gmax, 0, 1);
+        this.string(A.x + ux * ra, A.y + uy * ra, B.x - ux * rb, B.y - uy * rb, ux, uy, P.h0, P.h0 * (1 - .8 * x));
+      }
+      this.snaps = this.snaps.filter(c => now - c.t0 < 160);
+      for (const c of this.snaps) {
+        const { A, B } = c.P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, ux = dx / D, uy = dy / D, k = (now - c.t0) / 160;
+        const l = c.l * (1 - k) ** 2, w = c.w * (1 - .4 * k), w0 = c.P.h0 * (1 - .5 * k);
+        for (const [g, u, v] of [[A, ux, uy], [B, -ux, -uy]]) { const r = this.edge(g, u, v); this.stub(g.x + u * r, g.y + v * r, u, v, l, w0, w); }
+      }
     }
   },
 
@@ -2022,23 +2106,25 @@ function thumb(id) {
       return svg('#d9d8de', `<defs><filter id="laserHeat" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".35"/></filter></defs><g filter="url(#laserHeat)">${ghost}${web}${holes}</g>`);
     }
     case 'gummy': {
-      // pink jelly cubes packed so tight they run together, out of focus on the off-white tray, with a bay of tray in one
-      // corner and soft white glints on the jelly: the middle one is pulled to the right, so it squeezes its neighbour
-      // narrow and draws a chewy neck of jelly out of the one on its left
-      let glint = '';
+      // pink jelly cubes packed edge to edge, each with a deeper pink lower edge, a white glint and a deeper pink outline:
+      // the middle one is pulled to the right, so it squeezes its neighbour narrow and draws a string of jelly out of the
+      // one on its left
+      let top = '', glint = '';
       const box = (x, y, w, h) => {
-        b += `<rect x="${(x - w / 2).toFixed(1)}" y="${(y - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3.6"/>`;
-        if (r() < .7) { const gx = (x + (r() - .5) * 8).toFixed(1), gy = (y + (r() - .5) * 8).toFixed(1); glint += `<ellipse cx="${gx}" cy="${gy}" rx="${(1.4 + r() * 1.3).toFixed(1)}" ry=".9" transform="rotate(${((r() - .5) * 30).toFixed(0)} ${gx} ${gy})"/>`; }
+        const X = (x - w / 2).toFixed(1), Y = (y - h / 2).toFixed(1), gx = (x - w * .2).toFixed(1), gy = (y - h * .25).toFixed(1);
+        b += `<rect x="${X}" y="${Y}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3.6"/>`;
+        top += `<rect x="${X}" y="${Y}" width="${(w - 1.1).toFixed(1)}" height="${(h - 1.3).toFixed(1)}" rx="3.3"/>`;
+        glint += `<ellipse cx="${gx}" cy="${gy}" rx="${(w * .13).toFixed(1)}" ry=".75" transform="rotate(-22 ${gx} ${gy})"/>`;
       };
       for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) {
         const x = 7.6 + i * 16.2, y = 8.5 + j * 16.5;
-        if ((j === 0 && i === 4) || (j === 2 && i < 2)) continue;
-        if (j === 1 && i === 2) box(43.2, y, 14.3, 16.8);
-        else if (j === 1 && i === 3) box(57.5, y, 14.3, 18.2);
-        else box(x, y, 16.8, 16.8);
+        if (j === 1 && i === 2) box(43.2, y, 14.3, 16.2);
+        else if (j === 1 && i === 3) box(57.5, y, 14.3, 17.6);
+        else box(x, y, 16.2, 16.2);
       }
-      b += `<path d="M31.5 20.6Q33 23 34.1 23.3V26.7Q33 27 31.5 29.4ZM36.8 20.6Q35.2 23 34.1 23.3V26.7Q35.2 27 36.8 29.4Z"/>`;
-      return svg('#e8ecea', `<filter id="gummySoft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation=".8"/></filter><g filter="url(#gummySoft)"><g fill="#fc94bc">${b}</g><g fill="#e8ecea">${glint}</g></g>`);
+      const string = 'M31.9 21.5C33.3 23.6 34.6 23.6 36.05 21.5M31.9 28.5C33.3 26.4 34.6 26.4 36.05 28.5';
+      return svg('#e8ecea', `<g fill="#f07aab">${b}</g><g fill="#fc94bc">${top}</g><g fill="#fff" opacity=".85">${glint}</g><g fill="none" stroke="#d95a8c" stroke-width=".55">${b}</g>`
+        + `<path d="M31.4 21.5H31.9C33.3 23.6 34.6 23.6 36.05 21.5H36.6V28.5H36.05C34.6 26.4 33.3 26.4 31.9 28.5H31.4Z" fill="#fc94bc"/><path d="${string}" fill="none" stroke="#d95a8c" stroke-width=".55"/>`);
     }
     case 'pudding':
       // the scene's reference picture: blurred green rounds and turned red squares packed on cream
@@ -2136,7 +2222,7 @@ const STORY = {
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
   thock: { try: 'Your cursor is a heat laser: holes burn open pale lime in soft blue rims and cool back down through blue, pink and orange.', look: 'A perforated sheet seen through its heat, after a thermal print: lime holes in blue rims, with pink and orange heat between them on grainy grey paper', hear: 'A deep, muffled thock and a light tick as the key springs back' },
-  gummy: { try: 'Drag a gummy into its neighbors, then pull them apart until the jelly snaps.', look: 'Soft pink jelly cubes packed so tight they run together, out of focus on an off-white tray, after a blurry reference', hear: 'A round, chewy squish (쫀득) and a tacky peel (쩍)' },
+  gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge, drawn flat after a pink and white reference', hear: 'A rubbery creak and squelch as they grip and slide (쫀득), and a wet, tacky smack when the string snaps (쩍)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a clean path through the beads. They tumble off, and the cut slowly closes.', look: 'Pale soap crusted with sky blue seed beads, after a photo', hear: 'A crisp, rising shave and the patter of falling beads' },
   snow: { try: 'Walk across fresh snow and leave a trail of boot prints.', look: 'Fresh snow with wind-packed drifts and a twinkle of glitter', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
