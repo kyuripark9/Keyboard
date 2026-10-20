@@ -1651,12 +1651,12 @@ const SCENES = {
 
   /* 08 Soap Cutting: a bar of soap printed as a magenta halftone on cream paper, after a halftone print: a 45° screen of
      dots that comes out as a checkerboard at the soap's middle tone, mottled a little darker and lighter, with a few
-     cream flecks in it, and in one corner a stretch already cut down to the paper. Every step shaves a path along the
-     way the cursor travels, down to the cream paper with a ragged edge like a coastline: the shaved soap heaps up along
-     it in solid magenta that opens into cream holes as it fades back into the checkerboard, the paper keeps a few dots
-     close to the edge, and now and then a fleck of cream flies off into the soap. After a while the soap creeps back in
-     from the edges, its heap thinning as it comes, until the path is closed. With WebGL2 the dots are drawn at full
-     resolution on the GPU; without it they are worked out in JS at half. */
+     cream flecks in it. Every step shaves a path along the way the cursor travels, down to the cream paper with a
+     ragged edge like a coastline: the shaved soap heaps up along it in solid magenta that opens into cream holes as it
+     fades back into the checkerboard, the paper keeps a few dots close to the edge, and now and then a fleck of cream
+     flies off into the soap. After a while the soap creeps back in from the edges, its heap thinning as it comes, until
+     the path is closed. With WebGL2 the dots are drawn at full resolution on the GPU; without it they are worked out in
+     JS at half. */
   soap: {
     frame: 'full',
     HOLD: 6000, CLOSE: 4000, OPEN: 160,
@@ -1690,16 +1690,6 @@ const SCENES = {
         for (let k = Math.floor(rand(1, 5)); k--;) this.fleck(F0, x + rand(-2, 2) * c, y + rand(-2, 2) * c, c * rand(.5, 1), 1);
       }
       for (let o = 0; o < N; o++) base[o] *= 1 - F0[o];
-      // a stretch in one corner is cut down to the paper already: a few big rounds from around the corner. D0 is how far
-      // each cell lies inside the paper (below 0 outside it) and H0 the heap along its edge
-      const L = Math.min(SW, SH), kx = Math.random() < .5 ? 0 : SW, ky = Math.random() < .5 ? 0 : SH, sx = kx ? -1 : 1, sy = ky ? -1 : 1;
-      const lobes = Array.from({ length: 3 }, () => [kx + sx * rand(-.1, .25) * L, ky + sy * rand(-.1, .25) * L, rand(.3, .42) * L]);
-      const D0 = this.D0 = new Float32Array(N), H0 = this.H0 = new Float32Array(N);
-      for (let j = 0, o = 0; j < ny; j++) for (let i = 0; i < nx; i++, o++) {
-        let d = -1e9;
-        for (const [x, y, r] of lobes) d = Math.max(d, r - Math.hypot(i * c - x, j * c - y));
-        D0[o] = d += E[o] * c * 8; H0[o] = this.heap(-d, o);
-      }
       this.DP = new Float32Array(N); this.HP = new Float32Array(N); this.FL = new Float32Array(N);
       // the dot screen: cos(πx/c)·cos(πy/c), inked wherever it rises above a threshold. TH turns a tone (0 paper to 1
       // solid, in 256 steps) into the threshold that inks that share of the screen, read off the sorted screen values
@@ -1782,10 +1772,10 @@ void main() {
       }
       this.last = { x, y, t: now }; this.cuts.push(s);
     },
-    // every cell's tone from the soap, the paper already cut and the paths open now, then its threshold
+    // every cell's tone from the soap and the paths open now, then its threshold
     field(now) {
       const { c, nx, ny, E, DP, HP, FL, base, pap, T, TH } = this, R = this.R1 * 1.9 + this.R2;
-      DP.set(this.D0); HP.set(this.H0); FL.fill(0);
+      DP.fill(-1e9); HP.fill(0); FL.fill(0);
       for (const s of this.cuts) {
         // a path opens fast, holds, then narrows to nothing, its heap thinning as it goes
         const o = 1 - (1 - clamp((now - s.born) / this.OPEN, 0, 1)) ** 3, cl = clamp(1 - (now - s.t0) / this.CLOSE, 0, 1), w = s.w * o * cl, k = o * Math.sqrt(cl), amp = w * .45;
@@ -2292,13 +2282,12 @@ function thumb(id) {
       for (const [x, y, a] of [[60.4, .2, 20], [40.9, 21.6, -35], [15.8, 35.7, 24], [68.4, 29.7, -28]]) b += `<rect x="-7.7" y="-7.7" width="15.4" height="15.4" rx="2.9" fill="#f31802" transform="translate(${x} ${y}) rotate(${a})"/>`;
       return svg('#eed9b1', `<filter id="jellyBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.3"/></filter><g filter="url(#jellyBlur)">${b}</g>`);
     case 'soap': {
-      // a magenta halftone on cream: the soap a checkerboard of dots, cut down to the paper in the top left corner and
-      // along a path up to the right, each ragged edge heaped with solid magenta that opens into holes as it fades.
+      // a magenta halftone on cream: the soap a checkerboard of dots, cut down to the paper along a path up to the
+      // right, its ragged edges heaped with solid magenta that opens into holes as it fades.
       // The dots sit on a 45° screen as squares that meet corner to corner at the middle tone and close up past it
       const c = 1.6, deep = (x, y) => {
         const u = clamp(((x - 8) * 60 - (y - 44) * 34) / 4756, 0, 1);
-        return Math.max(5.5 - Math.hypot(x - 8 - u * 60, y - 44 + u * 34) + 1.2 * Math.sin(x * .7 + y * .3),
-          20 - Math.hypot(x + 4, y + 6) + 2 * Math.sin(x * .45 - y * .6) + Math.sin(x * 1.3 + y));
+        return 5.5 - Math.hypot(x - 8 - u * 60, y - 44 + u * 34) + 1.2 * Math.sin(x * .7 + y * .3);
       };
       let d = '';
       for (let j = 0; j * c < 52; j++) for (let i = j & 1; i * c < 82; i += 2) {
