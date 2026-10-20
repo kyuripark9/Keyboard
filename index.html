@@ -1233,9 +1233,10 @@ const SCENES = {
   },
 
   /* 08 Soap Cutting: a bar of soap packed with tiny cream beads over a core of periwinkle ones. Every step shaves a
-     short strip along the way the cursor travels: its beads come loose, tumble off and fall out of the frame, the core
+     short strip along the way the cursor travels: its beads come loose, tumble off and fall off the screen, the core
      shows in the cut, and the beads pop back in one by one as the bar sets again. */
   soap: {
+    frame: 'full',
     init() {
       const c = this.c = clamp(Math.round(Math.min(SW, SH) / 60), 8, 12), h = c * .866, R = c / 2;
       const cols = this.cols = Math.ceil(SW / c) + 1, rows = this.rows = Math.ceil(SH / h) + 1, n = cols * rows;
