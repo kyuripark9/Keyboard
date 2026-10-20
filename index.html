@@ -1076,11 +1076,11 @@ const SCENES = {
 
   /* 05 Thocky Keys: a perforated sheet seen through its heat, after a thermal print. Pale grey paper with a fine grain
      of coloured specks, cut with an even grid of round holes that only show once they heat up: the cursor shoots a
-     laser along its path and the holes near it burn open in a flash, throwing a few sparks. Their heat spreads into
-     the sheet and runs together into one blob, banded like a thermal image: pale lime where it is hottest, then a band
-     of blue, then pink and orange out to a faint peach haze, with each hole a cool ring inside it. A few seconds after
-     the cursor passes the holes go out, the outer ones first, and the blob cools back down through blue, pink and
-     orange, leaving a faint ghost of its bands that slowly fades. */
+     laser along its path and the holes near it burn open in a flash, throwing a few sparks. A hot hole glows pale lime
+     inside a soft rim of blue, and its heat spreads into the sheet between the holes, so a band of them runs together
+     into one blob whose webs mottle pink, violet, orange and yellow and fade out through orange to a faint peach haze.
+     A few seconds after the cursor passes the holes go out, the outer ones first: each one cools from lime through
+     blue, pink and orange, leaving a faint ghost of its rim that slowly fades. */
   laser: {
     frame: 'full',
     init() {
@@ -1089,41 +1089,39 @@ const SCENES = {
       this.x0 = (SW - cols * s + s) / 2; this.y0 = (SH - rows * s + s) / 2;
       this.E = new Float32Array(n); this.T = new Float64Array(n); this.on = new Uint8Array(n); this.a0 = new Float64Array(n).fill(-1e4);
       this.ig = new Float64Array(n).fill(-1e5); this.fl = new Float32Array(n); this.sk = [];
-      // h: each hole's heat; gh: how much of its ghost is left once it has cooled
-      this.h = new Float32Array(n); this.gh = new Float32Array(n);
+      // h: each hole's heat; gh: how much of its ghost is left once it has cooled; hr: its radius, a little off the
+      // others, as the print's circles are
+      this.h = new Float32Array(n); this.gh = new Float32Array(n); this.hr = Float32Array.from({ length: n }, () => r * rand(.94, 1.06));
       // every grid point is cut through, so wherever the cursor goes the hole under it lights; each hole lets the light
       // in at its own level, so the lit band comes out ragged at its edges
       this.th = Float32Array.from({ length: n }, () => rand(.35, 1.15));
-      // the heat is summed on a coarse grid and scaled up smooth, so its bands come out soft like the print's
-      const c = this.c = Math.max(3, Math.round(s / 18)), fw = this.fw = Math.ceil(SW / c) + 2, fh = this.fh = Math.ceil(SH / c) + 2;
+      // the heat is summed on a coarse grid and scaled up smooth, so its bands come out soft like the print's; on a big
+      // screen the grid gets coarser, so it stays at about a quarter of a million cells
+      const c = this.c = Math.max(2, Math.round(s / 24), Math.ceil(Math.sqrt(SW * SH / 250000))), fw = this.fw = Math.ceil(SW / c) + 2, fh = this.fh = Math.ceil(SH / c) + 2;
       this.F = new Float32Array(fw * fh); this.GV = new Float32Array(fw * fh); this.GA = new Float32Array(fw * fh);
       this.hc = document.createElement('canvas'); this.hc.width = fw; this.hc.height = fh;
       this.hx = this.hc.getContext('2d'); this.img = this.hx.createImageData(fw, fh);
-      // the holes stay cool, so where the sheet is hot its heat dips in a soft ring at each one's rim: the ramp runs it a
-      // band or two cooler than the sheet around it, a haze of blue inside the lime and of pink near the edge, its
-      // colours bleeding in toward the middle of the hole with no line drawn. Outside the rim it fades faster, so
-      // neighbouring rings don't run together
-      const RING = this.RING = new Float32Array(fw * fh), sgIn = s * .13, sgOut = s * .075, e = r + sgOut * 2.5;
-      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-        const x = this.x0 + i * s, y = this.y0 + j * s;
-        for (let v = Math.max(0, Math.floor((y - e) / c)); v <= Math.min(fh - 1, Math.ceil((y + e) / c)); v++)
-          for (let u = Math.max(0, Math.floor((x - e) / c)); u <= Math.min(fw - 1, Math.ceil((x + e) / c)); u++) {
-            const d = Math.hypot(u * c - x, v * c - y) - r, z = d / (d < 0 ? sgIn : sgOut), p = v * fw + u;
-            RING[p] = Math.max(RING[p], Math.exp(-z * z));
-          }
+      // the print's mottle: soft blotches that make the rims wobble and the webs between the holes run pink, violet,
+      // orange and yellow, and a scatter of warm specks in the webs
+      const NZ = this.NZ = new Float32Array(fw * fh), SPK = this.SPK = new Uint8Array(fw * fh), gw = Math.ceil(fw / 3) + 2;
+      const gN = Float32Array.from({ length: gw * (Math.ceil(fh / 3) + 2) }, () => rand(-1, 1)), at = (i, j) => gN[j * gw + i];
+      for (let v = 0; v < fh; v++) for (let u = 0; u < fw; u++) {
+        const i0 = (u / 3) | 0, j0 = (v / 3) | 0, tx = u / 3 - i0, ty = v / 3 - j0;
+        const sm = (at(i0, j0) * (1 - tx) + at(i0 + 1, j0) * tx) * (1 - ty) + (at(i0, j0 + 1) * (1 - tx) + at(i0 + 1, j0 + 1) * tx) * ty;
+        NZ[v * fw + u] = .12 * sm; SPK[v * fw + u] = Math.random() < .08;
       }
-      // the thermal ramp from cool to hot, sampled from the print: a faint peach haze, orange, rose pink, a little
-      // violet, blue deepening to teal blue, then pale lime, whitening in a flash. Each entry is r, g, b, alpha and the
-      // ghost's alpha: the ghost keeps only the edge of the bands, a pink haze and a pale blue line, with clear paper inside
-      const RAMP = [[0, 236, 206, 200, 0], [.06, 238, 200, 190, .3], [.14, 244, 158, 84, .75], [.2, 242, 128, 56, 1], [.24, 245, 116, 92, 1],
-        [.28, 241, 146, 172, 1], [.36, 236, 158, 198, 1], [.42, 184, 156, 226, 1], [.47, 92, 132, 214, 1], [.55, 52, 116, 200, 1],
-        [.62, 40, 120, 180, 1], [.7, 130, 176, 202, 1], [.78, 196, 216, 194, 1], [.84, 205, 223, 190, 1], [1, 208, 226, 192, 1], [1.5, 230, 240, 216, 1]];
+      // the thermal ramp from cool to hot, sampled from the print: a faint peach haze, yellow, orange, orange red, rose
+      // pink, violet, blue, teal, then pale lime, whitening in a flash. Each entry is r, g, b, alpha and the ghost's
+      // alpha: the ghost keeps only the rims and the haze between them, with clear paper inside the holes
+      const RAMP = [[0, 236, 206, 200, 0], [.06, 238, 200, 190, .3], [.11, 236, 200, 140, .7], [.16, 243, 156, 83, 1], [.21, 244, 123, 97, 1],
+        [.27, 236, 145, 172, 1], [.33, 232, 150, 190, 1], [.39, 190, 162, 225, 1], [.45, 128, 156, 219, 1], [.53, 82, 122, 200, 1],
+        [.61, 90, 153, 189, 1], [.7, 150, 190, 196, 1], [.8, 203, 227, 188, 1], [1.05, 203, 220, 190, 1], [1.5, 226, 234, 214, 1]];
       const L = this.lut = new Float32Array(256 * 5);
       for (let i = 0, k = 0; i < 256; i++) {
         const v = i / 170; while (k < RAMP.length - 2 && RAMP[k + 1][0] < v) k++;
         const A = RAMP[k], B = RAMP[k + 1], u = clamp((v - A[0]) / (B[0] - A[0]), 0, 1);
         for (let ch = 0; ch < 4; ch++) L[i * 5 + ch] = A[ch + 1] + (B[ch + 1] - A[ch + 1]) * u;
-        L[i * 5 + 4] = .32 * clamp(v / .12, 0, 1) * clamp((.7 - v) / .15, 0, 1);
+        L[i * 5 + 4] = .32 * clamp(v / .12, 0, 1) * clamp((.75 - v) / .15, 0, 1);
       }
       // the paper: flat pale grey, with a grain of red, green and blue specks laid over everything, heat and all
       dc.fillStyle = '#dddce3'; dc.fillRect(0, 0, SW, SH);
@@ -1162,8 +1160,11 @@ const SCENES = {
     hit(x, y, k, now) { this.paint(x, y, k.code === 'Cell' ? 2.4 : 2.7, now); },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const { s, cols, E, T, th, on, a0, ig, fl, h, gh, c, fw, F, GV, GA, RING, lut } = this, fade = Math.exp(-dt / 3500);
+      const { s, cols, E, T, th, on, a0, ig, fl, h, gh, hr, c, fw, F, GV, GA, NZ, SPK, lut } = this, fade = Math.exp(-dt / 3500);
       const warm = 1 - Math.exp(-dt / 60), cool = Math.exp(-dt / 650), fadeG = Math.exp(-dt / 3000), R = s * 1.1, iR2 = 1 / (R * R);
+      // a hole's rim, measured from its edge: the lime falls away just inside it, then a band of blue holds for a few
+      // pixels past it before it gives way to the heat of the sheet
+      const e0 = -s * .1, e1 = s * .05, e2 = s * .12, ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
       F.fill(0); GV.fill(0); GA.fill(0);
       let any = false;
       for (let j = 0, q = 0; j < this.rows; j++) for (let i = 0; i < cols; i++, q++) {
@@ -1181,27 +1182,36 @@ const SCENES = {
         if (h[q] < .004) h[q] = 0;
         gh[q] = h[q] > .5 ? 1 : gh[q] * fadeG; if (gh[q] < .02) gh[q] = 0;
         if (!h[q] && !gh[q]) continue;
-        // its heat spreads into the sheet around it and adds up with its neighbours', so a band of lit holes runs
-        // together into one blob; the ghost keeps the shape of where it was hot
         any = true;
-        const u0 = Math.max(0, Math.floor((x - R) / c)), u1 = Math.min(fw - 1, Math.ceil((x + R) / c));
-        const v0 = Math.max(0, Math.floor((y - R) / c)), v1 = Math.min(this.fh - 1, Math.ceil((y + R) / c));
+        // the hole burns open: a hot point swells past full size in a flash, then settles with a little give
+        const age = now - a0[q];
+        let k = 1;
+        if (on[q] && fl[q] === 1) { const u = age / 80; k = u < 1 ? .2 + .9 * (1 - Math.pow(1 - u, 3)) : 1 + .1 * Math.exp(-(age - 80) / 90) * Math.cos((age - 80) / 55); }
+        else if (on[q]) k = 1 + .07 * Math.exp(-age / 110);
+        // its heat: full inside the hole, falling off over the rim, plus a gentler warmth spread into the sheet that adds
+        // up with its neighbours', so a band of lit holes runs together into one blob with warm webs between them; the
+        // ghost keeps the same shape, and only needs adding once the heat over it starts to fade
+        const rr = hr[q] * k, ro2 = (rr + e2) ** 2, hq = h[q], gq = hq < .5 ? gh[q] : 0;
+        const v0 = Math.max(0, Math.ceil((y - R) / c)), v1 = Math.min(this.fh - 1, Math.floor((y + R) / c));
         for (let v = v0; v <= v1; v++) {
-          const dy = v * c - y;
+          const dy = v * c - y, hw = Math.sqrt(Math.max(0, R * R - dy * dy));
+          const u0 = Math.max(0, Math.ceil((x - hw) / c)), u1 = Math.min(fw - 1, Math.floor((x + hw) / c));
           for (let u = u0, p = v * fw + u0; u <= u1; u++, p++) {
-            const dx = u * c - x, k = 1 - (dx * dx + dy * dy) * iR2;
-            if (k <= 0) continue;
-            const w = k * k; F[p] += h[q] * w;
-            if (gh[q]) { GV[p] += w; GA[p] += w * gh[q]; }
+            const dx = u * c - x, d2 = dx * dx + dy * dy, kk = 1 - d2 * iR2;
+            let w = .19 * kk * kk;
+            if (d2 < ro2) { const e = Math.sqrt(d2) - rr; w += .7 * (1 - ss(e0, 0, e)) + .3 * (1 - ss(e1, e2, e)); }
+            F[p] += hq * w;
+            if (gq) { GV[p] += w; GA[p] += w * gq; }
           }
         }
       }
       if (any) {
-        // colour the heat through the ramp, dipping around the holes where it is warm, lay the faint ghost underneath it,
+        // colour the heat through the ramp, mottled where it is warm but not yet lime, lay the faint ghost underneath it,
         // and scale it up soft over the paper
         const D = this.img.data;
         for (let p = 0, o = 0; p < F.length; p++, o += 4) {
-          const f = F[p] * (1 - .4 * RING[p] * clamp((F[p] - .35) * 2, 0, 1)), hi = Math.min(255, f * 170 | 0) * 5, ha = lut[hi + 3];
+          const F0 = F[p], f = F0 + NZ[p] * clamp(F0 * 5, 0, 1) * clamp((1.1 - F0) * 2.5, 0, 1) - (SPK[p] && F0 < .45 ? .14 * clamp(F0 * 6, 0, 1) : 0);
+          const hi = clamp(f * 170 | 0, 0, 255) * 5, ha = lut[hi + 3];
           let gi = 0, ga = 0;
           if (GV[p] > .001) { gi = Math.min(255, GV[p] * 170 | 0) * 5; ga = lut[gi + 4] * GA[p] / GV[p] * (1 - ha); }
           const A = ha + ga;
@@ -1988,17 +1998,18 @@ function thumb(id) {
       return svg('#c3c6db', `<g fill="#e7ffd1">${b}</g>`);
     }
     case 'thock': {
-      // the sheet under heat: a swipe of the laser lights a ragged band of holes whose heat runs together into one blob,
-      // banded pale lime, blue, pink and orange, each hole a soft cool ring inside it; above it, the faint ghost of an older one
+      // the sheet under heat: a swipe of the laser lights a ragged band of holes, each a pale lime disc in a soft blue
+      // rim, with pink and orange heat in the webs between them; above it, the faint ghost of an older swipe
       const P = [], G = [], at = (L, R) => L.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${R}"/>`).join('');
       for (let j = 0; j < 7; j++) for (let i = 0; i < 11; i++) {
         const x = (4 + i * 7.4).toFixed(1), y = (4 + j * 7.4).toFixed(1), sw = Math.abs(j - 5.6 + i * .45);
         if (i > 0 && sw < 1 + r() * .7) P.push([x, y]);
         else if (i < 6 && Math.abs(j - .6 - i * .12) < .7 + r() * .4) G.push([x, y]);
       }
-      const ghost = `<g opacity=".4"><g fill="#efb2be">${at(G, 6.4)}</g><g fill="#9fb3e8">${at(G, 5.3)}</g><g fill="#d9d8de">${at(G, 4.6)}</g></g>`;
-      const blob = [[9.4, '#eccbc2'], [8.4, '#f2803e'], [7.5, '#ef9ab6'], [6.6, '#3a76c4'], [5.5, '#cfe1bf']].map(([R, col]) => `<g fill="${col}">${at(P, R)}</g>`).join('');
-      return svg('#d9d8de', `<defs><filter id="laserHeat" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".4"/></filter><filter id="laserRing" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".65"/></filter></defs><g filter="url(#laserHeat)">${ghost}${blob}</g><g filter="url(#laserRing)" fill="#dfe8d6" stroke="#5f8fd0" stroke-width="1.4" stroke-opacity=".55">${at(P, 2.4)}</g>`);
+      const ghost = `<g opacity=".35"><g fill="#efc4cc">${at(G, 5)}</g><g fill="#d9d8de">${at(G, 3.6)}</g><g fill="none" stroke="#9fb3e8" stroke-width=".8">${at(G, 3)}</g></g>`;
+      const web = [[7.4, '#eccbc2'], [6.4, '#f39c53'], [5.6, '#f47b61'], [4.8, '#ec91ac']].map(([R, col]) => `<g fill="${col}">${at(P, R)}</g>`).join('');
+      const holes = [[3.6, '#6f8fd6'], [3.1, '#5a99bd'], [2.75, '#cbe3bc']].map(([R, col]) => `<g fill="${col}">${at(P, R)}</g>`).join('');
+      return svg('#d9d8de', `<defs><filter id="laserHeat" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".35"/></filter></defs><g filter="url(#laserHeat)">${ghost}${web}${holes}</g>`);
     }
     case 'gummy': {
       // pink jelly cubes packed so tight they run together, out of focus on the off-white tray, with a bay of tray in one
@@ -2114,7 +2125,7 @@ const STORY = {
   slime: { try: 'Every step folds the sheet along a sharp crease, like crumpled paper.', look: 'A sheet of + stitches that creases into flat facets', hear: 'A wet press and a fizz of tiny crackles, like foam beads bursting' },
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
-  thock: { try: 'Your cursor is a heat laser: holes burn open, their heat runs together in bands, and it cools back through blue, pink and orange.', look: 'A perforated sheet seen through its heat, after a thermal print: pale lime, blue, pink and orange on grainy grey paper', hear: 'A deep, muffled thock and a light tick as the key springs back' },
+  thock: { try: 'Your cursor is a heat laser: holes burn open pale lime in soft blue rims and cool back down through blue, pink and orange.', look: 'A perforated sheet seen through its heat, after a thermal print: lime holes in blue rims, with pink and orange heat between them on grainy grey paper', hear: 'A deep, muffled thock and a light tick as the key springs back' },
   gummy: { try: 'Drag a gummy into its neighbors, then pull them apart until the jelly snaps.', look: 'Soft pink jelly cubes packed so tight they run together, out of focus on an off-white tray, after a blurry reference', hear: 'A round, chewy squish (쫀득) and a tacky peel (쩍)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a clean path through the beads. They tumble off, and the cut slowly closes.', look: 'Pale soap crusted with sky blue seed beads, after a photo', hear: 'A crisp, rising shave and the patter of falling beads' },
