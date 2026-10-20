@@ -1666,20 +1666,23 @@ const SCENES = {
     }
   },
 
-  /* 08 Soap Cutting: a bar of soap crusted all over with tiny flat sky blue beads, after a photo of loose blue beads. Every
-     step sweeps a path along the way the cursor travels: its middle comes away clean down to the white soap, and toward
-     its edges fewer and fewer beads come loose, so it fades out into scattered beads. The loose beads tumble off and
-     fall off the screen. After a while the path closes in from its edges, and each bead pops back as an edge reaches it. */
+  /* 08 Soap Cutting: a bar of soap crusted all over with tiny flat sky blue beads, each outlined in deeper blue, after a
+     photo of loose blue beads. Every step sweeps a path along the way the cursor travels: its middle comes away clean
+     down to the white soap, and toward its edges fewer and fewer beads come loose, so it fades out into scattered beads.
+     The loose beads tumble off and fall off the screen. After a while the path closes in from its edges, and each bead
+     pops back as an edge reaches it. */
   soap: {
     frame: 'full',
     HOLD: 6000, CLOSE: 4000, POP: 380, BASE: '#a9caed',
     init() {
       const R = this.R = clamp(Math.min(SW, SH) / 200, 3.2, 5);
-      // every shade is drawn once into a sprite: a flat round bead in one even colour, with no light or shadow on it
+      // every shade is drawn once into a sprite: a flat round bead in one even colour, with no light or shadow on it,
+      // outlined in a thin line of deeper blue
       const sprite = col => {
-        const cv = document.createElement('canvas'), s = Math.ceil(R * 2.4 * SDPR), x = cv.getContext('2d'), k = s / (R * 2.4);
+        const cv = document.createElement('canvas'), s = Math.ceil(R * 2.4 * SDPR), x = cv.getContext('2d'), k = s / (R * 2.4), lw = Math.max(.8, R * .16);
         cv.width = cv.height = s; x.setTransform(k, 0, 0, k, s / 2, s / 2);
         x.fillStyle = col; x.beginPath(); x.arc(0, 0, R, 0, 6.283); x.fill();
+        x.strokeStyle = mix(col, '#2f68b4', .7); x.lineWidth = lw; x.beginPath(); x.arc(0, 0, R - lw / 2, 0, 6.283); x.stroke();
         return cv;
       };
       this.spr = ['#a8ccf0', '#9ac3ec', '#8cbae8', '#7fb1e4'].map(sprite);
@@ -2156,7 +2159,7 @@ function thumb(id) {
       return svg('#eed9b1', `<filter id="jellyBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.3"/></filter><g filter="url(#jellyBlur)">${b}</g>`);
     case 'soap': {
       // sky blue beads all over and a diagonal path swept clean down to white soap that thins out into scattered beads
-      // at its edges. Each bead is a flat disc in one of two shades
+      // at its edges. Each bead is a flat disc in one of two shades, outlined in deeper blue
       let dark = '', lite = '';
       const bead = (x, y) => { const c = `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.15"/>`; if (r() < .5) dark += c; else lite += c; };
       for (let j = 0; j < 31; j++) for (let i = 0; i < 42; i++) {
@@ -2166,7 +2169,7 @@ function thumb(id) {
       }
       return svg('#a9caed', `<filter id="soapGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.8"/></filter>` +
         `<path d="M5 37.9L68 11.4" stroke="#f5f9fd" stroke-width="7" stroke-linecap="round" filter="url(#soapGlow)"/>` +
-        `<g fill="#7fb1e4">${dark}</g><g fill="#94c0ea">${lite}</g>`);
+        `<g stroke="#4f86cc" stroke-width=".3"><g fill="#7fb1e4">${dark}</g><g fill="#94c0ea">${lite}</g></g>`);
     }
     case 'snow':
       // a trail of boot prints, left and right along a gentle curve
