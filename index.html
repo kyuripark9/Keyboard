@@ -2067,10 +2067,10 @@ void main() {
   },
 
   /* 10 Sugar Slime: slime packed with sugar, after a grainy gradient print. Lime runs all over it in a grain as fine
-     as the screen's pixels, flecked with blue and turning yellower toward the top right, with a lavender disc rising
-     from the bottom edge and a strip of sky down the right. The cursor drags three fingertips through it: each leaves
-     a furrow with the slime it pushed aside heaped along its walls. Walls facing the glow light up lime, shaded walls and creases sink to a deeper blue, all in the
-     same grain, and the slime slowly settles flat again. */
+     as the screen's pixels, flecked with blue and turning yellower toward the top right. The cursor drags three
+     fingertips through it: each leaves a furrow with the slime it pushed aside heaped along its walls. Walls facing the
+     glow light up lime, shaded walls and creases sink to a deeper blue, all in the same grain, and the slime slowly
+     settles flat again. */
   grit: {
     frame: 'full',
     init() {
@@ -2086,11 +2086,11 @@ void main() {
         this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer); this.A = new Uint32Array(w * h); this.Y = new Uint8Array(w * h);
       }
       const P = this.px, A = this.A, Y = this.Y;
-      const W = Math.max(w * .7, Math.min(w, h * .73)), cR = Math.min(h * .37, w * .49), cx = w * .58, cy = h * .985, sx = w - cR * .27;
+      const W = Math.max(w * .7, Math.min(w, h * .73));
       // per column: how far across the page it is
       const U = Float32Array.from({ length: w }, (_, i) => Math.max(0, 1 - (w - i) / W));
       let s = Math.random() * 4294967295 + 1 | 0;
-      // the lime and lilac grains clump into specks two or three pixels across while the light and dark speckle under
+      // the lime and blue grains clump into specks two or three pixels across while the light and dark speckle under
       // them is single pixels, so the mix's jitter N is white noise softened by a small binomial blur
       // (the outermost two pixels all round keep theirs unblurred, scaled to match). Both are worked out in the memory
       // of A and of the picture, which the loop below then fills, each pixel only after reading its own N
@@ -2101,33 +2101,17 @@ void main() {
       for (let o = 0; o < n; o++) N[o] = T[o] * .0558;
       for (let o = w2, e = n - w2; o < e; o++) N[o] = (T[o - w2] + 4 * T[o - w] + 6 * T[o] + 4 * T[o + w] + T[o + w2]) / 150;
       for (let j = 0, o = 0; j < h; j++) {
-        const v = j / h, es = (v - .36) / .19, dy = j - cy;
+        const v = j / h;
         for (let i = 0; i < w; i++, o++) {
-          // two steps of a quick xorshift give each grain eight random bytes, and nz is its share of the clumped jitter
-          s ^= s << 13; s ^= s >>> 17; s ^= s << 5; const n0 = s >>> 0;
-          s ^= s << 13; s ^= s >>> 17; s ^= s << 5; const n1 = s >>> 0, nz = N[o];
+          // a step of a quick xorshift gives each grain its random bytes, and nz is its share of the clumped jitter
+          s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
+          const n0 = s >>> 0, nz = N[o];
           // lime over blue all over, a glow (gl) from the top right turning it yellower, so the grain's blue flecks
-          // thin out toward that corner. Edges below are dithered so they break up into grain
-          const gl = clamp(.85 * (.854 * U[i] + .52 * v - .17), 0, .62);
-          let r = 62, g = 166, b = 236, y = .64 + .3 * gl;
-          // the disc: blue and lilac grains, pinker to the right, with the lime bleeding in round its rim, most toward
-          // the glow
-          const dx = i - cx, d = Math.sqrt(dx * dx + dy * dy), ed = (cR - d) / (5 * Q) + .5;
-          if (ed >= 1 || ed > 0 && (n0 >>> 8 & 255) < ed * 256) {
-            const p = clamp(.5 + nz * 1.6, 0, 1), k = clamp(.5 + dx / cR * .6, 0, 1);
-            r = 104 + (56 + 22 * k) * p; g = 173 + (23 - 6 * k) * p; b = 218 + (20 - 6 * k) * p;
-            y = d > .6 * cR ? (1 - (cR - d) / (.4 * cR)) * (.12 + clamp((gl - .45) * 1.6, 0, .3)) : 0;
-          }
-          // the strip of sky down the right, coming in below the glow
-          const ex = (i - sx) / Q;
-          if (es > 0 && ex > -2 && (ex >= 2 || ex >= (n1 & 255) / 64 - 2) && (es >= 1 || (n1 >>> 8 & 255) < es * 256)) {
-            r = 107; g = 204; b = 242; y = gl * clamp((.6 - v) / .25, 0, 1) * .5;
-          }
-          const ln = ((n1 >>> 16 & 255) + (n1 >>> 24) - 255) * .0824;
-          r = clamp(r + ln, 0, 255); g = clamp(g + ln, 0, 255); b = clamp(b + ln, 0, 255);
+          // thin out toward that corner; under it, a light and dark speckle (ln)
+          const gl = clamp(.85 * (.854 * U[i] + .52 * v - .17), 0, .62), ln = ((n0 & 255) + (n0 >>> 8 & 255) - 255) * .0824;
+          const r = clamp(62 + ln, 0, 255), g = clamp(166 + ln, 0, 255), b = clamp(236 + ln, 0, 255);
           A[o] = (n0 >>> 16 & 255) << 24 | b << 16 | g << 8 | r;
-          if (y) y += nz * Math.min(1, y * 3);
-          const q = Y[o] = clamp(y * 100 + 60.5 | 0, 0, 255), t = clamp((q - 60) / 100, 0, 1);
+          const q = Y[o] = clamp((.64 + .3 * gl + nz) * 100 + 60.5 | 0, 0, 255), t = clamp((q - 60) / 100, 0, 1);
           P[o] = 0xff000000 | (b + (116 - b) * t) << 16 | (g + (250 - g) * t) << 8 | (r + (228 - r) * t);
         }
       }
@@ -2489,8 +2473,8 @@ function thumb(id) {
     }
     case 'sugar': {
       // the scene's grainy print in small, grain by grain: lime flecked with blue all over, yellower to the top right,
-      // the lavender disc and the strip of sky, and three furrows raked across, lit from the top right like the scene.
-      // Grains are 1.25 units, drawn on a grid scaled down by that much
+      // and three furrows raked across, lit from the top right like the scene. Grains are 1.25 units, drawn on a grid
+      // scaled down by that much
       const hf = (x, y) => {
         if (x < 5 || x > 58) return 0;
         let hi = 0, lo = 0;
@@ -2506,13 +2490,8 @@ function thumb(id) {
         const x = (i + .5) * 1.25, y = (j + .5) * 1.25, u = Math.max(0, 1 - (80 - x) / 56), v = y / 50;
         const gl = clamp(.85 * (.854 * u + .52 * v - .17), 0, .62);
         let c = [62, 166, 236], t = .64 + .3 * gl;
-        if (Math.hypot(x - 46.4, y - 49.3) < 18.5) {
-          const k = clamp(.5 + (x - 46.4) / 18.5 * .6, 0, 1);
-          c = mix([104, 173, 218], [160 + 22 * k, 196 - 6 * k, 238 - 6 * k], clamp(.5 + n() * .6, 0, 1)); t = 0;
-        }
-        if (x > 75 && r() < (v - .36) / .19) { c = [107, 204, 242]; t = 0; }
         const lit = .7 * (hf(x, y + .6) - hf(x, y - .6) - hf(x + .6, y) + hf(x - .6, y)) / 1.2, s = clamp(-.35 * lit - .14 * hf(x, y), 0, 1);
-        c = mix(mix(c, [228, 250, 116], clamp(t + (t ? n() * .4 * Math.min(1, t * 3) : 0) + .4 * lit, 0, 1)), [63, 125, 230], s);
+        c = mix(mix(c, [228, 250, 116], clamp(t + n() * .4 + .4 * lit, 0, 1)), [63, 125, 230], s);
         const key = '#' + c.map(v => clamp(Math.round(v / 17), 0, 15).toString(16)).join('');
         grains[key] = (grains[key] || '') + `M${i} ${j}h1v1h-1z`;
       }
@@ -2568,7 +2547,7 @@ const STORY = {
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a path down to the paper. The shaved soap heaps up along its edges, and the cut slowly closes.', look: 'A bar of soap as a magenta halftone on cream, after a halftone print', hear: 'A crisp, rising shave and the patter of falling flakes' },
   snow: { try: 'Walk across it like still water: each step washes out a print and sends ripples that sweep the moiré bands across the lines.', look: 'Snow seen through a lenticular print, after a reference: fine olive and cream lines in wide arcs on periwinkle, beating into wavy moiré bands', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
-  sugar: { try: 'Rake three fingertips through the slime. Walls facing the glow light up lime and the creases sink to blue.', look: 'Grainy lime slime flecked with blue, with a lavender disc and a strip of sky, after a grainy gradient print', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
+  sugar: { try: 'Rake three fingertips through the slime. Walls facing the glow light up lime and the creases sink to blue.', look: 'Grainy lime slime flecked with blue, yellower toward one corner, after a grainy gradient print', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
 const storyEl = $('story');
 let storyFrom = null;
