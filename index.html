@@ -713,9 +713,9 @@ const SCENES = {
      scattered on lavender, each in a thin rim of mint green that bleeds out through lime into a pale yellow haze, and
      where bubbles sit close their hazes run together. It is all stippled: every pixel of a rim is either green or near
      white, and a fine grain mottles the lavender and the haze but hardly touches the white. The screen's edges hold the
-     bubbles like a membrane, so one that reaches an edge squashes flat against it. Over it all runs a contour map in
-     pale lines, as the sheet was first drawn: a few rings round every bubble that spread out through the haze like
-     ripples and meet their neighbours' in creases. The picture swells like water, so the bubbles and their rings wobble
+     bubbles like a membrane, so one that reaches an edge squashes flat against it. Over it all runs a contour map, as
+     the sheet was first drawn, but soft: a few faint bands of light round every bubble, stippled into the grain, that
+     spread out through the haze like ripples and meet their neighbours' in creases. The picture swells like water, so the bubbles and their rings wobble
      gently; the cursor presses a dent into the rings, and a pop collapses a bubble into a small lime spot, its rings
      shrinking with it, and sends water rings out that bend its neighbours and their lines and bounce back off the
      membrane, while the bubble slowly fills back up. With WebGL2 the picture is drawn on the screen's own pixels on the
@@ -811,10 +811,11 @@ const SCENES = {
     // the colouring in a fragment shader, on the screen's own pixels: the glow (read smooth off the coarse grid) is
     // jittered by a fixed random amount at every pixel before it goes through the ramp, so where the ramp turns fast,
     // as across a rim, neighbouring pixels land on different colours and the band breaks up into a stipple of green and
-    // white, as in the print. The contour lines come next, at three levels of the height (green), each drawn a steady
-    // width by dividing by how fast the height changes, and faded out across the rims so the bubbles stay clean. A fixed
-    // grain is then laid over everything in overlay, which mottles the lavender, the haze, the rims and the lines but
-    // leaves the white almost clean
+    // white, as in the print. The contour lines come next, at three levels of the height (green): not drawn lines but a
+    // soft band of light a few pixels wide about each level, kept a steady width by dividing by how fast the height
+    // changes, its edge jittered at every pixel so it breaks into the stipple, and faded out across the rims so the
+    // bubbles stay clean. A fixed grain is then laid over everything in overlay, which mottles the lavender, the haze,
+    // the rims and the bands but leaves the white almost clean
     glInit() {
       const c = document.createElement('canvas'), gl = c.getContext('webgl2', { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true });
       if (!gl) return null;
@@ -826,8 +827,8 @@ void main() {
   vec2 f = floor(vec2(gl_FragCoord.x, uRes.y * uRes.z - gl_FragCoord.y)), p = (f + .5) / uRes.z, vh = texture(uV, (p / uGrid.x + .5) / uGrid.yz).rg;
   float v = vh.r + (hash(f) + hash(f + 71.3) - 1.) * .16;
   vec3 b = texture(uRamp, vec2(((v + .3) * 600. + .5) / 1024., .5)).rgb;
-  float hl = vh.g * 3., dl = abs(fract(hl) - .5) / max(fwidth(hl), 1e-4), lw = .8 * uRes.z;
-  b = mix(b, vec3(.988, 1., .984), (1. - smoothstep(lw - .45 * uRes.z, lw + .45 * uRes.z, dl)) * (1. - smoothstep(.6, .7, vh.r)));
+  float hl = vh.g * 3., dl = abs(fract(hl) - .5) / max(fwidth(hl), 1e-4) / uRes.z + (hash(f + 41.9) - .5) * 1.6;
+  b = mix(b, vec3(.984, .996, .98), .38 * exp(-dl * dl / 4.5) * (1. - smoothstep(.6, .7, vh.r)));
   float s = .5 + .6 * (hash(f + 13.7) - .5) + .4 * (hash(floor(f * .5) + 5.1) - .5);
   o = vec4(mix(2. * b * s, 1. - 2. * (1. - b) * (1. - s), step(.5, b)), 1.);
 }`]]) {
@@ -954,9 +955,10 @@ void main() {
         sc.drawImage(cv, 0, 0, SW, SH);
         return;
       }
-      // without WebGL2: colour every small pixel through the ramp, jittered by its own amount, draw the contour lines
-      // over it the way the shader does (the slope read off the coarse cell it sits in), and scale it up soft
-      const { w, h, px: P32, N, lut, gx0, gtx, gy0, gty } = this, gs = this.G / c, LW = .4;
+      // without WebGL2: colour every small pixel through the ramp, jittered by its own amount, lay the soft bands of
+      // the contour lines over it the way the shader does (the slope read off the coarse cell it sits in), and scale it
+      // up soft
+      const { w, h, px: P32, N, lut, gx0, gtx, gy0, gty } = this, gs = this.G / c;
       for (let j = 0, o = 0; j < h; j++) {
         const r0 = gy0[j] * fw, ty = gty[j], sy = 1 - ty;
         for (let i = 0; i < w; i++, o++) {
@@ -965,10 +967,10 @@ void main() {
           if (v0 < .7) {
             const a0 = HL[q], a1 = HL[q + 1], a2 = HL[q + fw], a3 = HL[q + fw + 1], hl = ((a0 * sx + a1 * tx) * sy + (a2 * sx + a3 * tx) * ty) * 3;
             const gx = (a1 - a0) * sy + (a3 - a2) * ty, gy = (a2 - a0) * sx + (a3 - a1) * tx, g = Math.sqrt(gx * gx + gy * gy) * 3 * gs + 1e-4;
-            const dl = Math.abs(hl - Math.floor(hl) - .5) / g, al = clamp((LW + .22 - dl) / .45, 0, 1) * clamp((.7 - v0) / .1, 0, 1);
-            if (al > 0) {
+            const dl = Math.abs(hl - Math.floor(hl) - .5) / g * this.G + N[o] * 10, al = .38 * Math.exp(-dl * dl / 4.5) * clamp((.7 - v0) / .1, 0, 1);
+            if (al > .01) {
               const R = col & 255, Gc = col >> 8 & 255, B = col >> 16 & 255;
-              col = 0xff000000 | (B + (251 - B) * al) << 16 | (Gc + (255 - Gc) * al) << 8 | (R + (252 - R) * al);
+              col = 0xff000000 | (B + (250 - B) * al) << 16 | (Gc + (254 - Gc) * al) << 8 | (R + (251 - R) * al);
             }
           }
           P32[o] = col;
@@ -2612,7 +2614,7 @@ function demo() {
 // what each material asks you to try, what its picture is after and what it sounds like. A sound without an entry
 // falls back to its picker line
 const STORY = {
-  bubble: { try: 'Sweep across the sheet to pop the bubbles. Pop one near the edge and its ripple bounces back. They slowly fill back up.', look: 'Bubble wrap seen through its glow, after a grainy print: white bubbles in mint green rims and a yellow haze on lavender, under a contour map of pale lines', hear: 'A muffled pop that swoops up like a water drop' },
+  bubble: { try: 'Sweep across the sheet to pop the bubbles. Pop one near the edge and its ripple bounces back. They slowly fill back up.', look: 'Bubble wrap seen through its glow, after a grainy print: white bubbles in mint green rims and a yellow haze on lavender, under a soft contour map of faint bands of light', hear: 'A muffled pop that swoops up like a water drop' },
   slime: { try: 'Every step folds the sheet along a sharp crease, like crumpled paper.', look: 'A sheet of + stitches that creases into flat facets', hear: 'A wet press and a fizz of tiny crackles, like foam beads bursting' },
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
