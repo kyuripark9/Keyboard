@@ -882,9 +882,10 @@ const SCENES = {
       const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
       return lerp(lerp(G[c + a], G[c + b], sx), lerp(G[d + a], G[d + b], sx), sy);
     },
-    // the squares shrink to dots around the logo, the tally and the dock, so their text sits in a dark pool
+    // the squares shrink to dots around the logo and the tally, so their text sits in a dark pool; the dock has a panel
+    // of its own, so the print runs right up under it and plays there like anywhere else
     ui() {
-      const rs = [...document.querySelectorAll('.brand, .tally, #dock')].map(e => e.getBoundingClientRect()).filter(r => r.width);
+      const rs = [...document.querySelectorAll('.brand, .tally')].map(e => e.getBoundingClientRect()).filter(r => r.width);
       const key = rs.map(r => [r.left, r.top, r.right, r.bottom].map(Math.round).join()).join('|');
       if (key === this.mk) return;
       this.mk = key; this.M.fill(1);
