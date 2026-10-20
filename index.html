@@ -32,7 +32,7 @@ body[data-scene="laser"]  { --bg: #d9d8de; --ink: #2a5fa8; --ink-soft: #747990; 
 body[data-scene="gummy"]  { --bg: #e8ecea; --ink: #8c1f4f; --ink-soft: #a5486f; --line: rgba(140,31,79,.15); --acc: #8c1f4f; --cursor: #8c1f4f; color-scheme: light; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
 body[data-scene="soap"]   { --bg: #8ec8ea; --ink: #2b5f9f; --ink-soft: #3e75ae; --line: rgba(43,95,159,.15); --acc: #2b5f9f; --cursor: #2b5f9f; color-scheme: light; }
-body[data-scene="snow"]   { --bg: #f6f8fd; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
+body[data-scene="snow"]   { --bg: #f9d2e6; --ink: #2a2c25; --ink-soft: #6c6f66; --line: rgba(42,44,37,.15); --acc: #5f705c; --cursor: #2a2c25; color-scheme: light; }
 body[data-scene="grit"]   { --bg: #becdf9; --ink: #1d3fae; --ink-soft: #4f68b8; --line: rgba(29,63,174,.18); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 
 * { box-sizing: border-box; }
@@ -1797,70 +1797,91 @@ const SCENES = {
     }
   },
 
-  /* 09 Snow: a field of fresh snow. Every step crunches a boot print into it, left and right in turn along the way the
-     cursor walks, each with a blue shadow pressed inside it and a rim of kicked-up crumbs; glitter twinkles across the
-     field and around the cursor, and new snow slowly fills the prints back in. */
+  /* 09 Snow: fresh snow seen out of focus, after a blurry reference: big soft rounds of pink, peach, lavender and sage
+     light run together on white, with a few dark olive and mauve spots drifting through them, some nearly sharp and
+     some blurred away. Every step presses a boot print into it, left and right in turn along the way the cursor walks:
+     a dark ball and heel, nearly in focus at first, that slowly drift out of focus, swell, pale and melt back into the
+     light as new snow fills them in. */
   snow: {
     frame: 'full',
     init() {
-      paper(dc, '#f6f8fd', .04);
-      // wind-packed drifts: wavy crests with a faint blue shadow falling away below each
-      for (let i = 0; i < 5; i++) {
-        const y = SH * (i + rand(.3, .7)) / 5, ph = rand(0, 6.283), g = dc.createLinearGradient(0, y - 24, 0, y + 60);
-        g.addColorStop(0, 'rgba(190,205,249,.34)'); g.addColorStop(1, 'rgba(190,205,249,0)');
-        dc.fillStyle = g; dc.beginPath(); dc.moveTo(0, y + 60);
-        for (let x = 0; x <= SW + 20; x += 20) dc.lineTo(x, y - 10 + 14 * Math.sin(x / 190 + ph) + 5 * Math.sin(x / 67 + ph * 2));
-        dc.lineTo(SW + 20, y + 60); dc.closePath(); dc.fill();
+      // U is one pixel of the reference, scaled so its shorter side fits the screen's
+      const U = this.U = Math.min(SW, SH) / 720, g = 200 * U, q = this.q = 4, M = this.M = 3;
+      // the light is drawn small into lo, softened a touch into lb so the gradients' dither doesn't show once stretched,
+      // and stretched back over the screen, as it is all soft. M is a margin of small pixels so the edges don't fade
+      for (const k of ['lo', 'lb']) { const c = this[k] || (this[k] = document.createElement('canvas')); c.width = Math.ceil(SW / q) + M * 2; c.height = Math.ceil(SH / q) + M * 2; }
+      this.lx = this.lo.getContext('2d'); this.bx = this.lb.getContext('2d');
+      const pick = L => { let t = Math.random() * L.reduce((s, c) => s + c[1], 0); for (const c of L) if ((t -= c[1]) < 0) return c[0]; return L[0][0]; };
+      const LIGHT = [[[255, 206, 225], 28], [[254, 203, 245], 16], [[252, 220, 205], 14], [[181, 187, 224], 14], [[211, 198, 236], 8], [[141, 175, 177], 14], [[184, 205, 202], 6]];
+      this.ink = [[[84, 90, 74], 40], [[96, 117, 97], 30], [[119, 98, 102], 20], [[35, 28, 26], 10]];
+      this.pick = pick;
+      // big rounds of light on a jittered grid that runs off every edge, each drifting slowly on its own loop
+      this.L = [];
+      for (let y = -g * .5; y < SH + g; y += g * .82) for (let x = -g * .5; x < SW + g; x += g) {
+        this.L.push({ x: x + rand(-.35, .35) * g, y: y + rand(-.35, .35) * g, R: g * rand(.5, .78), c: pick(LIGHT), a: rand(.9, 1),
+          ph: rand(0, 6.283), w: rand(.00018, .00032), d: rand(8, 18) * U });
       }
-      this.pr = []; this.gl = []; this.foot = 1; this.dir = [1, 0];
-      // one boot sole, toe pointing along +x: the ball of the foot, a narrow waist and the heel
-      const L = this.L = clamp(CELL * 1.3, 30, 54), sole = this.sole = new Path2D();
-      sole.moveTo(L * .48, 0); sole.ellipse(L * .18, 0, L * .3, L * .16, 0, 0, 6.283);
-      sole.moveTo(L * .12, 0); sole.ellipse(-L * .08, 0, L * .2, L * .1, 0, 0, 6.283);
-      sole.moveTo(-L * .16, 0); sole.ellipse(-L * .32, 0, L * .16, L * .13, 0, 0, 6.283);
+      this.L.sort(() => Math.random() - .5);
+      // dark spots out in the light, at their own depths: big olive, green and mauve ones blurred away, and a few small
+      // near-black ones almost in focus. Some run two together side by side, one overlapping the other. They keep clear of the logo,
+      // the tally and the side arrows so those stay readable
+      const ui = [...document.querySelectorAll('.brand, .tally, .edge svg')].map(e => e.getBoundingClientRect()).filter(r => r.width);
+      const clear = (x, y, r) => ui.every(b => Math.hypot(Math.max(b.left - FX - x, 0, x - b.right + FX), Math.max(b.top - FY - y, 0, y - b.bottom + FY)) > r);
+      this.D = [];
+      for (let n = Math.round(SW * SH / (110000 * U * U)) + 3; n > 0; n--) {
+        const big = Math.random() < .75, R = (big ? rand(30, 55) : rand(9, 16)) * U, s = big ? R * rand(.22, .32) : rand(2.5, 4.5) * U;
+        let x, y, k = 0;
+        do { x = rand(0, SW); y = rand(0, SH); } while (!clear(x, y, R * 2.4 + s * 2 + 24 * U) && ++k < 30);
+        const D = { x, y, R, s, c: big ? pick(this.ink.slice(0, 3)) : this.ink[3][0], a: rand(.78, .92), ph: rand(0, 6.283), w: rand(.00015, .0003), d: rand(10, 24) * U };
+        this.D.push(D);
+        if (Math.random() < .35) { const t = (Math.random() < .5 ? 0 : Math.PI) + rand(-.35, .35); this.D.push({ ...D, x: D.x + Math.cos(t) * D.R * 1.3, y: D.y + Math.sin(t) * D.R * 1.3, R: D.R * rand(.5, .8) }); }
+      }
+      this.pr = []; this.foot = 1; this.dir = [1, 0];
+      this.P = clamp(32 * U, 20, 48);
+    },
+    // a round of radius R seen out of focus by about s, as a radial gradient: dense stops around its edge, and a small
+    // round blurred far comes out fainter in the middle, as it would through a lens
+    soft(x, y, R, s, rgb, a, ctx = sc) {
+      const E = R + 3 * s, r0 = Math.max(0, R - 3 * s), g = ctx.createRadialGradient(x, y, 0, x, y, E), col = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},`;
+      const f = r => a / (1 + Math.exp(1.7 * (r - R) / s));
+      g.addColorStop(0, col + f(0).toFixed(3) + ')');
+      for (let i = 1; i < 10; i++) { const r = r0 + (E - r0) * i / 10; g.addColorStop(r / E, col + f(r).toFixed(3) + ')'); }
+      g.addColorStop(r0 / E, col + f(r0).toFixed(3) + ')'); g.addColorStop(1, col + '0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, E, 0, 6.283); ctx.fill();
     },
     move(x, y, dx, dy) {
       const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l];
-      if (Math.random() < .35) this.glint(x + rand(-60, 60), y + rand(-60, 60), performance.now());
     },
-    glint(x, y, now) { this.gl.push({ x, y, t0: now, life: rand(300, 700), r: rand(2, 4.5) }); if (this.gl.length > 70) this.gl.shift(); },
     hit(x, y, k, now) {
       // a print every stride, feet taking turns either side of the path, each pointing the way the cursor walks
-      const L = this.L, last = this.pr[this.pr.length - 1];
-      if (last && now - last.t0 < 2000 && Math.hypot(last.sx - x, last.sy - y) < L) return;
-      const [ux, uy] = this.dir, f = this.foot = -this.foot, o = L * .2;
-      this.pr.push({ sx: x, sy: y, x: x - uy * o * f, y: y + ux * o * f, a: Math.atan2(uy, ux) + rand(-.12, .12), t0: now, life: rand(14000, 20000),
-        cr: Array.from({ length: 3 }, () => [rand(-.8, .8), Math.random() < .5 ? 1 : -1, rand(.8, 1.5)]) });
-      if (this.pr.length > 200) this.pr.shift();
+      const P = this.P, last = this.pr[this.pr.length - 1];
+      if (last && now - last.t0 < 2000 && Math.hypot(last.sx - x, last.sy - y) < P * 2.8) return;
+      const [ux, uy] = this.dir, f = this.foot = -this.foot, o = P * .6, a = Math.atan2(uy, ux) + rand(-.15, .15);
+      this.pr.push({ sx: x, sy: y, x: x - uy * o * f, y: y + ux * o * f, ux: Math.cos(a), uy: Math.sin(a), s: P * rand(.85, 1.15), c: this.pick(this.ink),
+        t0: now, life: rand(9000, 13000) });
+      if (this.pr.length > 120) this.pr.shift();
     },
     draw(now, dt) {
-      sc.drawImage(deco, 0, 0, SW, SH);
-      if (Math.random() < dt / 90) this.glint(rand(0, SW), rand(0, SH), now);
-      const L = this.L, sole = this.sole;
+      const U = this.U, q = this.q, M = this.M, lx = this.lx, bx = this.bx, sharp = [];
+      lx.setTransform(1 / q, 0, 0, 1 / q, M, M); lx.fillStyle = '#fdfbfd'; lx.fillRect(-M * q, -M * q, SW + M * q * 2 + q, SH + M * q * 2 + q);
+      for (const L of this.L) this.soft(L.x + L.d * Math.sin(now * L.w + L.ph), L.y + L.d * Math.cos(now * L.w * .8 + L.ph * 1.3), L.R, 18 * U, L.c, L.a, lx);
+      // a blurred spot loses nothing drawn small with the light, so only the nearly sharp ones are drawn full size
+      const spot = (x, y, R, s, c, a) => s > 8 * U ? this.soft(x, y, R, s, c, a, lx) : sharp.push([x, y, R, s, c, a]);
+      for (const D of this.D) spot(D.x + D.d * Math.sin(now * D.w + D.ph), D.y + D.d * Math.cos(now * D.w * .7 + D.ph), D.R, D.s, D.c, D.a);
       this.pr = this.pr.filter(p => now - p.t0 < p.life);
       for (const p of this.pr) {
-        const age = now - p.t0;
-        sc.save(); sc.globalAlpha = Math.min(1, age / 90) * clamp((p.life - age) / 6000, 0, 1);
-        // light comes from the top left: the far wall of the print is in shadow, the floor is lit; the shift is made
-        // before turning the print so the light stays put however it points
-        sc.translate(p.x, p.y); sc.rotate(p.a); sc.fillStyle = '#b4c4f3'; sc.fill(sole);
-        sc.save(); sc.clip(sole); sc.rotate(-p.a); sc.translate(1.8, 2.4); sc.rotate(p.a); sc.fillStyle = '#d9e2fb'; sc.fill(sole); sc.restore();
-        // a few crumbs kicked up on the rim
-        for (const [t, sd, r] of p.cr) {
-          const cx = t * L * .5, cy = sd * L * (.17 + .03 * Math.abs(t));
-          sc.fillStyle = '#c3cff6'; sc.beginPath(); sc.arc(cx + .6, cy + .9, r, 0, 6.283); sc.fill();
-          sc.fillStyle = '#fff'; sc.beginPath(); sc.arc(cx, cy, r, 0, 6.283); sc.fill();
-        }
-        sc.restore();
+        // pressed in at once and nearly sharp; then it drifts out of focus, swelling, paling and fading as it fills in
+        const age = now - p.t0, u = age / p.life, e = clamp((u - .03) / .97, 0, 1), sm = e * (2 - e);
+        const R = p.s * (.86 + .14 * (1 - Math.exp(-age / 70))) * (1 + .35 * sm), s = p.s * (.16 + .8 * sm);
+        const v = clamp((u - .3) / .7, 0, 1), a = Math.min(1, age / 80) * (1 - v * v * (3 - 2 * v)) * .95;
+        const c = p.c.map(ch => ch + (150 - ch) * .35 * sm);
+        spot(p.x + p.ux * p.s * .72, p.y + p.uy * p.s * .72, R, s, c, a);
+        spot(p.x - p.ux * p.s * 1.05, p.y - p.uy * p.s * 1.05, R * .72, s * .9, c, a);
       }
-      // glitter: tiny four-point glints that swell and fade
-      this.gl = this.gl.filter(g => now - g.t0 < g.life);
-      sc.strokeStyle = '#5c80ea'; sc.lineWidth = 1;
-      for (const g of this.gl) {
-        const a = Math.sin(Math.PI * (now - g.t0) / g.life), r = g.r * (.4 + .6 * a);
-        sc.globalAlpha = a; sc.beginPath(); sc.moveTo(g.x - r, g.y); sc.lineTo(g.x + r, g.y); sc.moveTo(g.x, g.y - r); sc.lineTo(g.x, g.y + r); sc.stroke();
-      }
-      sc.globalAlpha = 1;
+      bx.clearRect(0, 0, this.lb.width, this.lb.height); bx.filter = 'blur(1px)'; bx.drawImage(this.lo, 0, 0); bx.filter = 'none';
+      sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
+      sc.drawImage(this.lb, M, M, SW / q, SH / q, 0, 0, SW, SH);
+      for (const b of sharp) this.soft(...b);
     }
   },
 
@@ -2175,13 +2196,24 @@ function thumb(id) {
         `<path d="M5 37.9L68 11.4" stroke="#fbfdfe" stroke-width="7" stroke-linecap="round" filter="url(#soapGlow)"/>` +
         `<g fill="#72b3d8">${dark}</g><g fill="#80c2ec">${lite}</g><g fill="#c4ebfb">${hole}</g>`);
     }
-    case 'snow':
-      // a trail of boot prints, left and right along a gentle curve
-      for (let i = 0; i < 8; i++) {
-        const x = 8 + i * 9.4, y = 27 - Math.sin(i * .62) * 8, a = Math.atan2(-Math.cos(i * .62) * 4.96, 9.4), sd = i & 1 ? 3 : -3;
-        b += `<g transform="translate(${(x - Math.sin(a) * sd).toFixed(1)} ${(y + Math.cos(a) * sd).toFixed(1)}) rotate(${(a * 57.3).toFixed(0)})"><ellipse cx="1.4" rx="2.8" ry="1.4"/><ellipse cx="-2.7" rx="1.4" ry="1.15"/></g>`;
+    case 'snow': {
+      // pink, peach, lavender and sage light out of focus with a few dark spots blurred in it, and a trail of boot prints
+      // up to the right: the newest a near-black ball and heel almost in focus, the older ones paler and blurred away
+      const light = [[6, 6, 19, '#ffcee1'], [33, 2, 16, '#d3c6ec'], [62, 6, 18, '#b5bbe0'], [86, 22, 14, '#fcdccd'], [-2, 34, 17, '#8fb0b3'],
+        [22, 42, 17, '#fecbf5'], [47, 28, 15, '#ffcee1'], [74, 44, 16, '#8fb0b3'], [46, 56, 14, '#fcdccd']];
+      b = light.map(([x, y, R, c]) => `<circle cx="${x}" cy="${y}" r="${R}" fill="${c}"/>`).join('');
+      const spots = [[12, 16, 4.6, '#545a4a'], [16.5, 17, 3, '#545a4a'], [61, 41, 4.2, '#776266'], [41, 9, 3.8, '#607561']].map(([x, y, R, c]) => `<circle cx="${x}" cy="${y}" r="${R}" fill="${c}"/>`).join('');
+      let pr = '';
+      const a = Math.atan2(-6.2, 9.4), ux = Math.cos(a), uy = Math.sin(a);
+      for (let i = 0; i < 5; i++) {
+        const k = 4 - i, f = i & 1 ? 1 : -1, x = 26 + i * 9.4 - uy * 1.9 * f, y = 40 - i * 6.2 + ux * 1.9 * f, R = 3 + k * .3;
+        pr += `<g fill="${['#2a2321', '#545a4a', '#607561', '#776266', '#8b9080'][k]}" opacity="${[.95, .9, .8, .6, .45][k]}" filter="url(#snowP${k})">` +
+          `<circle cx="${(x + ux * 2.3).toFixed(1)}" cy="${(y + uy * 2.3).toFixed(1)}" r="${R.toFixed(1)}"/><circle cx="${(x - ux * 3.4).toFixed(1)}" cy="${(y - uy * 3.4).toFixed(1)}" r="${(R * .72).toFixed(1)}"/></g>`;
       }
-      return svg('#f6f8fd', `<g fill="#b9c8f4">${b}</g>`);
+      const blur = (id, d) => `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${d}"/></filter>`;
+      return svg('#fdfbfd', `<defs>${blur('snowLight', 2.2)}${blur('snowSpot', 1.1)}${[.25, .6, 1, 1.4, 1.8].map((d, k) => blur('snowP' + k, d)).join('')}</defs>` +
+        `<g filter="url(#snowLight)">${b}</g><g filter="url(#snowSpot)" opacity=".88">${spots}</g>${pr}`);
+    }
     case 'sugar': {
       // three furrows raked through the grains, lit from the top left like the scene: cobalt on the shaded walls,
       // white crystals on the lit ones and a sparse speckle of both on the flat slime
@@ -2251,7 +2283,7 @@ const STORY = {
   gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge, drawn flat after a pink and white reference', hear: 'A rubbery creak and squelch as they grip and slide (쫀득), and a wet, tacky smack when the string snaps (쩍)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a clean path through the beads. They tumble off, and the cut slowly closes.', look: 'Pale soap crusted with sky blue seed beads, after a photo', hear: 'A crisp, rising shave and the patter of falling beads' },
-  snow: { try: 'Walk across fresh snow and leave a trail of boot prints.', look: 'Fresh snow with wind-packed drifts and a twinkle of glitter', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
+  snow: { try: 'Walk across it and leave a trail of dark boot prints that slowly drift out of focus.', look: 'Snow seen out of focus, after a blurry reference: soft pink, peach, lavender and sage light with dark olive and mauve spots', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
   sugar: { try: 'Rake three fingertips through sugary slime and watch the grains heap up.', look: 'Periwinkle slime printed as a stipple of sugar grains', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
 const storyEl = $('story');
