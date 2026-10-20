@@ -26,7 +26,7 @@
 body[data-scene="wrap"]   { --bg: #69bca9; --ink: #164a3f; --ink-soft: #2a6156; --line: rgba(22,74,63,.16); --acc: #eef2ef; --cursor: #164a3f; color-scheme: light; }
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="wax"]    { --bg: #181818; --ink: #f4f4f0; --ink-soft: #a5a5a0; --line: rgba(244,244,240,.2); --acc: #f4f4f0; --cursor: #ffffff; color-scheme: dark; }
+body[data-scene="wax"]    { --bg: #c3c6db; --ink: #2d345d; --ink-soft: #60678b; --line: rgba(45,52,93,.15); --acc: #2d345d; --cursor: #2d345d; color-scheme: light; }
 body[data-scene="laser"]  { --bg: #adc1de; --ink: #2c4166; --ink-soft: #566c92; --line: rgba(44,65,102,.15); --acc: #f5ecc9; --cursor: #2c4166; color-scheme: light; }
 body[data-scene="gummy"]  { --bg: #efe6d8; --ink: #8f1029; --ink-soft: #8a6f5c; --line: rgba(143,16,41,.15); --acc: #e8344e; --cursor: #8f1029; color-scheme: light; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
@@ -74,8 +74,6 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
   filter: drop-shadow(0 2px 3px rgba(0,0,0,.2)); will-change: transform; opacity: 0; transition: opacity .2s;
 }
 .cursor.on { opacity: 1; }
-/* on the black and white halftone the ring inverts whatever is under it, so it shows on both */
-body[data-scene="wax"] .cursor { mix-blend-mode: difference; filter: none; }
 .cursor svg { width: 100%; height: 100%; display: block; transition: transform 90ms ease-out; }
 .cursor.press svg { transform: scale(.78); transition-duration: 30ms; }
 
@@ -332,7 +330,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
       <div class="st-iters">
         <div class="st-card"><em>06 Chewy Jellies</em><p class="chain">Tanghulu <i>&rarr;</i> Sugar Gummies <i>&rarr;</i> <b>Chewy Jellies</b></p><p>Rubbing the sugar off a gummy wasn't the feeling. Squeezing gummies together, feeling them stick and peeling them apart was.</p></div>
         <div class="st-card"><em>03 Cyanotype</em><p class="chain">Ringing twinkle <i>&rarr;</i> bubble blips <i>&rarr;</i> soft blips <i>&rarr;</i> <b>a breath of foam</b></p><p>Each try was softer, and each still sounded like shooting under a fast cursor. Filtered noise with slow attacks fixed it, and became the recipe for the calmer sounds that followed.</p></div>
-        <div class="st-card"><em>04 Wax Ball</em><p class="chain">Cell foam <i>&rarr;</i> pebbles <i>&rarr;</i> line print <i>&rarr;</i> towers <i>&rarr;</i> <b>halftone</b></p><p>Wax Ball went through seven looks and was cut once along the way. It came back as a black and white halftone of squares that the cursor presses into diamonds.</p></div>
+        <div class="st-card"><em>04 Wax Ball</em><p class="chain">Cell foam <i>&rarr;</i> pebbles <i>&rarr;</i> line print <i>&rarr;</i> towers <i>&rarr;</i> halftone <i>&rarr;</i> <b>lavender felt</b></p><p>Wax Ball went through eight looks and was cut once along the way. It came back as a black and white halftone of squares that the cursor presses into diamonds, then took the soft lavender, fine grain and lime glow of a second reference.</p></div>
       </div>
     </section>
 
@@ -340,7 +338,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
       <p class="st-num">05 &mdash; Details</p>
       <h3>The small stuff</h3>
       <div class="st-details">
-        <div><b>A cursor that belongs</b><p>The ring takes each picture's own color. On Wax Ball's halftone it inverts whatever is under it, so it shows on black and white alike.</p></div>
+        <div><b>A cursor that belongs</b><p>The ring takes each picture's own color, so it reads as part of the material rather than laid over it.</p></div>
         <div><b>No audio files</b><p>Every sound is synthesized live with the Web Audio API, with a little randomness, so no two steps sound exactly alike.</p></div>
         <div><b>Your keys play too</b><p>Letters, digits, space and enter play the current material, and the arrow keys switch between materials.</p></div>
         <div><b>Made for touch</b><p>On phones and tablets, drag a finger across the screen, and tap the arrows at its sides to switch materials.</p></div>
@@ -476,7 +474,7 @@ const SOUNDS = {
       hiss(at, { type: 'highpass', f: 7000 * j, q: 0.5, a: 0.05, d: 0.12, g: 0.03 });
       crinkle(at + 0.02, 8, 0.25, { lo: 4000, hi: 9000, g: 0.04, q: 1.5 });
     } },
-  wax: { name: 'Wax Ball', desc: 'Press the white squares down into dots', scene: 'wax', noTrail: true,
+  wax: { name: 'Wax Ball', desc: 'Press the lavender squares down into dots', scene: 'wax', noTrail: true,
     // the 왁뿌볼: a hard wax shell gives way in one dry snap and a rush of brittle crackles, then the soft clay inside squishes
     down(k, t, j) {
       hiss(t, { type: 'highpass', f: 2200, q: 0.7, a: 0.0006, d: 0.007, g: 1.1 });
@@ -1007,11 +1005,13 @@ const SCENES = {
     }
   },
 
-  /* 04 Wax Ball: the 왁뿌볼's shell as a black and white halftone, after a reference image: big white squares on a
-     grid over black, packed so close that only thin black seams show between them, swelling and easing a little as
-     the print slowly drifts. The cursor presses into the shell like a thumb into clay: the squares along its path
-     shrink and turn into tiny diamonds, leaving a black trail that pushes the grid aside, each step cracks the chips
-     around it so they twist and wobble back into line, and the squares slowly swell back into place. */
+  /* 04 Wax Ball: the 왁뿌볼's shell as a halftone in soft lavender, after two reference images: big pale lavender
+     squares on a grid, packed so close that only thin seams of a deeper lavender show between them, swelling and
+     easing a little as the print slowly drifts. A fine mottled grain, like felt, runs through squares and seams
+     alike, and a pale lime glow washes in from the left edge and drowns the print there. The cursor presses into the
+     shell like a thumb into clay: the squares along its path shrink and turn into tiny diamonds, leaving a deep
+     lavender trail that pushes the grid aside, each step cracks the chips around it so they twist and wobble back
+     into line, and the squares slowly swell back into place. */
   wax: {
     frame: 'full',
     init() {
@@ -1022,7 +1022,46 @@ const SCENES = {
       this.E = new Float32Array(n); this.A = new Float32Array(n); this.V = new Float32Array(n); this.F = new Float32Array(n); this.M = new Float32Array(n).fill(1);
       this.G = Float32Array.from({ length: 4096 }, Math.random);
       this.mk = ''; this.mt = 0;
-      dc.fillStyle = '#181818'; dc.fillRect(0, 0, SW, SH);
+      // the felt: the seams are painted into deco and the squares' face into a skin they are cut from, both through
+      // the same grain so it runs on unbroken from one to the other, and both under the same glow
+      const px = new DOMMatrix([1 / SDPR, 0, 0, 1 / SDPR, 0, 0]), grain = dc.createPattern(this.tile || (this.tile = this.felt(512)), 'repeat');
+      grain.setTransform(px);
+      // the glow: a flat lime wash at the left edge that eases out about a third of the way across, bulging a little at
+      // mid height
+      const glow = dc.createRadialGradient(0, 0, 0, 0, 0, 1);
+      for (let i = 0; i <= 12; i++) { const t = i / 12, u = clamp((t - .12) / .88, 0, 1); glow.addColorStop(t, `rgba(231,255,209,${(.95 * (1 - u * u * (3 - 2 * u)) ** 1.4).toFixed(3)})`); }
+      const skin = document.createElement('canvas'), kc = skin.getContext('2d');
+      skin.width = deco.width; skin.height = deco.height; kc.setTransform(SDPR, 0, 0, SDPR, 0, 0);
+      for (const [ctx, col] of [[dc, '#acb0cc'], [kc, '#cbcee2']]) {
+        ctx.fillStyle = col; ctx.fillRect(0, 0, SW, SH);
+        ctx.fillStyle = grain; ctx.fillRect(0, 0, SW, SH);
+        ctx.save(); ctx.translate(0, SH / 2); ctx.scale(SW * .3, SH * 1.6); ctx.fillStyle = glow; ctx.fillRect(0, -.5 / 1.6, 1 / .3, 1 / 1.6); ctx.restore();
+      }
+      this.skin = sc.createPattern(skin, 'no-repeat'); this.skin.setTransform(px);
+    },
+    // a tile of the felt's grain, after the reference: white noise softened into specks a few pixels across, with a
+    // scatter of pale fibres pressed into it, laid over the lavender as faint white and black
+    felt(T) {
+      const N = Float32Array.from({ length: T * T }, () => Math.random() - .5), B = new Float32Array(T * T), m = T - 1;
+      for (let f = 0; f < T * T / 900; f++) {
+        let x = Math.random() * T, y = Math.random() * T;
+        const a = Math.random() * 6.283, ca = Math.cos(a), sa = Math.sin(a), l = rand(6, 22), v = rand(.08, .2);
+        for (let s = 0; s < l; s++, x += ca, y += sa) N[(y & m) * T + (x & m)] += v;
+      }
+      for (let pass = 0; pass < 2; pass++) { // two 3x3 box blurs, wrapping at the tile's edges
+        for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) B[y * T + x] = (N[y * T + ((x - 1) & m)] + N[y * T + x] + N[y * T + ((x + 1) & m)]) / 3;
+        for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) N[y * T + x] = (B[((y - 1) & m) * T + x] + B[y * T + x] + B[((y + 1) & m) * T + x]) / 3;
+      }
+      let mu = 0, v2 = 0;
+      for (const v of N) mu += v;
+      mu /= N.length;
+      for (const v of N) v2 += (v - mu) ** 2;
+      // about 4.4 levels of spread either way, as on the reference, on a lavender near 190
+      const k = 4.4 / Math.sqrt(v2 / N.length), c = document.createElement('canvas'); c.width = c.height = T;
+      const g = c.getContext('2d'), img = g.createImageData(T, T), d = img.data;
+      for (let i = 0; i < N.length; i++) { const s = (N[i] - mu) * k; d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = s > 0 ? 255 : 0; d[i * 4 + 3] = s > 0 ? s / 65 * 255 : -s / 190 * 255; }
+      g.putImageData(img, 0, 0);
+      return c;
     },
     vn(x, y) { // smooth value noise on a wrapping 64x64 lattice
       const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, G = this.G;
@@ -1030,7 +1069,8 @@ const SCENES = {
       const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
       return lerp(lerp(G[c + a], G[c + b], sx), lerp(G[d + a], G[d + b], sx), sy);
     },
-    // the squares shrink to dots around the logo, the tally and the side arrows, so each sits in a dark pool and shows
+    // the squares shrink to dots around the logo, the tally and the side arrows, so each sits in a pool of the deeper
+    // lavender and shows
     ui() {
       const rs = [...document.querySelectorAll('.brand, .tally, .edge svg')].map(e => e.getBoundingClientRect()).filter(r => r.width);
       const key = rs.map(r => [r.left, r.top, r.right, r.bottom].map(Math.round).join()).join('|');
@@ -1088,7 +1128,7 @@ const SCENES = {
         const h = p * (.06 + .48 * v), a = (1 - v / .86) * .785 + (gx - gy) * .6 + A[q], c = Math.cos(a) * h, s = Math.sin(a) * h;
         path.moveTo(x + c - s, y + s + c); path.lineTo(x - c - s, y - s + c); path.lineTo(x - c + s, y - s - c); path.lineTo(x + c + s, y + s - c); path.closePath();
       }
-      sc.fillStyle = '#f4f4f0'; sc.fill(path);
+      sc.fillStyle = this.skin; sc.fill(path);
     }
   },
 
@@ -2033,13 +2073,15 @@ function thumb(id) {
       }
       return svg('#3557b0', `<g fill="#eef2ff">${b}</g>`);
     case 'wax': {
-      // a corner of the shell: big white squares in a close grid, with a swoop of the cursor's trail shrunk to diamonds
+      // a corner of the shell: big lavender squares in a close grid, with a swoop of the cursor's trail shrunk to
+      // diamonds, and the lime glow coming in from the left
       for (let j = 0; j < 16; j++) for (let i = 0; i < 25; i++) {
         const x = 1.6 + i * 3.2, y = 1.6 + j * 3.2, d = y - 25 - 11 * Math.sin(x * .07 - 1.2);
         const v = (.76 + .08 * Math.sin(x * .12 + .4) * Math.cos(y * .15 - .2)) * (1 - .95 * Math.exp(-d * d / 16)), s = 3.2 * (.12 + .94 * v);
         b += `<rect x="${(x - s / 2).toFixed(2)}" y="${(y - s / 2).toFixed(2)}" width="${s.toFixed(2)}" height="${s.toFixed(2)}" transform="rotate(${(45 * (1 - v / .86)).toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`;
       }
-      return svg('#181818', `<g fill="#f4f4f0">${b}</g>`);
+      const glow = [0, .12, .3, .5, .7, .85, 1].map(t => { const u = clamp((t - .12) / .88, 0, 1); return `<stop offset="${t}" stop-color="#e7ffd1" stop-opacity="${(.95 * (1 - u * u * (3 - 2 * u)) ** 1.4).toFixed(2)}"/>`; }).join('');
+      return svg('#acb0cc', `<radialGradient id="waxGlow" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1" gradientTransform="matrix(24 0 0 80 0 25)">${glow}</radialGradient><g fill="#cbcee2">${b}</g><rect width="80" height="50" fill="url(#waxGlow)"/>`);
     }
     case 'thock': {
       // the perforated sheet: a swipe of the laser lights a ragged band of holes glowing cream on powder blue that
@@ -2163,7 +2205,7 @@ const STORY = {
   bubble: { try: 'Sweep across the sheet to pop the bubbles. They slowly fill back up.', look: 'Bubble wrap as a contour map: pale grey rings on mint, after a print of pixel squares', hear: 'A muffled pop that swoops up like a water drop' },
   slime: { try: 'Every step folds the sheet along a sharp crease, like crumpled paper.', look: 'A sheet of + stitches that creases into flat facets', hear: 'A wet press and a fizz of tiny crackles, like foam beads bursting' },
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
-  wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a black and white halftone, after a reference image', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
+  wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone in grainy lavender felt with a lime glow, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
   thock: { try: 'Your cursor is a laser: holes burn open with a golden rim and cool to a soft cream glow.', look: 'Light through a perforated sheet in the powder blue and cream of a two-tone print', hear: 'A deep, muffled thock and a light tick as the key springs back' },
   gummy: { try: 'Drag a gummy into its neighbors, then pull them apart until the jelly snaps.', look: 'Sugar-dusted fruit gummies packed so tight they stick together', hear: 'A round, chewy squish (쫀득) and a tacky peel (쩍)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
