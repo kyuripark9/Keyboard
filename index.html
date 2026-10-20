@@ -24,7 +24,7 @@
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   color-scheme: light;
 }
-body[data-scene="wrap"]   { --bg: #69bca9; --ink: #164a3f; --ink-soft: #2a6156; --line: rgba(22,74,63,.16); --acc: #eef2ef; --cursor: #164a3f; color-scheme: light; }
+body[data-scene="wrap"]   { --bg: #e4e0e8; --ink: #2c6a45; --ink-soft: #5b7d68; --line: rgba(44,106,69,.16); --acc: #2c6a45; --cursor: #2c6a45; color-scheme: light; }
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="wax"]    { --bg: #c3c6db; --ink: #2d345d; --ink-soft: #60678b; --line: rgba(45,52,93,.15); --acc: #2d345d; --cursor: #2d345d; color-scheme: light; }
@@ -420,7 +420,7 @@ function crinkle(t, n, spread, o = {}) {
   for (let i = 0; i < n; i++) { const at = t + Math.pow(Math.random(), 1.6) * spread; hiss(at, { f: rand(lo, hi), q, a, d: rand(d / 3, d), g: rand(0.4, 1) * g * (1 - (at - t) / spread * 0.6) }); }
 }
 const SOUNDS = {
-  bubble: { name: 'Bubble Wrap', desc: 'Pop pale rings on mint', scene: 'wrap', noTrail: true,
+  bubble: { name: 'Bubble Wrap', desc: 'Pop white bubbles in a green glow', scene: 'wrap', noTrail: true,
     // a gentle, muffled pop that sounds like a drop of water: its note swoops up as the bubble bursts (the bloop), and
     // now and then a smaller droplet plinks after it
     down(k, t, j) {
@@ -709,141 +709,211 @@ function roundPoly(p, P, r) {
 
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
-  /* 01 Bubble Wrap: the sheet drawn as a contour map in pale grey on mint paper, after a photo. Every bubble is a
-     hill with one ring or two: irregular droplets (beans, eggs, blobs) of mixed sizes packed close, each pushed well
-     off its row and stretched and tilted its own way, so no two match; where two press together their rings meet in
-     a crease. The screen's edges hold the sheet like a membrane, and bubbles that reach one squash flat against it.
-     The sheet sways gently, and a pop flattens its hill and sends a ripple through the neighbours' rings that bounces
-     back off the membrane and shakes it. */
+  /* 01 Bubble Wrap: bubbles seen through their glow, after a grainy print. Round white bubbles of mixed sizes lie
+     scattered on lavender, each in a thin rim of mint green that bleeds out through lime into a pale yellow haze, and
+     where bubbles sit close their hazes run together. It is all stippled: every pixel of a rim is either green or near
+     white, and a fine grain mottles the lavender and the haze but hardly touches the white. The screen's edges hold the
+     bubbles like a membrane, so one that reaches an edge squashes flat against it. The bubbles drift a little and give
+     under the cursor; a pop collapses one into a small lime spot and sends a wave of haze through its neighbours that
+     bounces back off the membrane, and the bubble slowly fills back up. With WebGL2 the stipple is drawn on the
+     screen's own pixels on the GPU; without it, on pixels twice the size in JS. */
   wrap: {
     frame: 'full',
     init() {
-      const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
-      this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
-      this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
-      this.F = new Float32Array(w * h); this.w2 = (w >> 1) + 2; this.h2 = (h >> 1) + 2; this.K = new Float32Array(this.w2 * this.h2);
-      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 7.5), 52, 120);
-      // bubbles sit in rows a cell apart, each row slid sideways by its own amount, packed so they fill the sheet. Every
-      // bubble is nudged well off its spot and gets its own size, stretch and tilt, and a fifth are smaller droplets.
-      // Each is bent out of round by two lobes (c1 pulls it toward a rounded triangle, c2 toward an egg), so they come
-      // out as beans, eggs and blobs. Bigger ones stand taller, so they carry two rings instead of one, and no peak sits
-      // just over a ring's level, where that ring would shrink to a speck. None reaches further than .8 of a cell from
-      // its centre, the furthest draw() looks for it: a lobe reaches 1 / sqrt(1 - |c1| - |c2|) times the radius at most
-      const cols = this.cols = Math.ceil(SW / s2) + 4, rows = this.rows = Math.ceil(SH / s2) + 4, n = cols * rows;
-      this.ro = Float32Array.from({ length: rows }, Math.random);
-      this.bx = new Float32Array(n); this.by = new Float32Array(n); this.ca = new Float32Array(n); this.sa = new Float32Array(n);
-      this.irx = new Float32Array(n); this.iry = new Float32Array(n); this.c1 = new Float32Array(n); this.c2 = new Float32Array(n);
-      this.amp = new Float32Array(n); this.base = new Float32Array(n); this.back = new Float64Array(n);
-      for (let j = 0, q = 0; j < rows; j++) for (let i = 0; i < cols; i++, q++) {
-        const R = Math.random() < .2 ? rand(.3, .48) : rand(.55, .95), e = rand(.75, 1.35), a = rand(0, Math.PI);
-        const c1 = rand(-.16, .16), c2 = rand(-.18, .18), cap = .8 * Math.sqrt(1 - Math.abs(c1) - Math.abs(c2));
-        this.bx[q] = i + this.ro[j] + rand(-.2, .2); this.by[q] = j + rand(-.2, .2);
-        this.ca[q] = Math.cos(a); this.sa[q] = Math.sin(a); this.c1[q] = c1; this.c2[q] = c2;
-        this.irx[q] = 1 / Math.min(cap, R * e); this.iry[q] = 1 / Math.min(cap, R / e);
-        let A = clamp(.1 + R, .4, 1) * rand(.9, 1);
-        if (A > .47 && A < .62) A = A < .55 ? .47 : .62;
-        this.amp[q] = this.base[q] = A;
+      // U is one pixel of the reference at half size (it is a retina screenshot), scaled so its width fits the
+      // screen's shorter side
+      const U = this.U = Math.min(SW, SH) / 1620;
+      // bubbles are dropped wherever they fit, each keeping its own amount of room around it, until there are a few
+      // more to the area than in the print (ten to its 810 x 1146), so they sit close in places and leave lavender
+      // pockets in others; mostly small, a few big. They may hang past an edge
+      const B = this.b = [], want = Math.round(13 * SW * SH / (U * U * 810 * 1146));
+      for (let m = 0; m < 600 && B.length < want; m++) for (let n = 0, r = (60 + 170 * Math.random() ** 3) * U; n < 24; n++) {
+        const x = rand(-r * .4, SW + r * .4), y = rand(-r * .4, SH + r * .4), ps = Math.random();
+        if (B.every(o => Math.hypot(o.x0 - x, o.y0 - y) > (o.r + r) * (1.04 + .2 * (o.ps + ps)))) {
+          B.push({ x0: x, y0: y, r, ps, k: 1, back: 0, p1: rand(0, 6.283), p2: rand(0, 6.283), p3: rand(0, 6.283), x, y, re: r });
+          break;
+        }
       }
-      this.x0 = this.y0 = -s2 * 1.5;
-      // a membrane runs along the screen's edges: the hills press flat against it, so a bubble that reaches an edge
-      // squashes into a D, its rings closing along the edge instead of being cut off there
-      const wall = (n, S) => Float32Array.from({ length: n }, (_, i) => { const e = clamp(Math.min(i * G, S - i * G) / (s2 * .5), 0, 1); return 1 - (1 - e) * (1 - e); });
-      this.mx = wall(w, SW); this.my = wall(h, SH);
+      // a bubble's glow against how far out from its edge a point is (u = -1 to 1, 256 steps to the unit), after a
+      // circle of the print: clean white inside with a faint mint glow toward the edge, a thin rim of mint green right
+      // on it, then lime, and a soft yellow haze that thins out over half a radius or so beyond. The stipple spreads
+      // every band out again, so the rim here is about half as wide as it looks in the print. A lone bubble's haze stays
+      // cream; where the hazes of neighbours add up it turns butter yellow. Outside, u counts in a size between the
+      // bubble's radius and a fixed one, so a big bubble's rim is a little wider than a small one's, but not in proportion
+      const PROF = [[-1, 1.25], [-.45, 1.25], [-.3, 1], [-.2, .88], [-.12, .82], [-.06, .75], [-.02, .68], [0, .6], [.02, .52], [.05, .42], [.08, .34],
+        [.15, .3], [.25, .27], [.35, .23], [.5, .16], [.7, .08], [.9, .02], [1, 0]];
+      this.prof = Float32Array.from({ length: 512 }, (_, i) => {
+        const u = i / 256 - 1; let k = 0; while (k < PROF.length - 2 && PROF[k + 1][0] < u) k++;
+        const A = PROF[k], Z = PROF[k + 1]; return A[1] + (Z[1] - A[1]) * clamp((u - A[0]) / (Z[0] - A[0]), 0, 1);
+      });
+      // the glow is summed on a coarse grid c px across and scaled up smooth: M1 is the brightest bubble at each point
+      // and ST/MT the sum and the largest of their tails, so the hazes of close neighbours add up into one while the
+      // bubbles themselves stay round
+      const c = this.c = Math.max(4, Math.ceil(Math.sqrt(SW * SH / 75000))), fw = this.fw = Math.ceil(SW / c) + 2, fh = this.fh = Math.ceil(SH / c) + 2;
+      this.M1 = new Float32Array(fw * fh); this.ST = new Float32Array(fw * fh); this.MT = new Float32Array(fw * fh); this.V = new Float32Array(fw * fh);
+      // a membrane runs along the screen's edges: the glow presses flat against it, so a bubble that reaches an edge
+      // squashes there, its rim running along the edge instead of being cut off
+      const wall = (n, S) => Float32Array.from({ length: n }, (_, i) => { const e = clamp(Math.min(i * c, S - i * c) / (48 * U), 0, 1); return 1 - (1 - e) * (1 - e); });
+      this.mx = wall(fw, SW); this.my = wall(fh, SH);
+      // the ramp from the print's colours, from lavender through cream, butter yellow, lime and mint green to white,
+      // read 600 steps to the unit from -.3. The yellows lean a little warmer than the print's means, which mix in lime
+      // specks that a smooth haze doesn't have
+      const RAMP = [[-.3, 222, 218, 229], [0, 228, 224, 232], [.12, 232, 227, 216], [.2, 235, 233, 204], [.28, 234, 234, 186], [.35, 230, 236, 170],
+        [.43, 214, 237, 152], [.48, 175, 230, 122], [.54, 149, 228, 128], [.59, 143, 231, 155], [.64, 145, 232, 182], [.69, 173, 239, 210],
+        [.74, 202, 242, 226], [.8, 226, 247, 240], [.86, 238, 247, 247], [.92, 244, 251, 250], [1.5, 245, 251, 251]];
+      this.lut = Uint32Array.from({ length: 1024 }, (_, i) => {
+        const v = i / 600 - .3; let k = 0; while (k < RAMP.length - 2 && RAMP[k + 1][0] < v) k++;
+        const A = RAMP[k], Z = RAMP[k + 1], f = clamp((v - A[0]) / (Z[0] - A[0]), 0, 1), ch = n => Math.round(A[n] + (Z[n] - A[n]) * f);
+        return 0xff000000 | ch(3) << 16 | ch(2) << 8 | ch(1);
+      });
+      if (this.gl === undefined) this.gl = this.glInit();
+      if (this.gl) {
+        const { c: cv, gl, u, tV } = this.gl;
+        cv.width = Math.round(SW * SDPR); cv.height = Math.round(SH * SDPR); gl.viewport(0, 0, cv.width, cv.height);
+        gl.uniform3f(u.uRes, SW, SH, SDPR); gl.uniform3f(u.uGrid, c, fw, fh);
+        gl.activeTexture(gl.TEXTURE1); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1024, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(this.lut.buffer));
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tV); gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, fw, fh, 0, gl.RED, gl.FLOAT, null);
+      } else {
+        // without WebGL2 the picture is coloured on small pixels G px across, each reading the coarse grid in between
+        // its four nearest points and jittered by its own fixed amount (N), then scaled up soft under a grain tile
+        const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
+        this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
+        this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
+        this.gx0 = Int32Array.from({ length: w }, (_, i) => i * G / c | 0); this.gtx = Float32Array.from({ length: w }, (_, i) => i * G / c % 1);
+        this.gy0 = Int32Array.from({ length: h }, (_, j) => j * G / c | 0); this.gty = Float32Array.from({ length: h }, (_, j) => j * G / c % 1);
+        this.N = Float32Array.from({ length: w * h }, () => (Math.random() + Math.random() - 1) * .08);
+        if (!this.tile) {
+          const n = 192, t = this.tile = document.createElement('canvas'); t.width = t.height = n;
+          const x = t.getContext('2d'), im = x.createImageData(n, n), d = im.data, a = Float32Array.from({ length: n * n }, () => Math.random() * 2 - 1);
+          for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+            let s = 0;
+            for (let bj = -1; bj <= 1; bj++) for (let bi = -1; bi <= 1; bi++) s += a[(j + bj + n) % n * n + (i + bi + n) % n];
+            const o = (j * n + i) * 4;
+            d[o] = d[o + 1] = d[o + 2] = 128 + s / 3 * 95; d[o + 3] = 255;
+          }
+          x.putImageData(im, 0, 0);
+        }
+        this.grain = sc.createPattern(this.tile, 'repeat'); this.grain.setTransform(new DOMMatrix([1 / SDPR, 0, 0, 1 / SDPR, 0, 0]));
+      }
       this.rip = []; this.cur = { x: -999, y: -999, a: 0, t: 0 };
-      paper(dc, '#69bca9', .07);
+      dc.fillStyle = '#e4e0e8'; dc.fillRect(0, 0, SW, SH);
+    },
+    // the colouring in a fragment shader, on the screen's own pixels: the glow (read smooth off the coarse grid) is
+    // jittered by a fixed random amount at every pixel before it goes through the ramp, so where the ramp turns fast,
+    // as across a rim, neighbouring pixels land on different colours and the band breaks up into a stipple of green and
+    // white, as in the print. A fixed grain is then laid over in overlay, which mottles the lavender, the haze and the
+    // rims but leaves the white almost clean
+    glInit() {
+      const c = document.createElement('canvas'), gl = c.getContext('webgl2', { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true });
+      if (!gl) return null;
+      const pr = gl.createProgram();
+      for (const [t, s] of [[gl.VERTEX_SHADER, 'in vec2 v; void main() { gl_Position = vec4(v, 0., 1.); }'], [gl.FRAGMENT_SHADER, `precision highp float;
+uniform vec3 uRes, uGrid; uniform sampler2D uV, uRamp; out vec4 o;
+float hash(vec2 p) { vec3 q = fract(p.xyx * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+void main() {
+  vec2 f = floor(vec2(gl_FragCoord.x, uRes.y * uRes.z - gl_FragCoord.y)), p = (f + .5) / uRes.z;
+  float v = texture(uV, (p / uGrid.x + .5) / uGrid.yz).r + (hash(f) + hash(f + 71.3) - 1.) * .16;
+  vec3 b = texture(uRamp, vec2(((v + .3) * 600. + .5) / 1024., .5)).rgb;
+  float s = .5 + .6 * (hash(f + 13.7) - .5) + .4 * (hash(floor(f * .5) + 5.1) - .5);
+  o = vec4(mix(2. * b * s, 1. - 2. * (1. - b) * (1. - s), step(.5, b)), 1.);
+}`]]) {
+        const sh = gl.createShader(t); gl.shaderSource(sh, '#version 300 es\n' + s); gl.compileShader(sh); gl.attachShader(pr, sh);
+      }
+      gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null;
+      gl.useProgram(pr);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      const tex = unit => {
+        const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+        for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+        return t;
+      };
+      const tV = tex(0); tex(1); gl.activeTexture(gl.TEXTURE0);
+      const u = {};
+      for (const n of ['uRes', 'uGrid', 'uV', 'uRamp']) u[n] = gl.getUniformLocation(pr, n);
+      gl.uniform1i(u.uV, 0); gl.uniform1i(u.uRamp, 1);
+      return { c, gl, u, tV };
     },
     move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
-    // the sheet sways: rows slide sideways (ox) and columns bob (oy), so the rows stretch into soft, uneven loops; and
-    // the hills stretch wider toward the sides (xs), as if the sheet were pulled from the middle
-    ox(y, t) { const s = this.s; return s * (.2 * Math.sin(y / s * 1.9 + t * .35) + .08 * Math.sin(y / s * .53 - t * .2)); },
-    oy(x, t) { const s = this.s; return s * (.12 * Math.sin(x / s * 1.3 - t * .3) + .06 * Math.sin(x / s * .41 + t * .25)); },
-    xs(x) { const d = x - SW / 2; return SW / 2 + d * (1 - .28 * Math.abs(d) / SW); },
-    // how far sheet point (u, v) sits from bubble q's centre, squared, in units of its radius along each of its axes and
-    // scaled by its lobes: r² (1 + c1 cos 3θ + c2 cos θ)
-    d2(q, u, v) {
-      const dx = u - this.bx[q], dy = v - this.by[q], a = (dx * this.ca[q] + dy * this.sa[q]) * this.irx[q], b = (dy * this.ca[q] - dx * this.sa[q]) * this.iry[q], r = Math.hypot(a, b) + 1e-6;
-      return a * a + b * b + this.c1[q] * a * (a * a - 3 * b * b) / r + this.c2[q] * a * r;
-    },
     hit(x, y, k, now) {
-      // the step pops the nearest of the four bubbles around it on the sheet
-      const t = now / 1000, u = (this.xs(x) + this.ox(y, t) - this.x0) / this.s, v = (y + this.oy(x, t) - this.y0) / this.s;
-      let q = -1, best = 2.5;
-      for (let r = v | 0; r <= (v | 0) + 1; r++) for (let p = r * this.cols + ((u - this.ro[r]) | 0), e = p + 2; p < e; p++) {
-        const d = this.d2(p, u, v); if (d < best && this.base[p]) { best = d; q = p; }
-      }
-      if (q < 0 || this.back[q]) return;
-      this.back[q] = now + 9000 + Math.random() * 6000;
-      this.rip.push({ x, y, t0: now });
+      // the step pops the bubble under it, or the nearest one whose haze it lands in
+      let q = null, best = .35;
+      for (const o of this.b) { const u = (Math.hypot(x - o.x, y - o.y) - o.re) / o.re; if (u < best && !o.back) { best = u; q = o; } }
+      if (q) q.back = now + 9000 + Math.random() * 6000;
+      this.rip.push({ x, y, t0: now, a: q ? 1 : .4 });
       if (this.rip.length > 24) this.rip.shift();
     },
     draw(now, dt) {
-      sc.drawImage(deco, 0, 0, SW, SH);
-      const G = this.G, w = this.w, h = this.h, F = this.F, s2 = this.s, cols = this.cols, amp = this.amp, ro = this.ro;
-      // popped hills sink fast, refilled ones swell back slowly
-      for (let q = 0; q < amp.length; q++) {
-        if (this.back[q] && now > this.back[q]) this.back[q] = 0;
-        const target = this.back[q] ? .3 : this.base[q];
-        amp[q] += (target - amp[q]) * Math.min(1, dt * (this.back[q] ? .02 : .0025));
-      }
-      // the hills are worked out on a grid twice as coarse (K) and filled in between, as they are smooth at that scale
-      const W2 = this.w2, H2 = this.h2, K = this.K, G2 = G * 2, t = now / 1000;
-      const ox = new Float32Array(H2), oy = new Float32Array(W2), xs = new Float32Array(W2);
-      for (let j = 0; j < H2; j++) ox[j] = this.ox(j * G2, t);
-      for (let i = 0; i < W2; i++) { oy[i] = this.oy(i * G2, t); xs[i] = this.xs(i * G2); }
-      const x0 = this.x0, y0 = this.y0, inv = 1 / s2, { bx, by, ca: cos, sa: sin, irx, iry, c1, c2 } = this;
-      for (let j = 0, o = 0; j < H2; j++) {
-        const y = j * G2;
-        for (let i = 0; i < W2; i++, o++) {
-          // the four bubbles around this point, two from each nearby row (d2() inlined). The sheet takes the tallest of
-          // them, so packed bubbles press against each other and their rings meet in a crease instead of merging
-          const u = (xs[i] + ox[j] - x0) * inv, v = (y + oy[i] - y0) * inv;
-          let top = 0;
-          for (let r = v | 0, r1 = r + 1; r <= r1; r++) for (let q = r * cols + ((u - ro[r]) | 0), e = q + 2; q < e; q++) {
-            const dx = u - bx[q], dy = v - by[q];
-            if (dx * dx + dy * dy > .64) continue;
-            const a = (dx * cos[q] + dy * sin[q]) * irx[q], b = (dy * cos[q] - dx * sin[q]) * iry[q], r2 = a * a + b * b, r = Math.sqrt(r2) + 1e-6;
-            const d = r2 + c1[q] * a * (a * a - 3 * b * b) / r + c2[q] * a * r;
-            if (d < 1) { const k = 1 - d, f = amp[q] * k * k; if (f > top) top = f; }
+      const { U, c, fw, fh, M1, ST, MT, V, prof, mx, my } = this, t = now / 1000, cu = this.cur;
+      // the cursor presses the bubbles under it in a little, and they swell back once it rests
+      cu.a += (clamp(1 - (now - cu.t - 300) / 800, 0, 1) - cu.a) * Math.min(1, dt * .01);
+      M1.fill(0); ST.fill(0); MT.fill(0);
+      for (const o of this.b) {
+        // a popped bubble collapses fast and refills slowly; every bubble drifts a little and breathes
+        if (o.back && now > o.back) o.back = 0;
+        o.k += ((o.back ? 0 : 1) - o.k) * Math.min(1, dt * (o.back ? .02 : .0025));
+        const x = o.x = o.x0 + 8 * U * Math.sin(t * .23 + o.p1), y = o.y = o.y0 + 8 * U * Math.sin(t * .19 + o.p2);
+        let re = o.r * (.55 + .45 * o.k) * (1 + .015 * Math.sin(t * .5 + o.p3));
+        if (cu.a > .01) { const d = Math.hypot(cu.x - x, cu.y - y) / (re * 1.3); if (d < 2) re *= 1 - .08 * cu.a * Math.exp(-d * d * 2); }
+        o.re = re;
+        const a = .42 + .58 * o.k, S = .35 * re + 100 * U, iO = 1 / S, iI = 1 / Math.min(re * .9, S), R = re + S;
+        const j0 = Math.max(0, Math.ceil((y - R) / c)), j1 = Math.min(fh - 1, Math.floor((y + R) / c));
+        for (let j = j0; j <= j1; j++) {
+          const dy = j * c - y, hw = Math.sqrt(Math.max(0, R * R - dy * dy));
+          const i0 = Math.max(0, Math.ceil((x - hw) / c)), i1 = Math.min(fw - 1, Math.floor((x + hw) / c));
+          for (let i = i0, p = j * fw + i0; i <= i1; i++, p++) {
+            const dx = i * c - x, d = Math.sqrt(dx * dx + dy * dy) - re, ix = (d * (d < 0 ? iI : iO) + 1) * 256 | 0;
+            const P = a * (ix <= 0 ? 1.25 : ix > 511 ? 0 : prof[ix]), tl = P < .22 ? P : .22;
+            if (P > M1[p]) M1[p] = P;
+            ST[p] += tl; if (tl > MT[p]) MT[p] = tl;
           }
-          K[o] = top;
         }
       }
-      // filled in from K and pressed flat against the membrane at the edges; ripples come after, so one that hits it shakes it
-      for (let j = 0, o = 0, mx = this.mx; j < h; j++) {
-        const r0 = (j >> 1) * W2, r1 = j & 1 ? r0 + W2 : r0, my = this.my[j] * .25;
-        for (let i = 0; i < w; i++, o++) { const a = i >> 1, b = i & 1 ? a + 1 : a; F[o] = (K[r0 + a] + K[r0 + b] + K[r1 + a] + K[r1 + b]) * my * mx[i]; }
-      }
-      // ripples: a ring that runs out from each pop and bends the contour lines it passes through. It bounces off the
-      // screen's edges like water off a wall: each edge sends it back as a ring from the pop's mirror image beyond it,
-      // and a corner from the image beyond both of its edges
+      // the brightest bubble at each point plus its neighbours' tails, which saturate before they reach the lime, so
+      // where hazes meet they deepen to butter yellow and no further; pressed flat against the membrane at the edges.
+      // Ripples come after, so one that hits the membrane shakes it
+      for (let j = 0, p = 0; j < fh; j++) for (let i = 0; i < fw; i++, p++) V[p] = (M1[p] + .13 * (1 - Math.exp((MT[p] - ST[p]) / .13))) * my[j] * mx[i];
+      // ripples: a wave of haze that runs out from each pop. It bounces off the screen's edges like water off a wall:
+      // each edge sends it back as a ring from the pop's mirror image beyond it, and a corner from the image beyond both.
+      // Only the band the ring covers is visited, skipping the hole inside it (h0 to h1 on each row)
       this.rip = this.rip.filter(r => now - r.t0 < 2600);
-      const bump = (cx, cy, R, fn) => {
-        const i0 = Math.max(1, Math.floor((cx - R) / G)), i1 = Math.min(w - 2, Math.ceil((cx + R) / G)), j0 = Math.max(1, Math.floor((cy - R) / G)), j1 = Math.min(h - 2, Math.ceil((cy + R) / G));
-        for (let j = j0; j <= j1; j++) for (let i = i0, o = j * w + i0; i <= i1; i++, o++) { const d = Math.hypot(i * G - cx, j * G - cy); if (d < R) F[o] += fn(d); }
-      };
       for (const r of this.rip) {
-        const age = (now - r.t0) / 1000, front = age * s2 * 2.4, A = .3 * Math.pow(1 - age / 2.6, 2), W = s2 * .55;
-        const ring = d => { const z = (d - front) / W; return A * Math.exp(-z * z) * Math.sin(z * 3.2); };
-        for (const x of [r.x, -r.x, SW * 2 - r.x]) for (const y of [r.y, -r.y, SH * 2 - r.y]) bump(x, y, front + W * 2, ring);
+        const age = (now - r.t0) / 1000, front = age * 520 * U, A = .22 * r.a * Math.pow(1 - age / 2.6, 2), W = 60 * U, R = front + W * 2.2, R0 = Math.max(0, front - W * 2.2);
+        for (const x of [r.x, -r.x, SW * 2 - r.x]) for (const y of [r.y, -r.y, SH * 2 - r.y]) {
+          const j0 = Math.max(0, Math.ceil((y - R) / c)), j1 = Math.min(fh - 1, Math.floor((y + R) / c));
+          for (let j = j0; j <= j1; j++) {
+            const dy = j * c - y, hw = Math.sqrt(Math.max(0, R * R - dy * dy)), hi = Math.sqrt(Math.max(0, R0 * R0 - dy * dy));
+            const i0 = Math.max(0, Math.ceil((x - hw) / c)), i1 = Math.min(fw - 1, Math.floor((x + hw) / c)), h0 = Math.floor((x - hi) / c) + 1, h1 = Math.ceil((x + hi) / c) - 1;
+            for (let i = i0; i <= i1; i++) {
+              if (i >= h0 && i <= h1) { i = h1; continue; }
+              const dx = i * c - x, z = (Math.sqrt(dx * dx + dy * dy) - front) / W; V[j * fw + i] += A * Math.exp(-z * z);
+            }
+          }
+        }
       }
-      // the cursor presses a soft dent into the sheet, and it lifts once the cursor rests
-      const c = this.cur, ca = clamp(1 - (now - c.t - 300) / 800, 0, 1);
-      c.a += (ca - c.a) * Math.min(1, dt * .01);
-      if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * Math.pow(1 - d / R, 2)); }
-      // contour lines at two levels, .12 near a bubble's foot and .5 halfway up, each drawn at a steady width by
-      // dividing by the slope
-      const P = this.px, LW = .3;
-      P.fill(0);
-      for (let j = 1; j < h - 1; j++) for (let i = 1, o = j * w + 1; i < w - 1; i++, o++) {
-        const f = F[o]; if (f < .04) continue;
-        const gx = F[o + 1] - F[o - 1], gy = F[o + w] - F[o - w], g = Math.sqrt(gx * gx + gy * gy) * .5 + 1e-4;
-        const d = Math.min(Math.abs(f - .12), Math.abs(f - .5)) / g;
-        if (d > LW + .6) continue;
-        const al = d < LW ? 255 : ((1 - (d - LW) / .6) * 255) | 0;
-        P[o] = al << 24 | 0xe0e3df;
+      sc.imageSmoothingEnabled = true;
+      if (this.gl) {
+        const { gl, c: cv } = this.gl;
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, fw, fh, gl.RED, gl.FLOAT, V); gl.drawArrays(gl.TRIANGLES, 0, 3);
+        sc.drawImage(cv, 0, 0, SW, SH);
+        return;
+      }
+      // without WebGL2: colour every small pixel through the ramp, jittered by its own amount, and scale it up soft
+      const { w, h, px: P32, N, lut, gx0, gtx, gy0, gty } = this;
+      for (let j = 0, o = 0; j < h; j++) {
+        const r0 = gy0[j] * fw, ty = gty[j], sy = 1 - ty;
+        for (let i = 0; i < w; i++, o++) {
+          const q = r0 + gx0[i], tx = gtx[i], sx = 1 - tx;
+          let k = ((V[q] * sx + V[q + 1] * tx) * sy + (V[q + fw] * sx + V[q + fw + 1] * tx) * ty + N[o] + .3) * 600 | 0;
+          P32[o] = lut[k < 0 ? 0 : k > 1023 ? 1023 : k];
+        }
       }
       this.oc.putImageData(this.img, 0, 0);
-      sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
+      sc.imageSmoothingQuality = 'high';
+      sc.drawImage(this.off, 0, 0, w * this.G, h * this.G);
+      sc.imageSmoothingQuality = 'low';
+      sc.globalCompositeOperation = 'overlay'; sc.fillStyle = this.grain; sc.fillRect(0, 0, SW, SH); sc.globalCompositeOperation = 'source-over';
     }
   },
 
@@ -2218,14 +2288,15 @@ function thumb(id) {
   const svg = (bg, body) => `<svg viewBox="0 0 80 50" preserveAspectRatio="xMidYMid slice"><rect width="80" height="50" fill="${bg}"/>${body}</svg>`;
   let b = '';
   switch (id) {
-    case 'bubble':
-      // big droplets of mixed sizes in loose rows, each a few rings stretched and tilted its own way
-      for (let j = 0; j < 5; j++) for (let i = 0; i < 7; i++) {
-        const R = r() < .1 ? 3 + r() * 1.5 : 5 + r() * 3, e = .8 + r() * .45, a = (r() * 180).toFixed(0);
-        const x = (i * 13 + (j % 2) * 6 + (r() - .5) * 3).toFixed(1), y = (1 + j * 12 + (r() - .5) * 3).toFixed(1);
-        for (let k = 0, n = R > 6 ? 3 : 2; k < n; k++) b += `<ellipse cx="${x}" cy="${y}" rx="${(R * e * (1 - k * .3)).toFixed(1)}" ry="${(R / e * (1 - k * .3)).toFixed(1)}" transform="rotate(${a} ${x} ${y})"/>`;
-      }
-      return svg('#69bca9', `<g fill="none" stroke="#dfe3e0" stroke-width=".7">${b}</g>`);
+    case 'bubble': {
+      // white bubbles of mixed sizes on lavender, each in a mint green rim that fades out through lime into a yellow
+      // haze, softened a little so the bands bleed into each other
+      const B = [[15, 12, 11], [44, 31, 8.5], [68, 9, 6.5], [12, 41, 6], [71, 40, 7], [50, 5, 3.5], [31, 48, 4], [2, 26, 3.5], [58, 21, 3], [28, 27, 2.5]];
+      const at = d => B.map(([x, y, R]) => `<circle cx="${x}" cy="${y}" r="${(R * (1 + d)).toFixed(2)}"/>`).join('');
+      const glow = [[.55, '#eae8cf'], [.32, '#e9ebbc'], [.14, '#d9eba0'], [.06, '#a6e08c'], [0, '#93dca8'], [-.08, '#c9f0de'], [-.2, '#f4fbfa']]
+        .map(([d, col]) => `<g fill="${col}">${at(d)}</g>`).join('');
+      return svg('#e4e0e8', `<defs><filter id="wrapGlow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".45"/></filter></defs><g filter="url(#wrapGlow)">${glow}</g>`);
+    }
     case 'slime':
       for (let j = 0; j < 7; j++) for (let i = 0; i < 12; i++) {
         const x = 8 + i * 6 + (j > 3 ? (j - 3) * (i < 5 ? 1.2 : .2) : 0), y = 6 + j * 6.2 - (i > 4 && i < 9 ? 1.2 : 0), a = j > 3 && i < 5 ? .25 : 0, l = j > 3 && i < 5 ? 1.2 : 1.7;
@@ -2374,7 +2445,7 @@ function demo() {
 // what each material asks you to try, what its picture is after and what it sounds like. A sound without an entry
 // falls back to its picker line
 const STORY = {
-  bubble: { try: 'Sweep across the sheet to pop the bubbles. Pop one near the edge and its ripple bounces back. They slowly fill back up.', look: 'Bubble wrap as a contour map: pale grey rings on mint, after a print of pixel squares', hear: 'A muffled pop that swoops up like a water drop' },
+  bubble: { try: 'Sweep across the sheet to pop the bubbles. Pop one near the edge and its ripple bounces back. They slowly fill back up.', look: 'Bubble wrap seen through its glow, after a grainy print: white bubbles in mint green rims and a yellow haze on lavender', hear: 'A muffled pop that swoops up like a water drop' },
   slime: { try: 'Every step folds the sheet along a sharp crease, like crumpled paper.', look: 'A sheet of + stitches that creases into flat facets', hear: 'A wet press and a fizz of tiny crackles, like foam beads bursting' },
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
