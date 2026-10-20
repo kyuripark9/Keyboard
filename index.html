@@ -522,7 +522,7 @@ const SOUNDS = {
       crinkle(at + 0.015, 16 + Math.floor(Math.random() * 6), 0.18, { lo: 900, hi: 3200, g: 0.1, q: 1.2, a: 0.0025, d: 0.01 });
       hiss(at + 0.01, { type: 'highpass', f: 5500, q: 0.5, a: 0.04, d: 0.09, g: 0.03 });
     } },
-  sugar: { name: 'Sugar Slime', desc: 'Rake furrows through gritty slime', scene: 'grit',
+  sugar: { name: 'Sugar Slime', desc: 'Push the sugar aside down to the blue', scene: 'grit',
     // 사각사각: slime packed with sugar, stroked slowly close to the ear. A soft sandy brush as the fingers sweep through,
     // a fine trickle of sugar grains rolling past each other and a muted squish of the slime underneath
     down(k, t, j) {
@@ -2091,10 +2091,11 @@ void main() {
   },
 
   /* 10 Sugar Slime: slime packed with sugar, after a grainy gradient print. Lime runs all over it in a grain as fine
-     as the screen's pixels, flecked with blue and turning yellower toward the top right. The cursor drags three
-     fingertips through it: each leaves a furrow with the slime it pushed aside heaped along its walls. Walls facing the
-     glow light up lime, shaded walls and creases sink to a deeper blue, all in the same grain, and the slime slowly
-     settles flat again. */
+     as the screen's pixels, flecked with blue and turning yellower toward the top right. The cursor drags a fingertip
+     through it that scrapes the lime sugar off its path, so the blue slime under it shows through, and pushes the
+     sugar aside into a heap along each side, its grains standing out sharper there. Walls facing the glow light up
+     lime and the ones facing away sink to a deeper blue, all in the same grain, and the slime slowly settles flat
+     again. */
   grit: {
     frame: 'full',
     init() {
@@ -2147,37 +2148,33 @@ void main() {
       for (let j = 0; j < gh; j++) CY[j] = clamp(Math.ceil(j * GQ - .5), 0, h);
       for (let x = 0; x < w; x++) FX[x] = (x + .5) / GQ % 1;
       for (let y = 0; y < h; y++) FY[y] = (y + .5) / GQ % 1;
-      // per cell: the surface, how far it turned lime (LD) or sank into shade (SD) when it was last drawn, and a flag (F)
-      // for one drawn anew this frame; box is the part of the grid still moving
+      // per cell: the surface, how far it turned lime (LD), sank into shade (SD) or was heaped with sugar (KD) when it
+      // was last drawn, and a flag (F) for one drawn anew this frame; box is the part of the grid still moving
       const gn = gw * gh;
-      this.H = new Float32Array(gn); this.LD = new Float32Array(gn); this.SD = new Float32Array(gn); this.F = new Uint8Array(gn);
+      this.H = new Float32Array(gn); this.LD = new Float32Array(gn); this.SD = new Float32Array(gn); this.KD = new Float32Array(gn); this.F = new Uint8Array(gn);
       this.box = null;
-      this.wg = clamp(CELL * .25, 6, 12); this.dir = [1, 0]; this.last = null; this.mt = 0;
+      this.wg = clamp(CELL * .45, 10, 22); this.dir = [1, 0]; this.last = null; this.mt = 0;
     },
-    // three fingertips side by side drag a furrow each from (x0, y0) to (x1, y1) and heap the slime they push aside
-    // into ridges along the walls; a press without a drag sinks in three dimples, each with a ring around it
-    carve(x0, y0, x1, y1, fresh) {
-      const G = this.G, gw = this.gw, gh = this.gh, H = this.H, wg = this.wg, sp = wg * 2.9, D = wg * .9, Rm = wg * .4;
+    // a fingertip drags a trench from (x0, y0) to (x1, y1) and heaps the sugar it pushes aside along both sides; a press
+    // without a drag sinks in a dimple with a ring heaped round it
+    carve(x0, y0, x1, y1) {
+      const G = this.G, gw = this.gw, gh = this.gh, H = this.H, wg = this.wg, D = wg * .9, Rm = wg * .5;
       let ux = x1 - x0, uy = y1 - y0;
       const L = Math.hypot(ux, uy), drag = L > .5;
       if (drag) { ux /= L; uy /= L; } else [ux, uy] = this.dir;
-      const reach = sp + wg * 2.4;
+      const reach = wg * 2.4;
       const i0 = Math.max(0, Math.floor((Math.min(x0, x1) - reach) / G)), i1 = Math.min(gw - 1, Math.ceil((Math.max(x0, x1) + reach) / G));
       const j0 = Math.max(0, Math.floor((Math.min(y0, y1) - reach) / G)), j1 = Math.min(gh - 1, Math.ceil((Math.max(y0, y1) + reach) / G));
       if (i0 > i1 || j0 > j1) return;
       for (let j = j0; j <= j1; j++) for (let i = i0, o = j * gw + i0; i <= i1; i++, o++) {
         const px = i * G - x0, py = j * G - y0, a = px * ux + py * uy, u = py * ux - px * uy, da = a < 0 ? -a : a > L ? a - L : 0;
-        let hi = 0, lo = 0;
-        for (let f = -1; f <= 1; f++) {
-          const du = Math.abs(u - f * sp), d = Math.hypot(da, du) / wg;
-          if (d < 1) lo = Math.min(lo, -D * (1 - d * d) ** 2);
-          // the heaped ridge runs beside the stroke and tapers off past its end, but behind it only when the stroke has
-          // just begun, so where one step's stroke meets the last it doesn't fill that one's furrow
-          const r = (drag ? du / wg - 1.55 : d - 1.55) / .75;
-          if (r > -1 && r < 1 && (!drag || !da || da < wg && (a > L || fresh))) hi = Math.max(hi, Rm * (1 - r * r) ** 2 * (drag ? 1 - da / wg : 1));
-        }
-        // a ridge heaps up onto slime that was flat or already heaped, and adds to an older furrow it crosses, filling it
-        // in by as much; a furrow cuts into slime the same way, so a stroke over an old one blends into it without a seam
+        const du = Math.abs(u), d = Math.hypot(da, du) / wg, lo = d < 1 ? -D * (1 - d * d) ** 2 : 0;
+        // the heap runs beside the stroke and tapers off past both its ends, so the heaps of one step and the next run
+        // into each other round a bend
+        const r = (drag ? du / wg - 1.55 : d - 1.55) / .75;
+        const hi = r > -1 && r < 1 && (!drag || da < wg) ? Rm * (1 - r * r) ** 2 * (drag ? 1 - da / wg : 1) : 0;
+        // a heap piles up onto slime that was flat or already heaped, and adds to an older trench it crosses, filling it
+        // in by as much; a trench cuts into slime the same way, so a stroke over an old one blends into it without a seam
         if (hi) H[o] = H[o] < 0 ? H[o] + hi : Math.max(H[o], hi);
         if (lo) H[o] = H[o] > 0 ? H[o] + lo : Math.min(H[o], lo);
       }
@@ -2185,18 +2182,18 @@ void main() {
       this.box = b ? [Math.min(b[0], a[0]), Math.min(b[1], a[1]), Math.max(b[2], a[2]), Math.max(b[3], a[3])] : a;
     },
     move(x, y, dx, dy) {
-      const l = Math.hypot(dx, dy), now = performance.now(), fresh = now - this.mt > 120;
+      const l = Math.hypot(dx, dy);
       if (l > .5) this.dir = [dx / l, dy / l];
-      this.mt = now;
-      if (l < 300) this.carve(x - dx, y - dy, x, y, fresh);
+      this.mt = performance.now();
+      if (l < 300) this.carve(x - dx, y - dy, x, y);
     },
     hit(x, y, k, now) {
       // a drag carves as the cursor moves; keys, taps and the preview swipe have none, so a press soon after the last one
-      // drags the fingertips over to it and any other just sinks in
+      // drags the fingertip over to it and any other just sinks in
       if (now - this.mt < 150) return;
       const L = this.last, d = L ? Math.hypot(x - L.x, y - L.y) : 0, near = L && now - L.t < 400 && d < 220;
       if (near && d > .5) this.dir = [(x - L.x) / d, (y - L.y) / d];
-      this.carve(near ? L.x : x, near ? L.y : y, x, y, !near);
+      this.carve(near ? L.x : x, near ? L.y : y, x, y);
       this.last = { x, y, t: now };
     },
     draw(now, dt) {
@@ -2204,9 +2201,9 @@ void main() {
       // only the part of the slime still moving is worked out again, and of that only where the colour has visibly
       // changed is drawn again; once it has all settled the picture is just drawn
       if (b) {
-        const G = this.G, gw = this.gw, gh = this.gh, w = this.w, H = this.H, LD = this.LD, SD = this.SD, F = this.F;
-        const CX = this.CX, CY = this.CY, FX = this.FX, FY = this.FY, A = this.A, Y = this.Y, P = this.px, D = this.wg * .9;
-        // the slime settles, and a furrow that has nearly closed is let go
+        const G = this.G, gw = this.gw, gh = this.gh, w = this.w, H = this.H, LD = this.LD, SD = this.SD, KD = this.KD, F = this.F;
+        const CX = this.CX, CY = this.CY, FX = this.FX, FY = this.FY, A = this.A, Y = this.Y, P = this.px, D = this.wg * .9, Rm = this.wg * .5;
+        // the slime settles, and a trench that has nearly closed is let go
         const k = 1 - Math.exp(-dt / 4500);
         let i0 = gw, i1 = -1, j0 = gh, j1 = -1;
         for (let j = b[1]; j <= b[3]; j++) for (let i = b[0], o = j * gw + i; i <= b[2]; i++, o++) {
@@ -2215,21 +2212,23 @@ void main() {
           H[o] = v;
           if (i < i0) i0 = i; if (i > i1) i1 = i; if (j < j0) j0 = j; if (j > j1) j1 = j;
         }
-        // light from the top right, where the glow comes from: walls facing it turn lime and ridge crests brighten,
-        // walls facing away and the creases sink into blue. A cell whose colour has visibly changed since it was last
-        // drawn takes the new one and is flagged
+        // a trench has the lime scraped off it, so the blue under it shows, deeper the deeper it goes; a heap is piled
+        // with lime. Light from the top right, where the glow comes from, turns the walls facing it lime and brightens
+        // the heaps' crests, and the walls facing away sink into blue. A cell whose colour has visibly changed since it
+        // was last drawn takes the new one and is flagged
         for (let j = b[1]; j <= b[3]; j++) {
           const up = j ? -gw : 0, dn = j < gh - 1 ? gw : 0;
           for (let i = b[0], o = j * gw + i; i <= b[2]; i++, o++) {
             const l = H[i ? o - 1 : o], r = H[i < gw - 1 ? o + 1 : o], t = H[o + up], bt = H[o + dn], c = H[o];
-            let lt = 0, sd = 0;
+            let lt = 0, sd = 0, kd = 0;
             if (l || r || t || bt || c) {
-              const ax = (r - l) / (2 * G), ay = (bt - t) / (2 * G), lit = .7 * (ay - ax), lap = l + r + t + bt - 4 * c;
-              lt = .4 * lit - .06 * lap; sd = clamp(-.35 * lit + .07 * lap - .25 * c / D, 0, 1);
+              const ax = (r - l) / (2 * G), ay = (bt - t) / (2 * G), lit = .7 * (ay - ax), lap = l + r + t + bt - 4 * c, dig = c < 0 ? Math.min(1, -c / D) : 0;
+              kd = c > 0 ? Math.min(1, c / Rm) : 0;
+              lt = .4 * lit - .06 * lap - .75 * dig + .18 * kd; sd = clamp(-.35 * lit + .07 * lap + .3 * dig, 0, 1);
             }
-            const ol = LD[o], os = SD[o];
-            if (Math.abs(lt - ol) < .01 && Math.abs(sd - os) < .01 && (lt || sd || !ol && !os)) continue;
-            LD[o] = lt; SD[o] = sd; F[o] = 1;
+            const ol = LD[o], os = SD[o], ok = KD[o];
+            if (Math.abs(lt - ol) < .01 && Math.abs(sd - os) < .01 && Math.abs(kd - ok) < .01 && (lt || sd || kd || !ol && !os && !ok)) continue;
+            LD[o] = lt; SD[o] = sd; KD[o] = kd; F[o] = 1;
           }
         }
         // each pixel blends the colour of the four cells round it, so every span between cells next to a flagged one
@@ -2241,11 +2240,14 @@ void main() {
             const px0 = CX[i], px1 = CX[i + 1], py0 = CY[j], py1 = CY[j + 1];
             if (px0 < x0) x0 = px0; if (px1 > x1) x1 = px1; if (py0 < y0) y0 = py0; if (py1 > y1) y1 = py1;
             const l0 = LD[o], l1 = LD[o + 1], l2 = LD[o + gw], l3 = LD[o + gw + 1], s0 = SD[o], s1 = SD[o + 1], s2 = SD[o + gw], s3 = SD[o + gw + 1];
+            const k0 = KD[o], k1 = KD[o + 1], k2 = KD[o + gw], k3 = KD[o + gw + 1];
             for (let py = py0; py < py1; py++) {
               const fy = FY[py], la = l0 + (l2 - l0) * fy, lb = l1 + (l3 - l1) * fy, sa = s0 + (s2 - s0) * fy, sb = s1 + (s3 - s1) * fy;
+              const ka = k0 + (k2 - k0) * fy, kb = k1 + (k3 - k1) * fy;
               for (let px = px0, q = py * w + px0; px < px1; px++, q++) {
-                const fx = FX[px], lt = la + (lb - la) * fx, sd = sa + (sb - sa) * fx;
-                const a = A[q], ar = a & 255, ag = a >> 8 & 255, ab = a >> 16 & 255, tl = clamp((Y[q] - 60) / 100 + lt, 0, 1);
+                // on a heap each grain's own jitter is pushed further, so the piled grains stand out from each other
+                const fx = FX[px], lt = la + (lb - la) * fx, sd = sa + (sb - sa) * fx, kd = ka + (kb - ka) * fx, y = (Y[q] - 60) / 100;
+                const a = A[q], ar = a & 255, ag = a >> 8 & 255, ab = a >> 16 & 255, tl = clamp(y + lt + kd * (y - .75) * 1.2, 0, 1);
                 let rr = ar + (228 - ar) * tl, gg = ag + (250 - ag) * tl, bb = ab + (116 - ab) * tl;
                 if (sd) {
                   const f = clamp(sd + ((a >>> 24) - 128) / 512 * Math.min(1, sd * 3), 0, 1);
@@ -2497,25 +2499,21 @@ function thumb(id) {
     }
     case 'sugar': {
       // the scene's grainy print in small, grain by grain: lime flecked with blue all over, yellower to the top right,
-      // and three furrows raked across, lit from the top right like the scene. Grains are 1.25 units, drawn on a grid
-      // scaled down by that much
+      // and a path scraped across it down to the blue, with the sugar heaped along both sides, lit from the top right
+      // like the scene. Grains are 1.25 units, drawn on a grid scaled down by that much
       const hf = (x, y) => {
-        if (x < 5 || x > 58) return 0;
-        let hi = 0, lo = 0;
-        for (let f = -1; f <= 1; f++) {
-          const a = Math.abs(y - 15 - f * 5.8 - Math.sin(x * .07 + .4) * 4) / 2, q = (a - 1.55) / .75;
-          if (a < 1) lo = Math.min(lo, -1.8 * (1 - a * a) ** 2);
-          if (q > -1 && q < 1) hi = Math.max(hi, .8 * (1 - q * q) ** 2);
-        }
-        return lo || hi;
+        // rounded off where the path begins and ends
+        const da = Math.max(0, 8 - x, x - 60), a = Math.hypot(da, y - 22 - Math.sin(x * .07 + .4) * 6) / 4.5, q = (a - 1.55) / .75;
+        return a < 1 ? -4 * (1 - a * a) ** 2 : q > -1 && q < 1 ? 2.25 * (1 - q * q) ** 2 : 0;
       };
       const n = () => r() + r() - 1, mix = (c, d, t) => c.map((v, i) => v + (d[i] - v) * t), grains = {};
       for (let j = 0; j < 40; j++) for (let i = 0; i < 64; i++) {
         const x = (i + .5) * 1.25, y = (j + .5) * 1.25, u = Math.max(0, 1 - (80 - x) / 56), v = y / 50;
         const gl = clamp(.85 * (.854 * u + .52 * v - .17), 0, .62);
         let c = [62, 166, 236], t = .64 + .3 * gl;
-        const lit = .7 * (hf(x, y + .6) - hf(x, y - .6) - hf(x + .6, y) + hf(x - .6, y)) / 1.2, s = clamp(-.35 * lit - .14 * hf(x, y), 0, 1);
-        c = mix(mix(c, [228, 250, 116], clamp(t + n() * .4 + .4 * lit, 0, 1)), [63, 125, 230], s);
+        const h0 = hf(x, y), dig = clamp(-h0 / 4, 0, 1), kd = clamp(h0 / 2.25, 0, 1), lit = .7 * (hf(x, y + .6) - hf(x, y - .6) - hf(x + .6, y) + hf(x - .6, y)) / 1.2;
+        const jt = n() * .4, s = clamp(-.35 * lit + .3 * dig, 0, 1);
+        c = mix(mix(c, [228, 250, 116], clamp(t + jt + .4 * lit - .75 * dig + .18 * kd + kd * (t + jt - .75) * 1.2, 0, 1)), [63, 125, 230], s);
         const key = '#' + c.map(v => clamp(Math.round(v / 17), 0, 15).toString(16)).join('');
         grains[key] = (grains[key] || '') + `M${i} ${j}h1v1h-1z`;
       }
@@ -2571,7 +2569,7 @@ const STORY = {
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a path down to the paper. The shaved soap heaps up along its edges, and the cut slowly closes.', look: 'A bar of soap as a magenta halftone on cream, after a halftone print', hear: 'A crisp, rising shave and the patter of falling flakes' },
   snow: { try: 'Walk across it like still water: each step washes out a print and sends ripples that sweep the moiré bands across the lines.', look: 'Snow seen through a lenticular print, after a reference: fine olive and cream lines in wide arcs on periwinkle, beating into wavy moiré bands', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
-  sugar: { try: 'Rake three fingertips through the slime. Walls facing the glow light up lime and the creases sink to blue.', look: 'Grainy lime slime flecked with blue, yellower toward one corner, after a grainy gradient print', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
+  sugar: { try: 'Drag through the slime: the lime sugar is scraped off down to the blue and heaps up along both sides.', look: 'Grainy lime slime flecked with blue, yellower toward one corner, after a grainy gradient print', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
 const storyEl = $('story');
 let storyFrom = null;
