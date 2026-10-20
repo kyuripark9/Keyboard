@@ -723,7 +723,7 @@ const SCENES = {
   /* 01 Bubble Wrap: the sheet drawn as a contour map in pale grey on mint paper, after a photo. Every bubble is a
      hill of rings: big droplets of mixed sizes packed close, each nudged off its row and stretched and tilted its own
      way, so no two match; where two press together their rings meet in a crease. The sheet sways gently, and a pop
-     flattens its hill and sends a ripple through the neighbours' rings. */
+     flattens its hill and sends a ripple through the neighbours' rings that bounces back off the screen's edges. */
   wrap: {
     frame: 'full',
     init() {
@@ -812,7 +812,9 @@ const SCENES = {
         const r0 = (j >> 1) * W2, r1 = j & 1 ? r0 + W2 : r0;
         for (let i = 0; i < w; i++, o++) { const a = i >> 1, b = i & 1 ? a + 1 : a; F[o] = (K[r0 + a] + K[r0 + b] + K[r1 + a] + K[r1 + b]) * .25; }
       }
-      // ripples: a ring that runs out from each pop and bends the contour lines it passes through
+      // ripples: a ring that runs out from each pop and bends the contour lines it passes through. It bounces off the
+      // screen's edges like water off a wall: each edge sends it back as a ring from the pop's mirror image beyond it,
+      // and a corner from the image beyond both of its edges
       this.rip = this.rip.filter(r => now - r.t0 < 2600);
       const bump = (cx, cy, R, fn) => {
         const i0 = Math.max(1, Math.floor((cx - R) / G)), i1 = Math.min(w - 2, Math.ceil((cx + R) / G)), j0 = Math.max(1, Math.floor((cy - R) / G)), j1 = Math.min(h - 2, Math.ceil((cy + R) / G));
@@ -820,7 +822,8 @@ const SCENES = {
       };
       for (const r of this.rip) {
         const age = (now - r.t0) / 1000, front = age * s2 * 2.4, A = .3 * Math.pow(1 - age / 2.6, 2), W = s2 * .55;
-        bump(r.x, r.y, front + W * 2, d => { const z = (d - front) / W; return A * Math.exp(-z * z) * Math.sin(z * 3.2); });
+        const ring = d => { const z = (d - front) / W; return A * Math.exp(-z * z) * Math.sin(z * 3.2); };
+        for (const x of [r.x, -r.x, SW * 2 - r.x]) for (const y of [r.y, -r.y, SH * 2 - r.y]) bump(x, y, front + W * 2, ring);
       }
       // the cursor presses a soft dent into the sheet, and it lifts once the cursor rests
       const c = this.cur, ca = clamp(1 - (now - c.t - 300) / 800, 0, 1);
@@ -2249,7 +2252,7 @@ function demo() {
 // what each material asks you to try, what its picture is after and what it sounds like. A sound without an entry
 // falls back to its picker line
 const STORY = {
-  bubble: { try: 'Sweep across the sheet to pop the bubbles. They slowly fill back up.', look: 'Bubble wrap as a contour map: pale grey rings on mint, after a print of pixel squares', hear: 'A muffled pop that swoops up like a water drop' },
+  bubble: { try: 'Sweep across the sheet to pop the bubbles. Pop one near the edge and its ripple bounces back. They slowly fill back up.', look: 'Bubble wrap as a contour map: pale grey rings on mint, after a print of pixel squares', hear: 'A muffled pop that swoops up like a water drop' },
   slime: { try: 'Every step folds the sheet along a sharp crease, like crumpled paper.', look: 'A sheet of + stitches that creases into flat facets', hear: 'A wet press and a fizz of tiny crackles, like foam beads bursting' },
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
