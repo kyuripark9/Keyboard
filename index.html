@@ -302,7 +302,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
       <p>Seventeen materials were built, played and cut along the way.</p>
       <h4>Three iterations</h4>
       <div class="st-iters">
-        <div class="st-card"><em>06 Chewy Jellies</em><p class="chain">Tanghulu <i>&rarr;</i> Sugar Gummies <i>&rarr;</i> <b>Chewy Jellies</b></p><p>Rubbing the sugar off a gummy wasn't the feeling. Squeezing gummies together, feeling them stick and peeling them apart was. Later the fruit colors and sugar gave way to one flat, clear pink, after a pink and white reference.</p></div>
+        <div class="st-card"><em>06 Chewy Jellies</em><p class="chain">Tanghulu <i>&rarr;</i> Sugar Gummies <i>&rarr;</i> <b>Chewy Jellies</b></p><p>Rubbing the sugar off a gummy wasn't the feeling. Squeezing gummies together, feeling them stick and peeling them apart was. Later the fruit colors and sugar gave way to one flat pink under a fine grain, after a pink and white reference.</p></div>
         <div class="st-card"><em>03 Cyanotype</em><p class="chain">Ringing twinkle <i>&rarr;</i> bubble blips <i>&rarr;</i> soft blips <i>&rarr;</i> <b>a breath of foam</b></p><p>Each try was softer, and each still sounded like shooting under a fast cursor. Filtered noise with slow attacks fixed it, and became the recipe for the calmer sounds that followed.</p></div>
         <div class="st-card"><em>04 Wax Ball</em><p class="chain">Cell foam <i>&rarr;</i> pebbles <i>&rarr;</i> line print <i>&rarr;</i> towers <i>&rarr;</i> halftone <i>&rarr;</i> <b>lime on lavender</b></p><p>Wax Ball went through eight looks and was cut once along the way. It came back as a black and white halftone of squares that the cursor presses into diamonds, then took the lime, lavender and fine grain of a second reference.</p></div>
       </div>
@@ -1300,14 +1300,15 @@ const SCENES = {
   },
 
   /* 06 Chewy Jellies: firm pink jelly cut into cubes and packed edge to edge into a tray that fills the screen, drawn
-     flat after a pink and white reference: one clear pink, a deeper pink for the outline and the thick lower edge, and
-     a white glint on each. The cubes press flat against each other and stick where they touch. The cursor catches the
-     jelly under it and drags it along: it squeezes into the one ahead, which flattens, bulges out sideways and shoves
-     its own neighbours, and it pulls away from the one behind: their faces draw out toward each other and a string of
-     jelly stretches between them, thinning until it snaps (쩍) and each half springs back into its cube with a wobble.
-     Dragged too far, a jelly slips off the cursor and bounces home, where it sticks again to whatever it touches. Every
-     step also presses down on the jelly under it, so it spreads into its neighbours and keeps a dent that fills back
-     in. The squeezes, snaps and re-sticks play sounds of their own. */
+     after a pink and white reference in one flat pink on a pale tray, under a fine film grain that runs over both. The
+     cubes press flat against each other and stick where they touch, so they run together into one sheet, the tray
+     showing only where their rounded corners meet. The cursor catches the jelly under it and drags it along: it
+     squeezes into the one ahead, which flattens, bulges out sideways and shoves its own neighbours, and it pulls away
+     from the one behind: their faces draw out toward each other and a string of jelly stretches between them, thinning
+     until it snaps (쩍) and each half springs back into its cube with a wobble. Dragged too far, a jelly slips off the
+     cursor and bounces home, where it sticks again to whatever it touches. Every step also presses down on the jelly
+     under it, so it spreads into its neighbours and springs back. The squeezes, snaps and re-sticks play sounds of
+     their own. */
   gummy: {
     frame: 'full',
     init() {
@@ -1328,8 +1329,7 @@ const SCENES = {
         return B + Math.sqrt(Math.max(0, B * B - ax * ax - ay * ay + cr * cr));
       };
       // a centred grid of jellies that fills the screen and runs off every edge, packed a little tighter than they are
-      // wide, each turned and sized a little its own way and its cut nudged out of true. R0 is its outline at rest, gl
-      // its glint (a flat oval up on the lit side), in units of s
+      // wide, each turned and sized a little its own way and its cut nudged out of true. R0 is its outline at rest
       const p = s * .96, cx = SW / 2, cy = (ZT + ZB) / 2, nx = Math.ceil((cx + s * .6) / p), ny = Math.ceil((Math.max(cy, SH - cy) + s * .6) / p);
       this.g = []; const at = {};
       for (let j = -ny; j <= ny; j++) for (let i = -nx; i <= nx; i++) {
@@ -1337,10 +1337,9 @@ const SCENES = {
         const R0 = new Float32Array(N);
         for (let n = 0; n < N; n++) { const a = n / N * 6.2832 - r; R0[n] = reach(hw, hh, Math.cos(a), Math.sin(a)) * k * (1 + .015 * Math.sin(2 * a + w2) + .012 * Math.sin(3 * a + w3)); }
         const hx = cx + i * p + rand(-.03, .03) * s, hy = cy + j * p + rand(-.03, .03) * s;
-        const gl = [rand(-.24, -.17), rand(-.27, -.21), rand(.1, .14), rand(.04, .055), rand(-.5, -.25)];
-        this.g.push(at[i + ',' + j] = { hx, hy, x: hx, y: hy, vx: 0, vy: 0, fx: 0, fy: 0, tx: 0, ty: 0, gx: 0, gy: 0, cool: 0, gl,
+        this.g.push(at[i + ',' + j] = { hx, hy, x: hx, y: hy, vx: 0, vy: 0, fx: 0, fy: 0, tx: 0, ty: 0, gx: 0, gy: 0, cool: 0,
           R0, t: new Float32Array(N), rr: new Float32Array(N), rv: new Float32Array(N), cm: new Float32Array(N), ex: new Float32Array(N),
-          sq: 0, sv: 0, sz: 1, dn: [] });
+          sq: 0, sv: 0, sz: 1 });
       }
       // every pair of neighbours, with how far each reaches toward the other and how much they overlap at rest (o0) or
       // stand apart (g0); side by side ones start out stuck together, bridging any small gap between them
@@ -1353,6 +1352,7 @@ const SCENES = {
         this.pairs.push({ A, B, ra, rb, o0: Math.max(o0, 0), g0: Math.max(-o0, 0), can, on: can, h0: s * .24, sq: 0 });
       }
       this.hold = null; this.snaps = []; this.T = {};
+      this.grain = sc.createPattern(this.tile || (this.tile = this.grainTile(256)), 'repeat');
       this.shape();
       for (const g of this.g) g.rr.set(g.t);
     },
@@ -1388,10 +1388,21 @@ const SCENES = {
       g.tx = tx; g.ty = ty;
     },
     hit(x, y, k, now) {
-      // the step presses down on the jelly under it: it spreads into its neighbours and keeps a dent that fills back in
+      // the step presses down on the jelly under it: it spreads into its neighbours and springs back
       const g = this.under(x, y);
-      if (!g) return;
-      g.sv += .025; g.dn.push({ x: x - g.x, y: y - g.y, a: rand(-.4, .4), t0: now }); if (g.dn.length > 4) g.dn.shift();
+      if (g) g.sv += .025;
+    },
+    // a tile of film grain T px across: every pixel a speck a little lighter or darker than what lies under it, most
+    // of them faint, laid over jelly and tray alike
+    grainTile(T) {
+      const c = document.createElement('canvas'); c.width = c.height = T;
+      const g = c.getContext('2d'), img = g.createImageData(T, T), d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const v = Math.random() + Math.random() - 1;
+        d[i] = d[i + 1] = d[i + 2] = v > 0 ? 255 : 0; d[i + 3] = Math.abs(v) * (v > 0 ? 60 : 40);
+      }
+      g.putImageData(img, 0, 0);
+      return c;
     },
     // plays one of the scene's own sounds (squeeze, peel or stick); close ones of a kind share one
     snd(kind, now, gap) {
@@ -1439,35 +1450,29 @@ const SCENES = {
       }
     },
     // a string of jelly from the face at (ax, ay) to the one at (bx, by), along (ux, uy): w0 to either side where it
-    // meets them and wm at its waist, flaring into both. Its fill reaches just into each cube to cover the outline where
-    // it joins; its sides are outlined, and so is its waist, where the two faces are still stuck together: while they
-    // have barely parted that is the seam between them, and it shortens as the string thins
+    // meets them and wm at its waist, flaring into both. It reaches just into each cube, so no hairline shows where it
+    // joins
     string(ax, ay, bx, by, ux, uy, w0, wm) {
-      const nx = -uy, ny = ux, L = Math.hypot(bx - ax, by - ay) * .35, wc = (wm - w0 * .25) / .75, e = this.s * .02, mx = (ax + bx) / 2, my = (ay + by) / 2;
+      const nx = -uy, ny = ux, L = Math.hypot(bx - ax, by - ay) * .35, wc = (wm - w0 * .25) / .75, e = this.s * .02;
       const side = q => [ax + nx * w0 * q, ay + ny * w0 * q, ax + ux * L + nx * wc * q, ay + uy * L + ny * wc * q,
         bx - ux * L + nx * wc * q, by - uy * L + ny * wc * q, bx + nx * w0 * q, by + ny * w0 * q];
       const [a1, a2, c1, c2, d1, d2, b1, b2] = side(1), [A1, A2, C1, C2, D1, D2, B1, B2] = side(-1);
-      const f = new Path2D(), o = new Path2D();
+      const f = new Path2D();
       f.moveTo(a1 - ux * e, a2 - uy * e); f.lineTo(a1, a2); f.bezierCurveTo(c1, c2, d1, d2, b1, b2); f.lineTo(b1 + ux * e, b2 + uy * e);
       f.lineTo(B1 + ux * e, B2 + uy * e); f.lineTo(B1, B2); f.bezierCurveTo(D1, D2, C1, C2, A1, A2); f.lineTo(A1 - ux * e, A2 - uy * e); f.closePath();
-      o.moveTo(a1, a2); o.bezierCurveTo(c1, c2, d1, d2, b1, b2); o.moveTo(A1, A2); o.bezierCurveTo(C1, C2, D1, D2, B1, B2);
-      o.moveTo(mx + nx * wm, my + ny * wm); o.lineTo(mx - nx * wm, my - ny * wm);
-      sc.fill(f); sc.stroke(o);
+      sc.fill(f);
     },
     // half of a string that just snapped, springing back into the face at (ax, ay): l long, w0 wide where it meets the
     // face and ending in a round tip w wide
     stub(ax, ay, ux, uy, l, w0, w) {
       const nx = -uy, ny = ux, tx = ax + ux * l, ty = ay + uy * l, e = this.s * .02, a = Math.atan2(uy, ux);
-      const f = new Path2D(), o = new Path2D();
+      const f = new Path2D();
       f.moveTo(ax - ux * e + nx * w0, ay - uy * e + ny * w0); f.lineTo(ax + nx * w0, ay + ny * w0);
       f.quadraticCurveTo(ax + ux * l * .3 + nx * w, ay + uy * l * .3 + ny * w, tx + nx * w, ty + ny * w);
       f.arc(tx, ty, w, a + Math.PI / 2, a - Math.PI / 2, true);
       f.quadraticCurveTo(ax + ux * l * .3 - nx * w, ay + uy * l * .3 - ny * w, ax - nx * w0, ay - ny * w0);
       f.lineTo(ax - ux * e - nx * w0, ay - uy * e - ny * w0); f.closePath();
-      o.moveTo(ax + nx * w0, ay + ny * w0); o.quadraticCurveTo(ax + ux * l * .3 + nx * w, ay + uy * l * .3 + ny * w, tx + nx * w, ty + ny * w);
-      o.arc(tx, ty, w, a + Math.PI / 2, a - Math.PI / 2, true);
-      o.quadraticCurveTo(ax + ux * l * .3 - nx * w, ay + uy * l * .3 - ny * w, ax - nx * w0, ay - ny * w0);
-      sc.fill(f); sc.stroke(o);
+      sc.fill(f);
     },
     draw(now, dt) {
       const s = this.s, N = this.N, G = this.g, cs = this.cs, sn = this.sn, gmax = s * .24, H = this.hold;
@@ -1525,42 +1530,17 @@ const SCENES = {
         }
         paths.push(p);
       }
-      // flat pink jellies on the pale tray: each cube is one clear pink with a deeper pink crescent along its lower right,
-      // where the jelly is thickest, a white glint up on the lit side and a deeper pink outline
+      // one flat pink on the pale tray: the cubes pressed together run into one sheet
       sc.fillStyle = '#e8ecea'; sc.fillRect(0, 0, SW, SH);
-      sc.lineJoin = 'round'; sc.lineWidth = s * .028; sc.strokeStyle = '#d95a8c';
-      const ox = -s * .045, oy = -s * .055;
-      for (let n = 0; n < G.length; n++) {
-        const g = G[n], P = paths[n];
-        sc.save(); sc.translate(g.x, g.y);
-        sc.fillStyle = '#f07aab'; sc.fill(P);
-        sc.save(); sc.clip(P);
-        sc.translate(ox, oy); sc.fillStyle = '#fc94bc'; sc.fill(P); sc.translate(-ox, -oy);
-        // dents sink in quickly and fill back in slowly
-        g.dn = g.dn.filter(d => now - d.t0 < 2600);
-        if (g.dn.length) {
-          sc.fillStyle = '#f07aab';
-          for (const d of g.dn) {
-            const age = now - d.t0, dp = (1 - Math.exp(-age / 45)) * Math.exp(-age / 800);
-            sc.globalAlpha = Math.min(1, dp * .9); sc.beginPath(); sc.ellipse(d.x, d.y, s * .1 * (.6 + .4 * dp), s * .06 * (.6 + .4 * dp), d.a, 0, 6.283); sc.fill();
-          }
-          sc.globalAlpha = 1;
-        }
-        const [x, y, rx, ry, a] = g.gl;
-        sc.fillStyle = 'rgba(255,255,255,.85)'; sc.beginPath(); sc.ellipse(x * s * g.sz, y * s * g.sz, rx * s, ry * s, a, 0, 6.283); sc.fill();
-        sc.restore();
-        sc.stroke(P);
-        sc.restore();
-      }
+      sc.fillStyle = '#fc94bc';
+      for (let n = 0; n < G.length; n++) { const g = G[n]; sc.translate(g.x, g.y); sc.fill(paths[n]); sc.translate(-g.x, -g.y); }
       // strings of jelly between stuck pairs pulling apart, thinning as they stretch, then the halves of the ones that
       // just snapped, springing back into their cubes
-      sc.fillStyle = '#fc94bc';
       for (const P of this.pairs) {
         if (!P.on) continue;
         const { A, B } = P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, ux = dx / D, uy = dy / D;
-        // until they're further apart than an outline is wide, their two outlines just read as one seam
         const ra = this.edge(A, ux, uy), rb = this.edge(B, -ux, -uy);
-        if (D - ra - rb < s * .03) continue;
+        if (D - ra - rb <= 0) continue;
         const x = clamp((D - P.ra * A.sz - P.rb * B.sz - P.g0) / gmax, 0, 1);
         this.string(A.x + ux * ra, A.y + uy * ra, B.x - ux * rb, B.y - uy * rb, ux, uy, P.h0, P.h0 * (1 - .8 * x));
       }
@@ -1570,6 +1550,8 @@ const SCENES = {
         const l = c.l * (1 - k) ** 2, w = c.w * (1 - .4 * k), w0 = c.P.h0 * (1 - .5 * k);
         for (const [g, u, v] of [[A, ux, uy], [B, -ux, -uy]]) { const r = this.edge(g, u, v); this.stub(g.x + u * r, g.y + v * r, u, v, l, w0, w); }
       }
+      // the grain over everything
+      sc.fillStyle = this.grain; sc.fillRect(0, 0, SW, SH);
     }
   },
 
@@ -2153,25 +2135,17 @@ function thumb(id) {
       return svg('#d9d8de', `<defs><filter id="laserHeat" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".35"/></filter></defs><g filter="url(#laserHeat)">${ghost}${heat}</g>`);
     }
     case 'gummy': {
-      // pink jelly cubes packed edge to edge, each with a deeper pink lower edge, a white glint and a deeper pink outline:
-      // the middle one is pulled to the right, so it squeezes its neighbour narrow and draws a string of jelly out of the
-      // one on its left
-      let top = '', glint = '';
-      const box = (x, y, w, h) => {
-        const X = (x - w / 2).toFixed(1), Y = (y - h / 2).toFixed(1), gx = (x - w * .2).toFixed(1), gy = (y - h * .25).toFixed(1);
-        b += `<rect x="${X}" y="${Y}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3.6"/>`;
-        top += `<rect x="${X}" y="${Y}" width="${(w - 1.1).toFixed(1)}" height="${(h - 1.3).toFixed(1)}" rx="3.3"/>`;
-        glint += `<ellipse cx="${gx}" cy="${gy}" rx="${(w * .13).toFixed(1)}" ry=".75" transform="rotate(-22 ${gx} ${gy})"/>`;
-      };
+      // pink jelly cubes packed edge to edge in one flat pink, the tray showing where their corners meet: the middle one
+      // is pulled to the right, so it squeezes its neighbour narrow and draws a string of jelly out of the one on its left
+      const box = (x, y, w, h) => { b += `<rect x="${(x - w / 2).toFixed(1)}" y="${(y - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3.6"/>`; };
       for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) {
         const x = 7.6 + i * 16.2, y = 8.5 + j * 16.5;
-        if (j === 1 && i === 2) box(43.2, y, 14.3, 16.2);
-        else if (j === 1 && i === 3) box(57.5, y, 14.3, 17.6);
-        else box(x, y, 16.2, 16.2);
+        if (j === 1 && i === 2) box(43.2, y, 14.3, 16.8);
+        else if (j === 1 && i === 3) box(57.5, y, 14.9, 18.2);
+        else box(x, y, 16.8, 16.8);
       }
-      const string = 'M31.9 21.5C33.3 23.6 34.6 23.6 36.05 21.5M31.9 28.5C33.3 26.4 34.6 26.4 36.05 28.5';
-      return svg('#e8ecea', `<g fill="#f07aab">${b}</g><g fill="#fc94bc">${top}</g><g fill="#fff" opacity=".85">${glint}</g><g fill="none" stroke="#d95a8c" stroke-width=".55">${b}</g>`
-        + `<path d="M31.4 21.5H31.9C33.3 23.6 34.6 23.6 36.05 21.5H36.6V28.5H36.05C34.6 26.4 33.3 26.4 31.9 28.5H31.4Z" fill="#fc94bc"/><path d="${string}" fill="none" stroke="#d95a8c" stroke-width=".55"/>`);
+      b += '<path d="M31.4 21.5H31.9C33.3 23.6 34.6 23.6 36.05 21.5H36.6V28.5H36.05C34.6 26.4 33.3 26.4 31.9 28.5H31.4Z"/>';
+      return svg('#e8ecea', `<g fill="#fc94bc">${b}</g>`);
     }
     case 'pudding':
       // the scene's reference picture: blurred green rounds and turned red squares packed on cream
@@ -2280,7 +2254,7 @@ const STORY = {
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
   thock: { try: 'Your cursor is a heat laser: the burn creeps outward from its path, the holes grow into each other, and it all cools through blue, pink and orange.', look: 'A perforated sheet seen through its heat, after a thermal print: lime holes in blue rims that merge as they burn, with pink and orange heat between them', hear: 'A deep, muffled thock and a light tick as the key springs back' },
-  gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge, drawn flat after a pink and white reference', hear: 'A rubbery creak and squelch as they grip and slide (쫀득), and a wet, tacky smack when the string snaps (쩍)' },
+  gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge in one flat pink under a fine grain, after a pink and white reference', hear: 'A rubbery creak and squelch as they grip and slide (쫀득), and a wet, tacky smack when the string snaps (쩍)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a clean path through the beads. They tumble off, and the cut slowly closes.', look: 'Pale soap crusted with sky blue seed beads, after a photo', hear: 'A crisp, rising shave and the patter of falling beads' },
   snow: { try: 'Walk across it and leave a trail of dark boot prints that slowly drift out of focus.', look: 'Snow seen out of focus, after a blurry reference: soft pink, peach, lavender and sage light with dark olive and mauve spots', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
