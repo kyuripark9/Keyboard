@@ -31,7 +31,7 @@ body[data-scene="wax"]    { --bg: #c3c6db; --ink: #2d345d; --ink-soft: #60678b; 
 body[data-scene="laser"]  { --bg: #d9d8de; --ink: #2a5fa8; --ink-soft: #747990; --line: rgba(42,95,168,.16); --acc: #f2803e; --cursor: #2a5fa8; color-scheme: light; }
 body[data-scene="gummy"]  { --bg: #e8ecea; --ink: #8c1f4f; --ink-soft: #a5486f; --line: rgba(140,31,79,.15); --acc: #8c1f4f; --cursor: #8c1f4f; color-scheme: light; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
-body[data-scene="soap"]   { --bg: #8ec8ea; --ink: #2b5f9f; --ink-soft: #3e75ae; --line: rgba(43,95,159,.15); --acc: #2b5f9f; --cursor: #2b5f9f; color-scheme: light; }
+body[data-scene="soap"]   { --bg: #eb368c; --ink: #5c0a34; --ink-soft: #8a1d55; --line: rgba(92,10,52,.18); --acc: #dbe124; --cursor: #dbe124; color-scheme: light; }
 body[data-scene="snow"]   { --bg: #9ca6e2; --ink: #252a5e; --ink-soft: #4a5088; --line: rgba(37,42,94,.18); --acc: #e8dcb2; --cursor: #252a5e; color-scheme: light; }
 body[data-scene="grit"]   { --bg: #becdf9; --ink: #1d3fae; --ink-soft: #4f68b8; --line: rgba(29,63,174,.18); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 
@@ -273,7 +273,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
       </figure>
       <div class="st-cards">
         <div class="st-card"><em>A</em><b>Just move</b><p>No clicks, no goals, no score to lose. A quiet count of your clacks is the only number on screen.</p></div>
-        <div class="st-card"><em>B</em><b>One material, two senses</b><p>Each sound draws its own picture, and the picture answers where you touch it: bubbles flatten, snow takes a boot print, soap gives up a path of beads.</p></div>
+        <div class="st-card"><em>B</em><b>One material, two senses</b><p>Each sound draws its own picture, and the picture answers where you touch it: bubbles flatten, snow takes a boot print, soap gives up a path of squares.</p></div>
         <div class="st-card"><em>C</em><b>Soft, never sharp</b><p>A quick stroke can fire twenty sounds a second, so anything with a hard edge (a ring, a ping, a thump) soon sounds like gunfire. The sounds are shaped from soft, filtered noise instead, so a stroke blends into one gentle wash.</p></div>
       </div>
     </section>
@@ -506,7 +506,7 @@ const SOUNDS = {
       wobble(f0 * 2, t, { f2: f0 * 2.7, ft: 0.05, a: 0.008, d: 0.14, g: 0.12, rate, depth: 0.09 });
       hiss(t, { f: 520 * j, f2: 900, ft: 0.08, q: 5, a: 0.015, d: 0.08, g: 0.45 });
     } },
-  soap: { name: 'Soap Cutting', desc: 'Shave tiny beads off a bar of soap', scene: 'soap',
+  soap: { name: 'Soap Cutting', desc: 'Shave tiny squares off a bar of soap', scene: 'soap',
     // a blade drawn through dry soap: a crisp rising shave, then the loose beads patter as they fall
     down(k, t, j) {
       hiss(t, { f: 2200 * j, f2: 4200, ft: 0.05, q: 1.6, a: 0.004, d: 0.055, g: 0.9 });
@@ -1649,142 +1649,170 @@ const SCENES = {
     }
   },
 
-  /* 08 Soap Cutting: a bar of pale soap crusted all over with tiny sky blue seed beads, after a photo of loose blue beads:
-     each a flat blue ring around a light hole. Every step sweeps a path along the way the cursor travels: its middle
-     comes away clean down to the white soap, and toward its edges fewer and fewer beads come loose, so it fades out into
-     scattered beads.
-     The loose beads tumble off and fall off the screen. After a while the path closes in from its edges, and each bead
-     pops back as an edge reaches it. */
+  /* 08 Soap Cutting: a hot pink bar of soap dotted with lime pixel squares, after a pixel print: one flat pink with the
+     squares scattered over it, alone or in short chains that run mostly up to the right, and here and there a patch
+     where the soap wears through in violet squares, grey in the middle. Every step shaves a path along the way the
+     cursor travels: the squares on it come loose, fewer and fewer toward its edges, and tumble off the screen, and the
+     soap under it wears through the same way, violet squares with a grey middle and a ragged edge. After a while the
+     path closes in from its edges, and each square pops back as an edge reaches it. */
   soap: {
     frame: 'full',
-    HOLD: 6000, CLOSE: 4000, POP: 380, BASE: '#cfecf7',
+    HOLD: 6000, CLOSE: 4000, POP: 380, BASE: '#eb368c', LIME: '#dbe124', WORN: ['#fa53f0', '#babebf'],
     init() {
-      const R = this.R = clamp(Math.min(SW, SH) / 200, 3.2, 5);
-      // every shade is drawn once into a sprite: a flat ring of blue around a light hole, like a seed bead seen end on,
-      // with no light or shadow on it and its edge a little soft, as in the photo
-      const sprite = col => {
-        const cv = document.createElement('canvas'), s = Math.ceil(R * 2.4 * SDPR), x = cv.getContext('2d'), k = s / (R * 2.4);
-        cv.width = cv.height = s; x.setTransform(k, 0, 0, k, s / 2, s / 2);
-        const g = x.createRadialGradient(0, 0, 0, 0, 0, R), hole = mix(col, '#d6f5ff', .72);
-        g.addColorStop(0, hole); g.addColorStop(.24, hole); g.addColorStop(.52, col); g.addColorStop(.9, col); g.addColorStop(1, `rgba(${hexRGB(col)},0)`);
-        x.fillStyle = g; x.beginPath(); x.arc(0, 0, R, 0, 6.283); x.fill();
-        return cv;
-      };
-      this.spr = ['#72b3d8', '#7ec2ec', '#87c9f1', '#79b8e6'].map(sprite);
-      // the swept soap: white in the middle of a path, fading out to the bare soap toward its edges. A band across the
-      // path and a round cap at either end, both in solid colours, so overlapping paths can take the lighter of the two
-      // and the white never piles up past its edges
-      const glow = this.glow = sc.createRadialGradient(0, 0, 0, 0, 0, 1), band = this.band = sc.createLinearGradient(0, -1, 0, 1);
-      for (const [o, v] of [[0, 240], [.15, 240], [.35, 205], [.55, 128], [.75, 45], [1, 0]]) {
-        const c = mix(this.BASE, '#ffffff', v / 255); glow.addColorStop(o, c); band.addColorStop((1 - o) / 2, c); band.addColorStop((1 + o) / 2, c);
+      const s = this.s = clamp(Math.min(SW, SH) / 90, 7, 12);
+      // about one square to every five squares' worth of soap: about half alone, the rest in short chains of
+      // corner-to-corner steps, mostly up or down the diagonal to the right, now and then a step to the side
+      const DX = [1, 1, 0, -1, -1, -1, 0, 1], DY = [0, -1, -1, -1, 0, 1, 1, 1], X = [], Y = [], n = Math.round(SW * SH / (s * s) * .2);
+      while (X.length < n) {
+        let x = rand(-s, SW + s), y = rand(-s, SH + s), d = Math.random() < .75 ? (Math.random() < .5 ? 1 : 5) : (Math.random() < .5 ? 3 : 7);
+        X.push(x); Y.push(y);
+        if (Math.random() < .55) continue;
+        for (let k = Math.floor(rand(1, 5)); k-- && X.length < n;) {
+          if (Math.random() < .2) d = (d + (Math.random() < .5 ? 2 : 6)) & 7;
+          const e = Math.random() < .15 ? (d + (Math.random() < .5 ? 1 : 7)) & 7 : d;
+          x += DX[e] * s * rand(1, 1.35) + s * rand(-.12, .12); y += DY[e] * s * rand(1, 1.35) + s * rand(-.12, .12);
+          X.push(x); Y.push(y);
+        }
       }
-      // the beads cover the bar evenly: a close grid of them shaken well out of line, then shuffled so they overlap at random
-      const g = R * 1.45, h = g * .866, X = [], Y = [];
-      for (let j = 0; j * h < SH + 2 * R; j++) for (let i = 0; i * g < SW + 2 * R; i++) { X.push((i + (j & 1) * .5 + rand(-.45, .45)) * g - R); Y.push((j + rand(-.45, .45)) * h - R); }
-      for (let i = X.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [X[i], X[k]] = [X[k], X[i]]; [Y[i], Y[k]] = [Y[k], Y[i]]; }
-      const n = X.length, bx = this.bx = Float32Array.from(X), by = this.by = Float32Array.from(Y);
-      const br = this.br = Float32Array.from(X, () => R * rand(.85, 1.08)), bk = this.bk = Uint8Array.from(X, () => Math.floor(Math.random() * 4));
-      // how far out along a path's edge each bead still comes loose. The beads lie two or three deep, so most hold on
-      // only near the middle: the share left on the bar then grows slowly enough that the edge thins out evenly to the eye
-      this.th = Float32Array.from(X, () => 1 - Math.random() ** 2);
-      // a coarse grid of buckets to find the beads near a point
-      const B = this.B = Math.ceil(R * 4), gw = this.gw = Math.ceil(SW / B) + 2, gh = this.gh = Math.ceil(SH / B) + 2;
-      const at = q => clamp(Math.floor(by[q] / B) + 1, 0, gh - 1) * gw + clamp(Math.floor(bx[q] / B) + 1, 0, gw - 1);
-      const gs = this.gs = new Int32Array(gw * gh + 1), items = this.items = new Int32Array(n);
+      this.bx = Float32Array.from(X); this.by = Float32Array.from(Y);
+      // how far out along a path's edge each square still comes loose
+      this.th = Float32Array.from(X, () => Math.random());
+      // the soap under the squares: a grid of squares a little closer than their size, shaken out of line, so a worn
+      // patch comes out mostly solid with pink peeking through. Each has how far out from a path's middle it turns
+      // grey and how far it turns violet, most close to the same line and a few further out for a ragged, blocky edge.
+      // Two slow fields swell and shrink those reaches over a few squares, so the violet edge wanders and the grey
+      // only shows here and there, in chunks
+      const gp = s * .8, GX = [], GY = [], o1 = rand(0, 6.283), o2 = rand(0, 6.283);
+      const nz = (x, y, o) => (Math.sin(x / (s * 5) + o + Math.sin(y / (s * 6) + o * 2)) + Math.sin(y / (s * 4.5) - x / (s * 7) + o * 3)) / 2;
+      for (let y = -s; y < SH + s; y += gp) for (let x = -s; x < SW + s; x += gp) { GX.push(x + gp * rand(-.35, .35)); GY.push(y + gp * rand(-.35, .35)); }
+      this.gx = Float32Array.from(GX); this.gy = Float32Array.from(GY);
+      this.hv = Float32Array.from(GX, (x, g) => (.35 + .55 * Math.random() ** 3) * (1 + .5 * nz(x, GY[g], o1)));
+      this.hg = Float32Array.from(GX, (x, g) => Math.max(0, (.1 + .2 * Math.random() ** 2) * (.2 + 1.3 * nz(x, GY[g], o2))));
+      // a coarse grid of buckets to find the squares near a point
+      const B = this.B = Math.ceil(s * 2); this.gw = Math.ceil(SW / B) + 2; this.gh = Math.ceil(SH / B) + 2;
+      this.Q = this.bucket(this.bx, this.by); this.G = this.bucket(this.gx, this.gy);
+      // a few patches already worn through, mostly by the edges of the screen: each a few round lobes
+      this.st = new Uint8Array(GX.length);
+      for (let i = Math.round(SW * SH / 600000) + 1; i--;) {
+        const e = Math.floor(Math.random() * 4), t = Math.random(), o = s * rand(-2, 6);
+        const cx = e === 0 ? SW * t : e === 1 ? SW - o : e === 2 ? SW * t : o, cy = e === 0 ? o : e === 1 ? SH * t : e === 2 ? SH - o : SH * t;
+        for (let l = Math.floor(rand(2, 6)); l--;) {
+          const x = cx + s * rand(-5, 5), y = cy + s * rand(-5, 5), R = s * rand(5, 11);
+          this.each(this.G, x, y, R, g => { this.st[g] = Math.max(this.st[g], this.wear(Math.hypot(this.gx[g] - x, this.gy[g] - y) / R, g)); });
+        }
+      }
+      // the soap, its worn patches, then the squares
+      dc.fillStyle = this.BASE; dc.fillRect(0, 0, SW, SH);
+      this.paint(dc, Array.from(GX.keys()), this.st);
+      dc.beginPath(); for (let q = 0; q < X.length; q++) this.sq(dc, X[q], Y[q], s);
+      dc.fillStyle = this.LIME; dc.fill();
+      this.cut = new Uint8Array(X.length); this.back = new Float64Array(X.length); this.seen = new Uint32Array(X.length); this.stamp = 0;
+      this.lv = new Uint8Array(GX.length); this.gseen = new Uint32Array(GX.length);
+      this.open = []; this.cuts = []; this.bits = []; this.dir = [1, 0]; this.last = null;
+    },
+    bucket(X, Y) {
+      const B = this.B, gw = this.gw, gh = this.gh, n = X.length;
+      const at = q => clamp(Math.floor(Y[q] / B) + 1, 0, gh - 1) * gw + clamp(Math.floor(X[q] / B) + 1, 0, gw - 1);
+      const gs = new Int32Array(gw * gh + 1), items = new Int32Array(n);
       for (let q = 0; q < n; q++) gs[at(q) + 1]++;
       for (let c = 1; c <= gw * gh; c++) gs[c] += gs[c - 1];
       const fill = gs.slice();
       for (let q = 0; q < n; q++) items[fill[at(q)]++] = q;
-      // the soap, then the beads in their order
-      dc.fillStyle = this.BASE; dc.fillRect(0, 0, SW, SH);
-      this.beads(dc, Array.from(X.keys()));
-      this.cut = new Uint8Array(n); this.back = new Float64Array(n); this.seen = new Uint32Array(n); this.stamp = 0;
-      this.open = []; this.cuts = []; this.bits = []; this.dir = [1, 0]; this.last = null;
+      return { gs, items };
     },
-    put(ctx, img, x, y, r) { ctx.drawImage(img, x - r * 1.2, y - r * 1.2, r * 2.4, r * 2.4); },
-    beads(ctx, list) { for (const q of list) this.put(ctx, this.spr[this.bk[q]], this.bx[q], this.by[q], this.br[q]); },
-    // calls f with every bead in the buckets within d of (x, y)
-    each(x, y, d, f) {
-      const B = this.B, gw = this.gw, gs = this.gs, items = this.items;
+    // a square of side a centred on (x, y), its edges on whole device pixels so it stays crisp
+    sq(ctx, x, y, a) {
+      const x0 = Math.round((x - a / 2) * SDPR) / SDPR, y0 = Math.round((y - a / 2) * SDPR) / SDPR;
+      ctx.rect(x0, y0, Math.round((x + a / 2) * SDPR) / SDPR - x0, Math.round((y + a / 2) * SDPR) / SDPR - y0);
+    },
+    // how worn the soap square g is at r, its distance from the middle of a path or patch as a part of the width:
+    // 2 grey, 1 violet, 0 not at all
+    wear(r, g) { return r < this.hg[g] ? 2 : r < this.hv[g] ? 1 : 0; },
+    // the worn soap squares in list, by their level in lv: every violet one, then the grey ones over them
+    paint(ctx, list, lv) {
+      for (const L of [1, 2]) {
+        ctx.beginPath(); for (const g of list) if (lv[g] >= L) this.sq(ctx, this.gx[g], this.gy[g], this.s);
+        ctx.fillStyle = this.WORN[L - 1]; ctx.fill();
+      }
+    },
+    // calls f with every square of the bucket grid G in the buckets within d of (x, y)
+    each(G, x, y, d, f) {
+      const B = this.B, gw = this.gw, { gs, items } = G;
       const i0 = clamp(Math.floor((x - d) / B) + 1, 0, gw - 1), i1 = clamp(Math.floor((x + d) / B) + 1, 0, gw - 1);
       const j0 = clamp(Math.floor((y - d) / B) + 1, 0, this.gh - 1), j1 = clamp(Math.floor((y + d) / B) + 1, 0, this.gh - 1);
       for (let j = j0; j <= j1; j++) for (let c = j * gw + i0; c <= j * gw + i1; c++) for (let s = gs[c]; s < gs[c + 1]; s++) f(items[s]);
     },
     move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; },
-    // calls f with every bead in the buckets around path c, widened by m
-    near(c, m, f) { this.each(c.x0 + c.dx / 2, c.y0 + c.dy / 2, Math.sqrt(c.l2) / 2 + c.w + m, f); },
+    // calls f with every square of G in the buckets around path c, widened by m
+    near(G, c, m, f) { this.each(G, c.x0 + c.dx / 2, c.y0 + c.dy / 2, Math.sqrt(c.l2) / 2 + c.w + m, f); },
     // how far (x, y) is from the middle line of path c
     dist(c, x, y) {
       const px = x - c.x0, py = y - c.y0, u = c.l2 ? clamp((px * c.dx + py * c.dy) / c.l2, 0, 1) : 0;
       return Math.hypot(px - u * c.dx, py - u * c.dy);
     },
     hit(x, y, k, now) {
-      // the blade sweeps a band from the last step to this one, so the steps join into one even path. Its middle comes
-      // away clean and over a wide edge fewer and fewer beads come loose, the loosest ones furthest out. It stays open a
-      // while, then narrows, keeping the same soft edge, and each bead pops back once the edge has narrowed past it
-      const R = this.R, [ux, uy] = this.dir, w = R * rand(13, 15), p = this.last;
+      // the blade shaves a band from the last step to this one, so the steps join into one even path. Every square in
+      // its middle comes loose and toward its edges fewer and fewer do. It stays open a while, then narrows, and each
+      // square pops back once the edge has narrowed past it
+      const s = this.s, [ux, uy] = this.dir, w = s * rand(6.5, 7.5), p = this.last;
       const c = p && now - p.t < 400 && Math.hypot(x - p.x, y - p.y) < CELL * 3 ? { x0: p.x, y0: p.y } : { x0: x, y0: y };
       c.dx = x - c.x0; c.dy = y - c.y0; c.l2 = c.dx * c.dx + c.dy * c.dy; c.w = w; c.t0 = now + this.HOLD;
       this.last = { x, y, t: now }; this.cuts.push(c);
-      this.near(c, 0, q => {
+      this.near(this.Q, c, 0, q => {
         const r = this.dist(c, this.bx[q], this.by[q]) / w, th = this.th[q];
-        if (th < (r - .15) / .85) return;
-        // the bead comes back when the narrowing path has its edge at the bead's hold
-        const back = c.t0 + this.CLOSE * (1 - r / (.15 + .85 * th)) - rand(0, 300);
+        if (th < (r - .3) / .6) return;
+        // the square comes back when the narrowing path has its edge at the square's hold
+        const back = c.t0 + this.CLOSE * (1 - r / (.3 + .6 * th)) - rand(0, 300);
         if (this.cut[q] && now < this.back[q]) { this.back[q] = Math.max(this.back[q], back); return; }
         if (!this.cut[q]) this.open.push(q);
         this.cut[q] = 1; this.back[q] = back;
-        this.bits.push({ x: this.bx[q], y: this.by[q], r: this.br[q], k: this.bk[q], vx: ux * rand(.03, .12) + rand(-.03, .03), vy: uy * rand(.03, .1) - rand(.04, .14) });
+        this.bits.push({ x: this.bx[q], y: this.by[q], vx: ux * rand(.03, .12) + rand(-.03, .03), vy: uy * rand(.03, .1) - rand(.04, .14) });
       });
       if (this.bits.length > 2000) this.bits.splice(0, this.bits.length - 2000);
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const { bx, by, cut, back, seen, R, CLOSE, POP } = this, stamp = ++this.stamp;
-      // once a bead's time is up it pops back, and then it leaves the cut
+      const { bx, by, cut, back, seen, gx, gy, lv, gseen, s, CLOSE, POP } = this, stamp = ++this.stamp;
+      // once a square's time is up it pops back, and then it leaves the cut
       this.open = this.open.filter(q => { if (now < back[q] + POP) return true; cut[q] = 0; return false; });
       this.cuts = this.cuts.filter(c => now < c.t0 + CLOSE + POP);
       if (this.cuts.length) {
-        // everything over a path is drawn again: the soap, the white where it is swept clean, then the beads still on it
-        // (or already back) in their order
-        const area = new Path2D(), rim = [], m = R + 1, mr = m + R * 1.4;
+        // everything over a path is drawn again: the soap, its worn squares (the path's, or a patch's that was there
+        // already), then the squares still on it or already back
+        const area = new Path2D(), rim = [], worn = [], m = s + 1, mr = m + s;
         for (const c of this.cuts) {
-          const an = Math.atan2(c.dy, c.dx), x1 = c.x0 + c.dx, y1 = c.y0 + c.dy, r = c.w + m;
+          const an = Math.atan2(c.dy, c.dx), x1 = c.x0 + c.dx, y1 = c.y0 + c.dy, r = c.w + m, w = c.w * clamp(1 - (now - c.t0) / CLOSE, 0, 1);
           area.moveTo(x1 + r * Math.sin(an), y1 - r * Math.cos(an));
           area.arc(x1, y1, r, an - 1.571, an + 1.571); area.arc(c.x0, c.y0, r, an + 1.571, an + 4.712); area.closePath();
-          this.near(c, mr, q => {
+          this.near(this.G, c, mr, g => {
+            if (gseen[g] !== stamp) { gseen[g] = stamp; lv[g] = this.st[g]; worn.push(g); }
+            if (w > .5 && lv[g] < 2) lv[g] = Math.max(lv[g], this.wear(this.dist(c, gx[g], gy[g]) / w, g));
+          });
+          this.near(this.Q, c, mr, q => {
             if (seen[q] === stamp || cut[q]) return;
             if (this.dist(c, bx[q], by[q]) < c.w + mr) { seen[q] = stamp; rim.push(q); }
           });
         }
-        rim.sort((a, b) => a - b);
         sc.save(); sc.clip(area);
         sc.fillStyle = this.BASE; sc.fill(area);
-        sc.globalCompositeOperation = 'lighten';
-        for (const c of this.cuts) {
-          const w = c.w * clamp(1 - (now - c.t0) / CLOSE, 0, 1), len = Math.sqrt(c.l2);
-          if (w < .5) continue;
-          sc.save(); sc.translate(c.x0, c.y0); sc.rotate(Math.atan2(c.dy, c.dx));
-          if (len) { sc.save(); sc.scale(1, w); sc.fillStyle = this.band; sc.fillRect(0, -1, len, 2); sc.restore(); }
-          sc.fillStyle = this.glow;
-          for (const e of len ? [0, len] : [0]) { sc.save(); sc.translate(e, 0); sc.scale(w, w); sc.beginPath(); sc.arc(0, 0, 1, 0, 6.283); sc.fill(); sc.restore(); }
-          sc.restore();
-        }
-        sc.globalCompositeOperation = 'source-over';
-        this.beads(sc, rim);
+        this.paint(sc, worn, lv);
+        sc.beginPath(); for (const q of rim) this.sq(sc, bx[q], by[q], s);
+        sc.fillStyle = this.LIME; sc.fill();
         sc.restore();
       }
+      sc.beginPath();
       for (const q of this.open) if (now > back[q]) {
-        // ease out with a little overshoot, so the bead settles into its place
+        // ease out with a little overshoot, so the square settles into its place
         const t = (now - back[q]) / POP - 1;
-        this.put(sc, this.spr[this.bk[q]], bx[q], by[q], this.br[q] * (1 + 2.7 * t * t * t + 1.7 * t * t));
+        this.sq(sc, bx[q], by[q], s * (1 + 2.7 * t * t * t + 1.7 * t * t));
       }
-      // the loose beads tumble down out of the frame
+      // the loose squares tumble down out of the frame
       this.bits = this.bits.filter(p => p.y < SH + 30);
       for (const p of this.bits) {
         p.vy += .0016 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
-        this.put(sc, this.spr[p.k], p.x, p.y, p.r);
+        this.sq(sc, p.x, p.y, s);
       }
+      sc.fillStyle = this.LIME; sc.fill();
     }
   },
 
@@ -2243,22 +2271,28 @@ function thumb(id) {
       for (const [x, y, a] of [[60.4, .2, 20], [40.9, 21.6, -35], [15.8, 35.7, 24], [68.4, 29.7, -28]]) b += `<rect x="-7.7" y="-7.7" width="15.4" height="15.4" rx="2.9" fill="#f31802" transform="translate(${x} ${y}) rotate(${a})"/>`;
       return svg('#eed9b1', `<filter id="jellyBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.3"/></filter><g filter="url(#jellyBlur)">${b}</g>`);
     case 'soap': {
-      // sky blue beads all over pale soap and a diagonal path swept clean down to white that thins out into scattered
-      // beads at its edges. Each bead is a blue disc in one of two shades with a light hole in the middle
-      let dark = '', lite = '', hole = '';
-      const bead = (x, y) => {
-        const cx = x.toFixed(1), cy = y.toFixed(1);
-        if (r() < .5) dark += `<circle cx="${cx}" cy="${cy}" r="1.15"/>`; else lite += `<circle cx="${cx}" cy="${cy}" r="1.15"/>`;
-        hole += `<circle cx="${cx}" cy="${cy}" r=".4"/>`;
-      };
-      for (let j = 0; j < 31; j++) for (let i = 0; i < 42; i++) {
-        const x = (i + (j & 1) * .5 + r() * .9 - .45) * 2 - 1, y = (j + r() * .9 - .45) * 1.73 - 1;
-        const u = clamp(((x - 5) * 63 - (y - 37.9) * 26.5) / 4671, 0, 1), t = clamp((Math.hypot(x - 5 - u * 63, y - 37.9 + u * 26.5) / 6.5 - .35) / .6, 0, 1);
-        if (r() < t * t * (3 - 2 * t)) bead(x, y);
+      // lime squares dotted over hot pink, alone or in short diagonal chains, and a path shaved up to the right where
+      // the soap wears through in violet squares, grey in chunks along the middle, the lime thinning out at its edges
+      const s = 2, sq = (x, y) => `<rect x="${(x - s / 2).toFixed(1)}" y="${(y - s / 2).toFixed(1)}" width="${s}" height="${s}"/>`;
+      const d = (x, y) => { const u = clamp(((x - 5) * 63 - (y - 37.9) * 26.5) / 4671, 0, 1); return Math.hypot(x - 5 - u * 63, y - 37.9 + u * 26.5) / 9; };
+      let vio = '', grey = '', lime = '';
+      for (let y = -1; y < 52; y += 1.6) for (let x = -1; x < 82; x += 1.6) {
+        const gx = x + (r() - .5) * 1.1, gy = y + (r() - .5) * 1.1, t = d(gx, gy);
+        if (t < .35 + .55 * r() ** 3) vio += sq(gx, gy);
+        if (t < (.1 + .2 * r() ** 2) * (.2 + 1.3 * Math.sin(gx / 5 + 1))) grey += sq(gx, gy);
       }
-      return svg('#cfecf7', `<filter id="soapGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.8"/></filter>` +
-        `<path d="M5 37.9L68 11.4" stroke="#fbfdfe" stroke-width="7" stroke-linecap="round" filter="url(#soapGlow)"/>` +
-        `<g fill="#72b3d8">${dark}</g><g fill="#80c2ec">${lite}</g><g fill="#c4ebfb">${hole}</g>`);
+      const DX = [1, 1, 0, -1, -1, -1, 0, 1], DY = [0, -1, -1, -1, 0, 1, 1, 1];
+      const put = (x, y) => { if (r() < clamp((d(x, y) - .3) / .6, 0, 1)) lime += sq(x, y); };
+      for (let n = 0; n < 200;) {
+        let x = r() * 84 - 2, y = r() * 54 - 2, k = r() < .55 ? 0 : 1 + Math.floor(r() * 4), e = r() < .75 ? (r() < .5 ? 1 : 5) : (r() < .5 ? 3 : 7);
+        put(x, y); n++;
+        for (; k-- > 0; n++) {
+          if (r() < .2) e = (e + (r() < .5 ? 2 : 6)) & 7;
+          const f = r() < .15 ? (e + (r() < .5 ? 1 : 7)) & 7 : e;
+          x += DX[f] * s * (1 + r() * .35); y += DY[f] * s * (1 + r() * .35); put(x, y);
+        }
+      }
+      return svg('#eb368c', `<g shape-rendering="crispEdges"><g fill="#fa53f0">${vio}</g><g fill="#babebf">${grey}</g><g fill="#dbe124">${lime}</g></g>`);
     }
     case 'snow': {
       // olive and cream lines in arcs around a point off to the right, on periwinkle, with wavy bands where they thin
@@ -2343,7 +2377,7 @@ const STORY = {
   thock: { try: 'Your cursor is a heat laser: the burn creeps outward from its path, the holes grow into each other, and it all cools through blue, pink and orange.', look: 'A perforated sheet seen through its heat, after a thermal print: lime holes in blue rims that merge as they burn, with pink and orange heat between them', hear: 'A deep, muffled thock and a light tick as the key springs back' },
   gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge in one flat pink under a fine grain, after a pink and white reference', hear: 'A soft, slow squish with a fine tacky fizz as they cling (쫀득), and a gentle sticky pop when the string lets go (쪽)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
-  soap: { try: 'Shave a clean path through the beads. They tumble off, and the cut slowly closes.', look: 'Pale soap crusted with sky blue seed beads, after a photo', hear: 'A crisp, rising shave and the patter of falling beads' },
+  soap: { try: 'Shave a path through the squares. They tumble off, the soap wears through violet and grey, and the cut slowly closes.', look: 'Hot pink soap dotted with lime pixel squares, after a pixel print', hear: 'A crisp, rising shave and the patter of falling squares' },
   snow: { try: 'Walk across it like still water: each step washes out a print and sends ripples that sweep the moiré bands across the lines.', look: 'Snow seen through a lenticular print, after a reference: fine olive and cream lines in wide arcs on periwinkle, beating into wavy moiré bands', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
   sugar: { try: 'Rake three fingertips through sugary slime and watch the grains heap up.', look: 'Periwinkle slime printed as a stipple of sugar grains', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
