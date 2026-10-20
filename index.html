@@ -506,14 +506,14 @@ const SOUNDS = {
       wobble(f0 * 2, t, { f2: f0 * 2.7, ft: 0.05, a: 0.008, d: 0.14, g: 0.12, rate, depth: 0.09 });
       hiss(t, { f: 520 * j, f2: 900, ft: 0.08, q: 5, a: 0.015, d: 0.08, g: 0.45 });
     } },
-  soap: { name: 'Soap Cutting', desc: 'Shave tiny squares off a bar of soap', scene: 'soap',
+  soap: { name: 'Soap Cutting', desc: 'Shave tiny squares off a bar of soap', scene: 'soap', noTrail: true,
     // a blade drawn through dry soap: a crisp rising shave, then the loose beads patter as they fall
     down(k, t, j) {
       hiss(t, { f: 2200 * j, f2: 4200, ft: 0.05, q: 1.6, a: 0.004, d: 0.055, g: 0.9 });
       hiss(t, { type: 'lowpass', f: 1400, q: 0.8, a: 0.001, d: 0.01, g: 0.7 });
       crinkle(t + 0.03, 7, 0.16, { lo: 1600, hi: 4200, g: 0.45, q: 2 });
     } },
-  snow: { name: 'Snow', desc: 'Crunch boot prints into fresh snow', scene: 'snow',
+  snow: { name: 'Snow', desc: 'Crunch boot prints into fresh snow', scene: 'snow', noTrail: true,
     // a slow step into powder snow: a soft hush as it gives, a fine, close creak of crystals packing together (뽀드득), like
     // cornstarch squeezed in the hand, and a breath of cold air over the top
     down(k, t, j) {
