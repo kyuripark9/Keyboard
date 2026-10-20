@@ -710,10 +710,11 @@ function roundPoly(p, P, r) {
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
   /* 01 Bubble Wrap: the sheet drawn as a contour map in pale grey on mint paper, after a photo. Every bubble is a
-     hill of rings: big droplets of mixed sizes packed close, each nudged off its row and stretched and tilted its own
-     way, so no two match; where two press together their rings meet in a crease. The screen's edges hold the sheet
-     like a membrane, and bubbles that reach one squash flat against it. The sheet sways gently, and a pop flattens its
-     hill and sends a ripple through the neighbours' rings that bounces back off the membrane and shakes it. */
+     hill with one ring or two: irregular droplets (beans, eggs, blobs) of mixed sizes packed close, each pushed well
+     off its row and stretched and tilted its own way, so no two match; where two press together their rings meet in
+     a crease. The screen's edges hold the sheet like a membrane, and bubbles that reach one squash flat against it.
+     The sheet sways gently, and a pop flattens its hill and sends a ripple through the neighbours' rings that bounces
+     back off the membrane and shakes it. */
   wrap: {
     frame: 'full',
     init() {
@@ -723,21 +724,24 @@ const SCENES = {
       this.F = new Float32Array(w * h); this.w2 = (w >> 1) + 2; this.h2 = (h >> 1) + 2; this.K = new Float32Array(this.w2 * this.h2);
       const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 7.5), 52, 120);
       // bubbles sit in rows a cell apart, each row slid sideways by its own amount, packed so they fill the sheet. Every
-      // bubble is nudged off its spot and gets its own size, stretch and tilt, and a few are smaller droplets; bigger
-      // ones stand taller, so they carry more rings, and no peak sits just over a ring's level, where that ring would
-      // shrink to a speck. None reaches further than .85 of a cell from its centre, the furthest draw() looks for it
+      // bubble is nudged well off its spot and gets its own size, stretch and tilt, and a fifth are smaller droplets.
+      // Each is bent out of round by two lobes (c1 pulls it toward a rounded triangle, c2 toward an egg), so they come
+      // out as beans, eggs and blobs. Bigger ones stand taller, so they carry two rings instead of one, and no peak sits
+      // just over a ring's level, where that ring would shrink to a speck. None reaches further than .8 of a cell from
+      // its centre, the furthest draw() looks for it: a lobe reaches 1 / sqrt(1 - |c1| - |c2|) times the radius at most
       const cols = this.cols = Math.ceil(SW / s2) + 4, rows = this.rows = Math.ceil(SH / s2) + 4, n = cols * rows;
       this.ro = Float32Array.from({ length: rows }, Math.random);
       this.bx = new Float32Array(n); this.by = new Float32Array(n); this.ca = new Float32Array(n); this.sa = new Float32Array(n);
-      this.irx = new Float32Array(n); this.iry = new Float32Array(n);
+      this.irx = new Float32Array(n); this.iry = new Float32Array(n); this.c1 = new Float32Array(n); this.c2 = new Float32Array(n);
       this.amp = new Float32Array(n); this.base = new Float32Array(n); this.back = new Float64Array(n);
       for (let j = 0, q = 0; j < rows; j++) for (let i = 0; i < cols; i++, q++) {
-        const R = Math.random() < .1 ? rand(.34, .46) : rand(.6, .85), e = rand(.8, 1.25), a = rand(0, Math.PI);
-        this.bx[q] = i + this.ro[j] + rand(-.15, .15); this.by[q] = j + rand(-.15, .15);
-        this.ca[q] = Math.cos(a); this.sa[q] = Math.sin(a);
-        this.irx[q] = 1 / Math.min(.85, R * e); this.iry[q] = 1 / Math.min(.85, R / e);
-        let A = clamp(.35 + .85 * R, .5, 1) * rand(.92, 1);
-        for (const L of [.375, .625, .875]) if (A > L - .02 && A < L + .07) A = L + .07;
+        const R = Math.random() < .2 ? rand(.3, .48) : rand(.55, .95), e = rand(.75, 1.35), a = rand(0, Math.PI);
+        const c1 = rand(-.16, .16), c2 = rand(-.18, .18), cap = .8 * Math.sqrt(1 - Math.abs(c1) - Math.abs(c2));
+        this.bx[q] = i + this.ro[j] + rand(-.2, .2); this.by[q] = j + rand(-.2, .2);
+        this.ca[q] = Math.cos(a); this.sa[q] = Math.sin(a); this.c1[q] = c1; this.c2[q] = c2;
+        this.irx[q] = 1 / Math.min(cap, R * e); this.iry[q] = 1 / Math.min(cap, R / e);
+        let A = clamp(.1 + R, .4, 1) * rand(.9, 1);
+        if (A > .47 && A < .62) A = A < .55 ? .47 : .62;
         this.amp[q] = this.base[q] = A;
       }
       this.x0 = this.y0 = -s2 * 1.5;
@@ -754,10 +758,11 @@ const SCENES = {
     ox(y, t) { const s = this.s; return s * (.2 * Math.sin(y / s * 1.9 + t * .35) + .08 * Math.sin(y / s * .53 - t * .2)); },
     oy(x, t) { const s = this.s; return s * (.12 * Math.sin(x / s * 1.3 - t * .3) + .06 * Math.sin(x / s * .41 + t * .25)); },
     xs(x) { const d = x - SW / 2; return SW / 2 + d * (1 - .28 * Math.abs(d) / SW); },
-    // how far sheet point (u, v) sits from bubble q's centre, squared, in units of its radius along each of its axes
+    // how far sheet point (u, v) sits from bubble q's centre, squared, in units of its radius along each of its axes and
+    // scaled by its lobes: r² (1 + c1 cos 3θ + c2 cos θ)
     d2(q, u, v) {
-      const dx = u - this.bx[q], dy = v - this.by[q], a = (dx * this.ca[q] + dy * this.sa[q]) * this.irx[q], b = (dy * this.ca[q] - dx * this.sa[q]) * this.iry[q];
-      return a * a + b * b;
+      const dx = u - this.bx[q], dy = v - this.by[q], a = (dx * this.ca[q] + dy * this.sa[q]) * this.irx[q], b = (dy * this.ca[q] - dx * this.sa[q]) * this.iry[q], r = Math.hypot(a, b) + 1e-6;
+      return a * a + b * b + this.c1[q] * a * (a * a - 3 * b * b) / r + this.c2[q] * a * r;
     },
     hit(x, y, k, now) {
       // the step pops the nearest of the four bubbles around it on the sheet
@@ -777,7 +782,7 @@ const SCENES = {
       // popped hills sink fast, refilled ones swell back slowly
       for (let q = 0; q < amp.length; q++) {
         if (this.back[q] && now > this.back[q]) this.back[q] = 0;
-        const target = this.back[q] ? .2 : this.base[q];
+        const target = this.back[q] ? .3 : this.base[q];
         amp[q] += (target - amp[q]) * Math.min(1, dt * (this.back[q] ? .02 : .0025));
       }
       // the hills are worked out on a grid twice as coarse (K) and filled in between, as they are smooth at that scale
@@ -785,7 +790,7 @@ const SCENES = {
       const ox = new Float32Array(H2), oy = new Float32Array(W2), xs = new Float32Array(W2);
       for (let j = 0; j < H2; j++) ox[j] = this.ox(j * G2, t);
       for (let i = 0; i < W2; i++) { oy[i] = this.oy(i * G2, t); xs[i] = this.xs(i * G2); }
-      const x0 = this.x0, y0 = this.y0, inv = 1 / s2, { bx, by, ca: cos, sa: sin, irx, iry } = this;
+      const x0 = this.x0, y0 = this.y0, inv = 1 / s2, { bx, by, ca: cos, sa: sin, irx, iry, c1, c2 } = this;
       for (let j = 0, o = 0; j < H2; j++) {
         const y = j * G2;
         for (let i = 0; i < W2; i++, o++) {
@@ -795,8 +800,9 @@ const SCENES = {
           let top = 0;
           for (let r = v | 0, r1 = r + 1; r <= r1; r++) for (let q = r * cols + ((u - ro[r]) | 0), e = q + 2; q < e; q++) {
             const dx = u - bx[q], dy = v - by[q];
-            if (dx * dx + dy * dy > .7225) continue;
-            const a = (dx * cos[q] + dy * sin[q]) * irx[q], b = (dy * cos[q] - dx * sin[q]) * iry[q], d = a * a + b * b;
+            if (dx * dx + dy * dy > .64) continue;
+            const a = (dx * cos[q] + dy * sin[q]) * irx[q], b = (dy * cos[q] - dx * sin[q]) * iry[q], r2 = a * a + b * b, r = Math.sqrt(r2) + 1e-6;
+            const d = r2 + c1[q] * a * (a * a - 3 * b * b) / r + c2[q] * a * r;
             if (d < 1) { const k = 1 - d, f = amp[q] * k * k; if (f > top) top = f; }
           }
           K[o] = top;
@@ -824,14 +830,15 @@ const SCENES = {
       const c = this.cur, ca = clamp(1 - (now - c.t - 300) / 800, 0, 1);
       c.a += (ca - c.a) * Math.min(1, dt * .01);
       if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * Math.pow(1 - d / R, 2)); }
-      // contour lines: four levels, each drawn at a steady width by dividing by the slope
-      const P = this.px, L = 4, LW = .3;
+      // contour lines at two levels, .12 near a bubble's foot and .5 halfway up, each drawn at a steady width by
+      // dividing by the slope
+      const P = this.px, LW = .3;
       P.fill(0);
       for (let j = 1; j < h - 1; j++) for (let i = 1, o = j * w + 1; i < w - 1; i++, o++) {
         const f = F[o]; if (f < .04) continue;
         const gx = F[o + 1] - F[o - 1], gy = F[o + w] - F[o - w], g = Math.sqrt(gx * gx + gy * gy) * .5 + 1e-4;
-        const vv = f * L - .5, d = Math.abs(vv - Math.round(vv)) / (L * g);
-        if (d > LW + .6 || vv < -.5) continue;
+        const d = Math.min(Math.abs(f - .12), Math.abs(f - .5)) / g;
+        if (d > LW + .6) continue;
         const al = d < LW ? 255 : ((1 - (d - LW) / .6) * 255) | 0;
         P[o] = al << 24 | 0xe0e3df;
       }
