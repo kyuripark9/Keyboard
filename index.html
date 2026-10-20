@@ -32,7 +32,7 @@ body[data-scene="laser"]  { --bg: #d9d8de; --ink: #2a5fa8; --ink-soft: #747990; 
 body[data-scene="gummy"]  { --bg: #e8ecea; --ink: #8c1f4f; --ink-soft: #a5486f; --line: rgba(140,31,79,.15); --acc: #8c1f4f; --cursor: #8c1f4f; color-scheme: light; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
 body[data-scene="soap"]   { --bg: #8ec8ea; --ink: #2b5f9f; --ink-soft: #3e75ae; --line: rgba(43,95,159,.15); --acc: #2b5f9f; --cursor: #2b5f9f; color-scheme: light; }
-body[data-scene="snow"]   { --bg: #f9d2e6; --ink: #3b3247; --ink-soft: #7a7088; --line: rgba(59,50,71,.15); --acc: #8f7fd6; --cursor: #3b3247; color-scheme: light; }
+body[data-scene="snow"]   { --bg: #9ca6e2; --ink: #252a5e; --ink-soft: #4a5088; --line: rgba(37,42,94,.18); --acc: #e8dcb2; --cursor: #252a5e; color-scheme: light; }
 body[data-scene="grit"]   { --bg: #becdf9; --ink: #1d3fae; --ink-soft: #4f68b8; --line: rgba(29,63,174,.18); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
 
 * { box-sizing: border-box; }
@@ -1788,90 +1788,172 @@ const SCENES = {
     }
   },
 
-  /* 09 Snow: fresh snow washed in watercolor, after a blurry reference: big rounds of pink, peach, lavender and mint
-     bleed into each other on white and drift slowly, with a few deeper blooms soaking through them. The colors lie in
-     slow bands across the screen, mint into sky, lavender, lilac, pink and peach, so only near neighbors run together
-     and the wash never mixes to grey. Every step drops a boot print of paint, left and right in turn along the way the cursor walks:
-     a ball and heel that spread out into the wet paper like watercolor, running together as they grow and pale, and
-     slowly melt back into the light as new snow fills them in. */
+  /* 09 Snow: fresh snow seen through a lenticular print, after a reference: a periwinkle ground ruled with fine lines of
+     olive and pale cream that sweep across the screen in wide, bending arcs, over a second, slightly shifted ruling, so
+     the two beat into wavy moiré bands where the lines thicken and thin, with a few ghost patches where they wash out.
+     Every step drops a boot print into it like a stone into still water, left and right in turn along the way the
+     cursor walks: the lines wash out to plain periwinkle in a soft ball and heel, and ripples run out that bend them,
+     which the moiré blows up into broad bands sweeping across the sheet before it settles. The prints slowly fill back
+     in. With WebGL2 the lines are drawn at full resolution on the GPU; without it they are worked out in JS at half. */
   snow: {
     frame: 'full',
     init() {
-      // U is one pixel of the reference, scaled so its shorter side fits the screen's
-      const U = this.U = Math.min(SW, SH) / 720, g = 250 * U, q = this.q = 4, M = this.M = 3;
-      // it is all soft, so it is drawn small into lo, softened a touch into lb so the gradients' dither doesn't show once
-      // stretched, and stretched back over the screen. M is a margin of small pixels so the edges don't fade
-      for (const k of ['lo', 'lb']) { const c = this[k] || (this[k] = document.createElement('canvas')); c.width = Math.ceil(SW / q) + M * 2; c.height = Math.ceil(SH / q) + M * 2; }
-      this.lx = this.lo.getContext('2d'); this.bx = this.lb.getContext('2d');
-      // where on the band of colors each spot lies, 0 mint to 1 peach: a slow field of a couple of bands across the screen
-      const p1 = rand(0, 6.283), p2 = rand(0, 6.283), p3 = rand(0, 6.283);
-      this.hue = (x, y) => clamp(.5 + .48 * Math.sin(x / SW * 3.6 + p1 + 1.1 * Math.sin(y / SH * 3 + p2)) + .2 * Math.sin(y / SH * 3.4 - x / SW * 1.6 + p3), 0, 1);
-      // the light, and the paint in deeper pastels of the same hues for the blooms and the prints
-      const band = S => t => { t = clamp(t, 0, 1) * (S.length - 1); const i = Math.min(S.length - 2, Math.floor(t)), f = t - i; return S[i].map((v, j) => v + (S[i + 1][j] - v) * f); };
-      const light = band([[184, 234, 214], [180, 218, 244], [192, 194, 240], [232, 198, 240], [255, 204, 224], [253, 218, 200]]);
-      this.ink = band([[120, 210, 175], [130, 186, 240], [160, 160, 236], [206, 150, 226], [244, 146, 186], [247, 168, 138]]);
-      // big rounds of light on a jittered grid that runs off every edge, each drifting slowly on its own loop
-      this.L = [];
-      for (let y = -g * .5; y < SH + g; y += g * .82) for (let x = -g * .5; x < SW + g; x += g) {
-        const X = x + rand(-.35, .35) * g, Y = y + rand(-.35, .35) * g;
-        this.L.push({ x: X, y: Y, R: g * rand(.55, .85), c: light(this.hue(X, Y) + rand(-.15, .15)), a: rand(.85, .95),
-          ph: rand(0, 6.283), w: rand(.00018, .00032), d: rand(8, 18) * U, lb: this.lobes() });
+      // U is one pixel of the reference, scaled so its shorter side fits the screen's, and p the spacing of the lines.
+      // The lines are rings around a far point off the right of the screen, bent by a slow warp; the beat with the
+      // second ruling runs across them in wavy bands about 48 px apart, closer in places and wider in others, and a
+      // slower swell leaves some stretches mostly periwinkle and others mostly lines
+      const U = this.U = Math.min(SW, SH) / 860, p = this.p = 8.6 * U;
+      this.cx = SW * rand(1.08, 1.18); this.cy = SH * rand(.3, .7);
+      this.q = Array.from({ length: 5 }, () => rand(0, 6.283));
+      // the water and the washes live on a coarse grid of cells C px across: H0 and H1 are the ripple now and a step
+      // ago (in line spacings), W the prints' wash, W0 the print's own ghost patches and Wc the two together
+      const C = this.C = 8, nx = this.nx = Math.ceil(SW / C) + 3, ny = this.ny = Math.ceil(SH / C) + 3, N = nx * ny;
+      this.H0 = new Float32Array(N); this.H1 = new Float32Array(N); this.W = new Float32Array(N); this.W0 = new Float32Array(N); this.Wc = new Float32Array(N);
+      for (let n = 3 + Math.floor(Math.random() * 3); n > 0; n--) {
+        const x = rand(0, SW), y = rand(0, SH), r = rand(26, 70) * U;
+        for (let k = 0; k < 3; k++) this.stamp(this.W0, x + rand(-.6, .6) * r, y + rand(-.6, .6) * r, r * rand(.45, .85), rand(.75, 1));
       }
-      this.L.sort(() => Math.random() - .5);
-      // a few deeper blooms soaking through the light
-      this.D = Array.from({ length: Math.round(SW * SH / (300000 * U * U)) + 2 }, () => { const x = rand(0, SW), y = rand(0, SH);
-        return { x, y, R: rand(70, 120) * U, c: this.ink(this.hue(x, y) + rand(-.12, .12)), a: rand(.35, .45), ph: rand(0, 6.283), w: rand(.00015, .0003), d: rand(10, 24) * U, lb: this.lobes() }; });
-      this.pr = []; this.foot = 1; this.dir = [1, 0];
-      this.P = clamp(34 * U, 22, 52);
+      if (this.gl === undefined) this.gl = this.glInit();
+      if (this.gl) {
+        const { c, gl, u } = this.gl, q = this.q;
+        c.width = Math.round(SW * SDPR); c.height = Math.round(SH * SDPR); gl.viewport(0, 0, c.width, c.height);
+        gl.uniform3f(u.uRes, SW, SH, SDPR); gl.uniform2f(u.uC, this.cx, this.cy); gl.uniform2f(u.uP, p, U);
+        gl.uniform4f(u.uQ, q[0], q[1], q[2], q[3]); gl.uniform1f(u.uQ4, q[4]); gl.uniform3f(u.uGrid, C, nx, ny);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, nx, ny, 0, gl.RG, gl.FLOAT, null);
+        this.tx = new Float32Array(N * 2);
+      } else {
+        // the picture is worked out on a grid of small pixels G px across: F is the first ruling's phase in periods at
+        // every small pixel, B the beat between the two, which is what draws the bands, and A the swell
+        const G = this.G = 2, w = this.w = Math.ceil(SW / G), h = this.h = Math.ceil(SH / G);
+        this.off = this.off || document.createElement('canvas'); this.off.width = w; this.off.height = h;
+        this.oc = this.off.getContext('2d'); this.img = this.oc.createImageData(w, h); this.px = new Uint32Array(this.img.data.buffer);
+        const F = this.F = new Float32Array(w * h), B = this.B = new Float32Array(w * h), A = this.A = new Float32Array(w * h);
+        for (let j = 0, o = 0; j < h; j++) for (let i = 0; i < w; i++, o++) [F[o], B[o], A[o]] = this.phase(i * G, j * G);
+        // the band's swell as a table over one beat, so it costs no cosine per pixel
+        this.cosT = Float32Array.from({ length: 1024 }, (_, k) => .5 + .5 * Math.cos(k / 1024 * 6.2832));
+      }
+      this.P = 34 * U; this.foot = 1; this.dir = [1, 0]; this.last = null; this.acc = 0; this.at = performance.now(); this.still = false;
     },
-    // a round is a few overlapping lobes, [x, y, r] as parts of its radius, so its edge wanders like a wash
-    lobes() {
-      return [[0, 0, 1], ...Array.from({ length: 3 }, () => { const t = rand(0, 6.283), d = rand(.3, .5); return [Math.cos(t) * d, Math.sin(t) * d, rand(.55, .8)]; })];
+    // the first ruling's phase, the beat (both in periods) and the swell at (x, y); the shader below works out the same
+    phase(x, y) {
+      const U = this.U, q = this.q, wp = 80 * U * Math.sin(y / (260 * U) + q[0] + .8 * Math.sin(x / (340 * U) + q[1])) + 16 * U * Math.sin(x / (180 * U) - y / (270 * U) + q[2]);
+      return [(Math.hypot(x - this.cx, y - this.cy) + wp) / this.p,
+        (y + 20 * U * Math.sin(x / (110 * U) + q[3]) + 34 * U * Math.sin(x / (260 * U) - y / (320 * U) + q[4])) / (48 * U) + .7 * Math.sin(x / (420 * U) + y / (380 * U) + q[1] * 2),
+        .14 * Math.sin(x / (520 * U) - y / (430 * U) + q[2] * 1.7)];
     },
-    // a round of radius R blurred by about s, as a radial gradient into the small canvas (in screen px): dense stops
-    // around its edge, and a small round blurred far comes out fainter in the middle
-    soft(x, y, R, s, rgb, a) {
-      const ctx = this.lx, E = R + 3 * s, r0 = Math.max(0, R - 3 * s), g = ctx.createRadialGradient(x, y, 0, x, y, E), col = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},`;
-      const f = r => a / (1 + Math.exp(1.7 * (r - R) / s));
-      g.addColorStop(0, col + f(0).toFixed(3) + ')');
-      for (let i = 1; i < 10; i++) { const r = r0 + (E - r0) * i / 10; g.addColorStop(r / E, col + f(r).toFixed(3) + ')'); }
-      g.addColorStop(r0 / E, col + f(r0).toFixed(3) + ')'); g.addColorStop(1, col + '0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, E, 0, 6.283); ctx.fill();
+    // the lines in a fragment shader: each period is periwinkle with an olive and a cream line side by side in its
+    // middle, filtered over the pixel's width so they stay smooth. The beat thins the lines in some bands and thickens
+    // them in others, about their middle so they never shift; the ripple (red) moves the lines and the beat alike, and
+    // the wash (green) thins them away to periwinkle
+    glInit() {
+      const c = document.createElement('canvas'), gl = c.getContext('webgl2', { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true });
+      if (!gl) return null;
+      const pr = gl.createProgram();
+      for (const [t, s] of [[gl.VERTEX_SHADER, 'in vec2 v; void main() { gl_Position = vec4(v, 0., 1.); }'], [gl.FRAGMENT_SHADER, `precision highp float;
+uniform vec3 uRes, uGrid; uniform vec2 uC, uP; uniform vec4 uQ; uniform float uQ4; uniform sampler2D uT; out vec4 o;
+void main() {
+  vec2 p = vec2(gl_FragCoord.x, uRes.y * uRes.z - gl_FragCoord.y) / uRes.z; float U = uP.y;
+  vec2 rw = texture(uT, (p / uGrid.x + .5) / uGrid.yz).rg;
+  float wp = 80. * U * sin(p.y / (260. * U) + uQ.x + .8 * sin(p.x / (340. * U) + uQ.y)) + 16. * U * sin(p.x / (180. * U) - p.y / (270. * U) + uQ.z);
+  float F = (length(p - uC) + wp) / uP.x + rw.r;
+  float B = (p.y + 20. * U * sin(p.x / (110. * U) + uQ.w) + 34. * U * sin(p.x / (260. * U) - p.y / (320. * U) + uQ4)) / (48. * U) + .7 * sin(p.x / (420. * U) + p.y / (380. * U) + uQ.y * 2.) + rw.r;
+  float a = clamp(.16 + .48 * (.5 + .5 * cos(6.2832 * B)) + .14 * sin(p.x / (520. * U) - p.y / (430. * U) + uQ.z * 1.7), .08, .8); a += (1. - a) * rw.g;
+  float ol = (1. - a) * .64, cr = 1. - a - ol, s = a * .5, dp = max(fwidth(F), 1e-4), u = F - dp * .5, v = u + dp, n = floor(v) - floor(u), uu = fract(u), vv = fract(v);
+  float co = n * ol + clamp(vv - s, 0., ol) - clamp(uu - s, 0., ol), cc = n * cr + clamp(vv - s - ol, 0., cr) - clamp(uu - s - ol, 0., cr), cl = dp - co - cc;
+  o = vec4((cl * vec3(156, 166, 226) + co * vec3(120, 122, 86) + cc * vec3(232, 220, 178)) / dp / 255., 1.);
+}`]]) {
+        const sh = gl.createShader(t); gl.shaderSource(sh, '#version 300 es\n' + s); gl.compileShader(sh); gl.attachShader(pr, sh);
+      }
+      gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null;
+      gl.useProgram(pr);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+      for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+      const u = {};
+      for (const n of ['uRes', 'uC', 'uGrid', 'uP', 'uQ', 'uQ4']) u[n] = gl.getUniformLocation(pr, n);
+      return { c, gl, u };
     },
-    // a wash: every lobe a soft round, blurred by a part sb of its own size
-    wash(x, y, R, sb, rgb, a, lb) { for (const [u, v, r] of lb) this.soft(x + u * R, y + v * R, r * R, r * R * sb, rgb, a); },
+    // a soft round of radius r into a coarse grid, keeping whichever is stronger
+    stamp(A, x, y, r, v) {
+      const C = this.C, nx = this.nx, i0 = Math.max(1, Math.floor((x - r * 1.3) / C)), i1 = Math.min(nx - 2, Math.ceil((x + r * 1.3) / C));
+      const j0 = Math.max(1, Math.floor((y - r * 1.3) / C)), j1 = Math.min(this.ny - 2, Math.ceil((y + r * 1.3) / C));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const s = clamp(1 - (Math.hypot(i * C - x, j * C - y) - r * .55) / (r * .7), 0, 1), o = j * nx + i;
+        A[o] = Math.max(A[o], v * s * s * (3 - 2 * s));
+      }
+    },
+    // a stone into the water: a dip of depth A (in line spacings) and spread sg (in cells)
+    drop(x, y, A, sg) {
+      const nx = this.nx, H = this.H0, ci = x / this.C, cj = y / this.C, R = Math.ceil(sg * 3);
+      for (let j = Math.max(1, Math.round(cj) - R); j <= Math.min(this.ny - 2, Math.round(cj) + R); j++)
+        for (let i = Math.max(1, Math.round(ci) - R); i <= Math.min(nx - 2, Math.round(ci) + R); i++)
+          H[j * nx + i] -= A * Math.exp(-((i - ci) ** 2 + (j - cj) ** 2) / (2 * sg * sg));
+      this.at = performance.now(); this.still = false;
+    },
     move(x, y, dx, dy) {
       const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l];
+      // the cursor trails a faint wake through the water
+      if (l < 200) this.drop(x, y, Math.min(.1, l * .005), 1.4);
     },
     hit(x, y, k, now) {
-      // a print every stride, feet taking turns either side of the path, each pointing the way the cursor walks, in the
-      // paint of the band it lands on, so a walk across the screen shades from one color into the next
-      const P = this.P, last = this.pr[this.pr.length - 1];
-      if (last && now - last.t0 < 2000 && Math.hypot(last.sx - x, last.sy - y) < P * 2.8) return;
-      const [ux, uy] = this.dir, f = this.foot = -this.foot, o = P * .6, a = Math.atan2(uy, ux) + rand(-.15, .15);
-      this.pr.push({ sx: x, sy: y, x: x - uy * o * f, y: y + ux * o * f, ux: Math.cos(a), uy: Math.sin(a), s: P * rand(.9, 1.15), c: this.ink(this.hue(x, y) + rand(-.1, .1)),
-        t0: now, life: rand(10000, 14000), lb: this.lobes(), hb: this.lobes() });
-      if (this.pr.length > 120) this.pr.shift();
+      // a print every stride, feet taking turns either side of the path, each pointing the way the cursor walks: the
+      // ball ahead and the heel behind wash out to plain periwinkle, and the step drops a stone into the water
+      const P = this.P, l = this.last;
+      if (l && now - l.t < 2000 && Math.hypot(l.x - x, l.y - y) < P * 2.6) return;
+      this.last = { x, y, t: now };
+      const [ux, uy] = this.dir, f = this.foot = -this.foot, px = x - uy * P * .55 * f, py = y + ux * P * .55 * f;
+      this.stamp(this.W, px + ux * P * .5, py + uy * P * .5, P * .62, .95);
+      this.stamp(this.W, px - ux * P * .75, py - uy * P * .75, P * .46, .95);
+      this.drop(px, py, 1.1, 2);
+    },
+    // one step of the ripple: each cell is pulled by its neighbours and keeps its swing, losing a little every step
+    step() {
+      const nx = this.nx, ny = this.ny, a = this.H0, b = this.H1;
+      for (let j = 1; j < ny - 1; j++) for (let i = 1, o = j * nx + 1; i < nx - 1; i++, o++) b[o] = ((a[o - 1] + a[o + 1] + a[o - nx] + a[o + nx]) * .5 - b[o]) * .985;
+      this.H0 = b; this.H1 = a;
     },
     draw(now, dt) {
-      const U = this.U, q = this.q, M = this.M, lx = this.lx, bx = this.bx;
-      lx.setTransform(1 / q, 0, 0, 1 / q, M, M); lx.fillStyle = '#fdfbfd'; lx.fillRect(-M * q, -M * q, SW + M * q * 2 + q, SH + M * q * 2 + q);
-      for (const L of this.L) this.wash(L.x + L.d * Math.sin(now * L.w + L.ph), L.y + L.d * Math.cos(now * L.w * .8 + L.ph * 1.3), L.R, .24, L.c, L.a * .6, L.lb);
-      for (const D of this.D) this.wash(D.x + D.d * Math.sin(now * D.w + D.ph), D.y + D.d * Math.cos(now * D.w * .7 + D.ph), D.R, .5, D.c, D.a * .55, D.lb);
-      this.pr = this.pr.filter(p => now - p.t0 < p.life);
-      for (const p of this.pr) {
-        // the paint lands as a soft ball and heel and spreads out fast, then keeps creeping outward, paling as it thins,
-        // and fades away as the snow fills it in
-        const age = now - p.t0, u = age / p.life, k = 1 - Math.exp(-age / 450);
-        const R = p.s * (1 + .7 * k + .35 * u), sb = .5 + .15 * k;
-        const v = clamp((u - .3) / .7, 0, 1), a = .7 * Math.min(1, age / 120) * (1 - .35 * k) * (1 - v * v * (3 - 2 * v));
-        const c = p.c.map(ch => ch + (255 - ch) * .2 * k);
-        this.wash(p.x + p.ux * p.s * .72, p.y + p.uy * p.s * .72, R, sb, c, a, p.lb);
-        this.wash(p.x - p.ux * p.s * 1.05, p.y - p.uy * p.s * 1.05, R * .75, sb, c, a, p.hb);
+      // once the water has stilled and the prints have filled in, the last picture is kept and only drawn again
+      const idle = now - this.at > 15000;
+      if (!idle || !this.still) {
+        this.acc += dt;
+        let n = 0;
+        for (; this.acc >= 16 && n < 3; n++) { this.step(); this.acc -= 16; }
+        if (n === 3) this.acc = 0;
+        const k = Math.exp(-dt / 3000), W = this.W, W0 = this.W0, Wc = this.Wc;
+        for (let o = 0; o < W.length; o++) { W[o] *= k; Wc[o] = Math.max(W[o], W0[o]); }
+        if (this.gl) {
+          const { gl } = this.gl, T = this.tx, H = this.H0;
+          for (let o = 0; o < Wc.length; o++) { T[o * 2] = H[o]; T[o * 2 + 1] = Wc[o]; }
+          gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.nx, this.ny, gl.RG, gl.FLOAT, T); gl.drawArrays(gl.TRIANGLES, 0, 3);
+        } else this.render();
+        this.still = idle;
       }
-      bx.clearRect(0, 0, this.lb.width, this.lb.height); bx.filter = 'blur(1px)'; bx.drawImage(this.lo, 0, 0); bx.filter = 'none';
       sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
-      sc.drawImage(this.lb, M, M, SW / q, SH / q, 0, 0, SW, SH);
+      if (this.gl) sc.drawImage(this.gl.c, 0, 0, SW, SH); else sc.drawImage(this.off, 0, 0, this.w * this.G, this.h * this.G);
+    },
+    // without WebGL2: the shader's work in JS on the small pixels, reading the coarse grid at every fourth one
+    render() {
+      const w = this.w, h = this.h, nx = this.nx, F = this.F, B = this.B, A = this.A, H = this.H0, Wc = this.Wc, P = this.px, T = this.cosT, dp = this.G / this.p;
+      for (let j = 0, o = 0; j < h; j++) {
+        const r0 = (j >> 2) * nx, fy = (j & 3) / 4;
+        for (let i = 0; i < w; i++, o++) {
+          const a00 = r0 + (i >> 2), fx = (i & 3) / 4, gx = 1 - fx, gy = 1 - fy;
+          const d = (H[a00] * gx + H[a00 + 1] * fx) * gy + (H[a00 + nx] * gx + H[a00 + nx + 1] * fx) * fy;
+          const wc = (Wc[a00] * gx + Wc[a00 + 1] * fx) * gy + (Wc[a00 + nx] * gx + Wc[a00 + nx + 1] * fx) * fy;
+          const bt = B[o] + d, m = T[((bt - Math.floor(bt)) * 1024) | 0];
+          let a = clamp(.16 + .48 * m + A[o], .08, .8); a += (1 - a) * wc;
+          const ol = (1 - a) * .64, cr = 1 - a - ol, s = a / 2, u = F[o] + d - dp / 2, v = u + dp, fu = Math.floor(u), fv = Math.floor(v), uu = u - fu, vv = v - fv;
+          // how much of the pixel's span falls on the olive line (from s to s + ol) and on the cream one after it
+          const co = (fv - fu) * ol + clamp(vv - s, 0, ol) - clamp(uu - s, 0, ol);
+          const cc = (fv - fu) * cr + clamp(vv - s - ol, 0, cr) - clamp(uu - s - ol, 0, cr), cl = dp - co - cc;
+          const R = (cl * 156 + co * 120 + cc * 232) / dp, Gc = (cl * 166 + co * 122 + cc * 220) / dp, Bc = (cl * 226 + co * 86 + cc * 178) / dp;
+          P[o] = 0xff000000 | (Bc << 16) | (Gc << 8) | R;
+        }
+      }
+      this.oc.putImageData(this.img, 0, 0);
     }
   },
 
@@ -2179,17 +2261,19 @@ function thumb(id) {
         `<g fill="#72b3d8">${dark}</g><g fill="#80c2ec">${lite}</g><g fill="#c4ebfb">${hole}</g>`);
     }
     case 'snow': {
-      // pastel washes in bands, mint and sky on the left through lavender to pink and peach on the right, and a walk of
-      // prints spreading into them like watercolor up to the right: the newest small and full, the older ones grown and pale
-      const light = [[2, 8, 20, '#b8ead6'], [8, 44, 18, '#b4daf4'], [28, 22, 18, '#c0c2f0'], [46, 4, 16, '#e8c6f0'], [52, 40, 18, '#e8c6f0'], [70, 18, 18, '#ffcce0'], [84, 46, 16, '#fddac8']];
-      b = light.map(([x, y, R, c]) => `<circle cx="${x}" cy="${y}" r="${R}" fill="${c}"/>`).join('');
-      let pr = '';
-      for (let i = 0; i < 5; i++) {
-        const k = 4 - i, x = 22 + i * 10, y = 36 - i * 5.5 + (i & 1 ? 2 : -2);
-        pr += `<circle cx="${x}" cy="${y.toFixed(1)}" r="${(3.4 + k * 1.3).toFixed(1)}" fill="${['#f492ba', '#e698c8', '#ce96e2', '#b69ae6', '#a8a2ec'][k]}" opacity="${[.9, .82, .72, .62, .52][k]}"/>`;
+      // olive and cream lines in arcs around a point off to the right, on periwinkle, with wavy bands where they thin
+      // away, and a boot print washed out to plain periwinkle
+      let ol = '', cr = '', bd = '';
+      for (let R = 52; R < 150; R += 2.2) { ol += `<circle cx="132" cy="22" r="${R.toFixed(1)}"/>`; cr += `<circle cx="132" cy="22" r="${(R + .62).toFixed(2)}"/>`; }
+      for (let k = 0; k < 9; k++) {
+        let d = '';
+        for (let x = 0; x <= 80; x += 4) d += `${x ? 'L' : 'M'}${x} ${(k * 6 + 1 + 2.2 * Math.sin(x * .09 + k * .8)).toFixed(1)}`;
+        bd += `<path d="${d}"/>`;
       }
-      const blur = (id, d) => `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${d}"/></filter>`;
-      return svg('#fdfbfd', `<defs>${blur('snowLight', 3)}${blur('snowPaint', 2)}</defs><g filter="url(#snowLight)">${b}</g><g filter="url(#snowPaint)">${pr}</g>`);
+      return svg('#9ca6e2', `<filter id="snowBand" x="-10%" y="-20%" width="120%" height="140%"><feGaussianBlur stdDeviation=".7"/></filter>` +
+        `<g fill="none" stroke-width=".72"><g stroke="#787a56">${ol}</g><g stroke="#e8dcb2" stroke-width=".55">${cr}</g></g>` +
+        `<g fill="none" stroke="#9ca6e2" stroke-width="2.4" opacity=".8" filter="url(#snowBand)">${bd}</g>` +
+        `<g fill="#9ca6e2" filter="url(#snowBand)"><ellipse cx="30" cy="31" rx="4.2" ry="3" transform="rotate(-30 30 31)"/><ellipse cx="24" cy="35" rx="3" ry="2.3"/></g>`);
     }
     case 'sugar': {
       // three furrows raked through the grains, lit from the top left like the scene: cobalt on the shaded walls,
@@ -2260,7 +2344,7 @@ const STORY = {
   gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge in one flat pink under a fine grain, after a pink and white reference', hear: 'A soft, slow squish with a fine tacky fizz as they cling (쫀득), and a gentle sticky pop when the string lets go (쪽)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a clean path through the beads. They tumble off, and the cut slowly closes.', look: 'Pale soap crusted with sky blue seed beads, after a photo', hear: 'A crisp, rising shave and the patter of falling beads' },
-  snow: { try: 'Walk across it: every step drops a print of watercolor that spreads into the wash and slowly fades.', look: 'Snow washed in pastel watercolor, after a blurry reference: mint, sky, lavender, lilac, pink and peach bleeding into each other on white', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
+  snow: { try: 'Walk across it like still water: each step washes out a print and sends ripples that sweep the moiré bands across the lines.', look: 'Snow seen through a lenticular print, after a reference: fine olive and cream lines in wide arcs on periwinkle, beating into wavy moiré bands', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
   sugar: { try: 'Rake three fingertips through sugary slime and watch the grains heap up.', look: 'Periwinkle slime printed as a stipple of sugar grains', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
 const storyEl = $('story');
