@@ -1156,7 +1156,7 @@ const SCENES = {
   jelly: {
     frame: 'full',
     init() {
-      const s = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 9), 34, 86), p = s * 1.04, ph = p * .88, bl = s * .067;
+      const s = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 6.8), 42, 114), p = s * 1.04, ph = p * .88, bl = s * .067;
       // each shape is blurred once into a sprite here, and only stretched and turned every frame
       const sprite = (fill, path) => {
         const c = document.createElement('canvas'), n = Math.ceil((s + bl * 6) * SDPR), x = c.getContext('2d');
