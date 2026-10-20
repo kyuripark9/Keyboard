@@ -1110,7 +1110,7 @@ const SCENES = {
       this.h = new Float32Array(n); this.gh = new Float32Array(n); this.hr = Float32Array.from({ length: n }, () => r * rand(.94, 1.06));
       // g: how far a burning hole has grown past its cut, up to its own gm; sp: when a hole that just caught passes the
       // fire on to its neighbours
-      this.g = new Float32Array(n).fill(1); this.gm = Float32Array.from({ length: n }, () => rand(1.45, 2.15)); this.sp = new Float64Array(n);
+      this.g = new Float32Array(n).fill(1); this.gm = Float32Array.from({ length: n }, () => rand(1.3, 1.85)); this.sp = new Float64Array(n);
       // every grid point is cut through, so wherever the cursor goes the hole under it lights; each hole lets the light
       // in at its own level, so the lit band comes out ragged at its edges
       this.th = Float32Array.from({ length: n }, () => rand(.35, 1.15));
@@ -1173,7 +1173,7 @@ const SCENES = {
     // the laser lights the holes near it, the nearer the brighter, so its path leaves a core of lit holes with a ragged
     // fringe; a hole it crosses right over flares up and heats again
     paint(x, y, P, now) {
-      const { s, cols, E, T, on, a0, ig, fl } = this, L = s * 1.15, reach = L * Math.log(P / .3);
+      const { s, cols, E, T, on, a0, ig, fl } = this, L = s * .7, reach = L * Math.log(P / .3);
       const i0 = Math.max(0, Math.floor((x - reach - this.x0) / s)), i1 = Math.min(cols - 1, Math.ceil((x + reach - this.x0) / s));
       const j0 = Math.max(0, Math.floor((y - reach - this.y0) / s)), j1 = Math.min(this.rows - 1, Math.ceil((y + reach - this.y0) / s));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
@@ -1192,7 +1192,7 @@ const SCENES = {
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
       const { s, cols, E, T, th, on, a0, ig, fl, h, gh, hr, g, gm, sp, c, fw, F, M, FH, FW, GV, GA, GM, NZ, SPK, lut } = this, fade = Math.exp(-dt / 3500);
-      const warm = 1 - Math.exp(-dt / 60), cool = Math.exp(-dt / 900), fadeG = Math.exp(-dt / 3000), R = s * 1.1, iR2 = 1 / (R * R);
+      const warm = 1 - Math.exp(-dt / 60), cool = Math.exp(-dt / 900), fadeG = Math.exp(-dt / 3000), R = s * .9, iR2 = 1 / (R * R);
       const RIM = this.RIM, rim = m => m >= .64 ? 1 : m <= 0 ? 0 : RIM[m * 800 | 0];
       // only the rows the heat reached last frame need clearing, and only those plus this frame's need colouring
       const c0 = this.r0 * fw, c1 = (this.r1 + 1) * fw;
@@ -1207,13 +1207,13 @@ const SCENES = {
           if (lit) { ig[q] = now; fl[q] = 1; sp[q] = now + rand(260, 420); if (Math.random() < .4) this.spark(x, y, 1 + (Math.random() < .4), now); }
         }
         // the burn creeps outward: a moment after a hole catches it sets its neighbours going, a little weaker at each
-        // step, so the fire creeps a few holes past the laser's path before it dies down
+        // step, so the fire creeps a hole or so past the laser's path before it dies down
         if (sp[q] && now >= sp[q]) {
           sp[q] = 0;
           for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) {
             const ii = i + a, jj = j + b;
             if ((!a && !b) || ii < 0 || jj < 0 || ii >= cols || jj >= this.rows) continue;
-            const nq = jj * cols + ii, v = E[q] * (a && b ? .55 : .68) * rand(.85, 1.1);
+            const nq = jj * cols + ii, v = E[q] * (a && b ? .45 : .6) * rand(.85, 1.1);
             if (v > E[nq]) { E[nq] = v; T[nq] = now; }
           }
         }
@@ -1226,7 +1226,7 @@ const SCENES = {
         // a burning hole keeps eating into the sheet, the more the closer it sits to the laser's path, so the holes along
         // it grow into each other while the ones the fire only just reached stay small; it keeps its size as it cools and
         // only shrinks back once it is cold
-        if (lit) g[q] += (1 + (gm[q] - 1) * clamp((E[q] - .6) / 1.6, 0, 1) - g[q]) * (1 - Math.exp(-dt / 1100)); else if (!h[q]) g[q] = 1;
+        if (lit) g[q] += (1 + (gm[q] - 1) * clamp((E[q] - 1) / 1.2, 0, 1) - g[q]) * (1 - Math.exp(-dt / 1100)); else if (!h[q]) g[q] = 1;
         if (!h[q] && !gh[q]) continue;
         any = true;
         // the hole burns open: a hot point swells past full size in a flash, then settles with a little give
@@ -1249,7 +1249,7 @@ const SCENES = {
           for (let u = u0, p = v * fw + u0; u <= u1; u++, p++) {
             const dx = u * c - x, d2 = dx * dx + dy * dy, kk = 1 - d2 * iR2, kb = 1 - d2 * ik2;
             if (kk > 0) {
-              const w = .19 * kk * kk;
+              const w = .28 * kk * kk;
               F[p] += hq * w;
               if (gq) { GV[p] += w; GA[p] += w * gq; }
             }
