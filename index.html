@@ -11,13 +11,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: a full-screen canvas scene sits under a slim header and a floating dock.
+/* Layout: a full-screen canvas scene sits under a slim header and a dock, each set in a soft frost with no edge.
    Every sound has its own scene and its own palette, most drawn from one moodboard:
    cobalt, periwinkle, grey paper, warm paper and ink. */
 :root {
   --cobalt: #2c62fb; --peri: #becdf9; --mid: #5c80ea; --paper: #f3eee6; --grey-paper: #e6e6e3; --ink-black: #1c1c1c;
   --bg: #f4f5f7; --ink: #1b2a6b; --ink-soft: #5a6890; --line: rgba(27,42,107,.14); --panel: rgba(255,255,255,.84);
-  --acc: var(--cobalt); --cursor: var(--cobalt);
+  --acc: var(--cobalt); --cursor: var(--cobalt); --frost: 60%;
   --font-ui: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   color-scheme: light;
@@ -25,7 +25,7 @@
 body[data-scene="wrap"]   { --bg: #69bca9; --ink: #164a3f; --ink-soft: #2a6156; --line: rgba(22,74,63,.16); --panel: rgba(236,242,239,.9); --acc: #eef2ef; --cursor: #164a3f; color-scheme: light; }
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --panel: rgba(40,70,150,.9); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --panel: rgba(244,244,244,.88); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
-body[data-scene="wax"]    { --bg: #181818; --ink: #f4f4f0; --ink-soft: #a5a5a0; --line: rgba(244,244,240,.2); --panel: rgba(30,30,30,.9); --acc: #f4f4f0; --cursor: #ffffff; color-scheme: dark; }
+body[data-scene="wax"]    { --bg: #181818; --ink: #f4f4f0; --ink-soft: #a5a5a0; --line: rgba(244,244,240,.2); --panel: rgba(30,30,30,.9); --acc: #f4f4f0; --cursor: #ffffff; --frost: 90%; color-scheme: dark; }
 body[data-scene="laser"]  { --bg: #d3d5d7; --ink: #27313d; --ink-soft: #66717f; --line: rgba(39,49,61,.14); --panel: rgba(232,234,236,.88); --acc: #27313d; --cursor: #46576b; color-scheme: light; }
 body[data-scene="gummy"]  { --bg: #efe6d8; --ink: #8f1029; --ink-soft: #8a6f5c; --line: rgba(143,16,41,.15); --panel: rgba(247,241,232,.9); --acc: #e8344e; --cursor: #8f1029; color-scheme: light; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --panel: rgba(244,231,205,.9); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
@@ -50,7 +50,7 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  pointer-events: none;
+  pointer-events: none; overflow: clip; /* the frosts at the screen's edges don't widen the page */
 }
 .top, .dock-wrap { pointer-events: auto; }
 
@@ -80,14 +80,20 @@ body[data-scene="wax"] .cursor { mix-blend-mode: difference; filter: none; }
 
 /* Dock */
 .dock-wrap { position: relative; z-index: 20; display: flex; justify-content: center; padding-bottom: max(14px, env(safe-area-inset-bottom, 0px)); padding-top: 6px; }
-.dock {
-  display: flex; align-items: center; gap: 4px; padding: 6px; max-width: 100%;
-  border-radius: 999px; background: var(--panel); border: 1px solid var(--line);
-  backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
-  box-shadow: 0 10px 30px rgba(10,20,60,.14);
-  overflow-x: auto; scrollbar-width: none;
+.dock { position: relative; isolation: isolate; display: flex; align-items: center; gap: 4px; padding: 6px; max-width: 100%; }
+/* the logo, the tally and the dock have no panel: each sits in a frost of the page colour that fades out into the
+   picture with no edge, --fx and --fy past it on each side. On the black and white halftone a pale frost reads as a
+   grey smudge, so there --frost is dark, like the pools under the logo */
+.brand, .tally { position: relative; isolation: isolate; --fx: 40px; --fy: 22px; }
+.brand::before, .tally::before, .dock::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  inset: calc(-1 * var(--fy, 30px)) calc(-1 * var(--fx, 64px));
+  background: color-mix(in srgb, var(--bg) var(--frost), transparent);
+  backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  --m: linear-gradient(to right, transparent, #000 var(--fx, 64px), #000 calc(100% - var(--fx, 64px)), transparent),
+       linear-gradient(transparent, #000 var(--fy, 30px), #000 calc(100% - var(--fy, 30px)), transparent);
+  -webkit-mask-image: var(--m); -webkit-mask-composite: source-in; mask-image: var(--m); mask-composite: intersect;
 }
-.dock::-webkit-scrollbar { display: none; }
 .seg { display: flex; background: var(--line); border-radius: 999px; padding: 3px; flex: none; }
 .seg button, .dbtn {
   font: 500 13px/1 var(--font-ui); color: var(--ink); background: transparent; border: 0;
@@ -886,7 +892,7 @@ const SCENES = {
       const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
       return lerp(lerp(G[c + a], G[c + b], sx), lerp(G[d + a], G[d + b], sx), sy);
     },
-    // the squares shrink to dots around the logo and the tally, so their text sits in a dark pool; the dock has a panel
+    // the squares shrink to dots around the logo and the tally, so their text sits in a dark pool; the dock has a frost
     // of its own, so the print runs right up under it and plays there like anywhere else
     ui() {
       const rs = [...document.querySelectorAll('.brand, .tally')].map(e => e.getBoundingClientRect()).filter(r => r.width);
