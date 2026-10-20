@@ -12,7 +12,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 /* Layout: a full-screen canvas scene with only a few marks on it, set right on the picture in its own ink: the logo
-   with the page number top left, the tally top right, and an arrow at the middle of each side to turn the page.
+   with the page number at the top centre, an arrow at each end of that top row to turn the page, and the tally at the
+   bottom centre.
    Every sound has its own scene and its own palette, most drawn from one moodboard:
    cobalt, periwinkle, grey paper, warm paper and ink. */
 :root {
@@ -55,13 +56,18 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 }
 .top, .edge { pointer-events: auto; }
 
-/* Header */
-.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-block: 16px 6px; }
+/* Header: the previous arrow, the logo and the next arrow in one row */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; padding-block: 16px 6px; }
 .brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
-.brand h1 { margin: 0; font: 800 28px/1 var(--font-ui); letter-spacing: -.04em; color: var(--ink); }
-.brand h1 sup { font: 500 10px/1 var(--font-mono); letter-spacing: 0; vertical-align: top; margin-left: 2px; color: var(--ink-soft); }
+.brand h1 { position: relative; margin: 0; font: 800 28px/1 var(--font-ui); letter-spacing: -.04em; color: var(--ink); }
+/* the page number hangs off the word, so the word itself sits at the centre and stays put from page 1 to 10 */
+.brand h1 sup { position: absolute; left: 100%; top: 0; font: 500 10px/1 var(--font-mono); letter-spacing: 0; margin-left: 2px; color: var(--ink-soft); }
 .brand p { margin: 0; font: 500 12px/1.3 var(--font-mono); color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tally { text-align: right; line-height: 1.1; font-family: var(--font-mono); }
+/* the tally sits at the bottom centre and lets the picture play on under it */
+.tally {
+  position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  text-align: center; line-height: 1.1; font-family: var(--font-mono);
+}
 .tally b { display: block; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .tally span { font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
 .stage { min-height: 0; min-width: 0; }
@@ -77,15 +83,16 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 .cursor svg { width: 100%; height: 100%; display: block; transition: transform 90ms ease-out; }
 .cursor.press svg { transform: scale(.78); transition-duration: 30ms; }
 
-/* Side arrows: the previous and the next material, at the middle of each edge, in the picture's own ink */
+/* Arrows: the previous and the next material, at the two ends of the top row in the picture's own ink. Each tip
+   sits on the page margin; the button reaches past it to the screen's edge and above and below the row */
 .edge {
-  position: fixed; top: 50%; z-index: 20; width: 56px; height: 96px; margin-top: -48px; padding: 0;
+  width: 44px; height: 44px; margin-block: -8px; padding: 0;
   display: grid; place-items: center; border: 0; background: none; color: var(--ink); cursor: pointer;
   transition: transform .15s;
 }
 .edge svg { width: 32px; height: 32px; }
-.edge.prev { left: max(4px, env(safe-area-inset-left, 0px)); }
-.edge.next { right: max(4px, env(safe-area-inset-right, 0px)); }
+.edge.prev { justify-self: start; margin-left: -16px; }
+.edge.next { justify-self: end; margin-right: -16px; }
 .edge.prev:hover { transform: translateX(-3px); }
 .edge.next:hover { transform: translateX(3px); }
 button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
@@ -102,6 +109,7 @@ button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 }
 @media (max-height: 520px) {
   .top { padding-block: 8px 2px; }
+  .tally { bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
   .brand p { display: none; }
 }
 /* The story: what clack is for and how it came to be. Nothing on the page opens it for now. It keeps one palette of its own,
@@ -207,19 +215,19 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
 <canvas id="scene" aria-label="Interactive graphic. Move your cursor to play"></canvas>
 <div class="app" id="app">
   <header class="top">
+    <button class="edge prev" id="prev" type="button" aria-label="Previous material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
     <div class="brand">
       <h1>clack<sup id="page">1</sup></h1>
     </div>
-    <div class="tally" aria-live="off">
-      <b id="count">0</b>
-      <span>CLACKS</span>
-    </div>
+    <button class="edge next" id="next" type="button" aria-label="Next material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
   </header>
 
   <main class="stage" id="stage"></main>
 
-  <button class="edge prev" id="prev" type="button" aria-label="Previous material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
-  <button class="edge next" id="next" type="button" aria-label="Next material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+  <div class="tally" aria-live="off">
+    <b id="count">0</b>
+    <span>CLACKS</span>
+  </div>
 </div>
 
 <canvas id="fx" aria-hidden="true"></canvas>
@@ -307,7 +315,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
         <div><b>A cursor that belongs</b><p>The ring takes each picture's own color, so it reads as part of the material rather than laid over it.</p></div>
         <div><b>No audio files</b><p>Every sound is synthesized live with the Web Audio API, with a little randomness, so no two steps sound exactly alike.</p></div>
         <div><b>Your keys play too</b><p>Letters, digits, space and enter play the current material, and the arrow keys switch between materials.</p></div>
-        <div><b>Made for touch</b><p>On phones and tablets, drag a finger across the screen, and tap the arrows at its sides to switch materials.</p></div>
+        <div><b>Made for touch</b><p>On phones and tablets, drag a finger across the screen, and tap the arrows on either side of the logo to switch materials.</p></div>
         <div><b>One moodboard</b><p>Cobalt, periwinkle, grey and warm paper, and ink. Six materials borrow their colors from their own reference images instead.</p></div>
         <div><b>One file</b><p>The whole toy is a single HTML page: no build step, no install, nothing to load but fonts.</p></div>
       </div>
