@@ -522,7 +522,7 @@ const SOUNDS = {
       crinkle(at + 0.015, 16 + Math.floor(Math.random() * 6), 0.18, { lo: 900, hi: 3200, g: 0.1, q: 1.2, a: 0.0025, d: 0.01 });
       hiss(at + 0.01, { type: 'highpass', f: 5500, q: 0.5, a: 0.04, d: 0.09, g: 0.03 });
     } },
-  sugar: { name: 'Sugar Slime', desc: 'Push the sugar aside down to the blue', scene: 'grit',
+  sugar: { name: 'Sugar Slime', desc: 'Rake furrows through the sugar down to the blue', scene: 'grit',
     // 사각사각: slime packed with sugar, stroked slowly close to the ear. A soft sandy brush as the fingers sweep through,
     // a fine trickle of sugar grains rolling past each other and a muted squish of the slime underneath
     down(k, t, j) {
@@ -2132,11 +2132,11 @@ void main() {
   },
 
   /* 10 Sugar Slime: slime packed with sugar, after a grainy gradient print. Lime runs all over it in a grain as fine
-     as the screen's pixels, flecked with blue and turning yellower toward the top right. The cursor drags a fingertip
-     through it that scrapes the lime sugar off its path, so the blue slime under it shows through, and pushes the
-     sugar aside into a heap along each side, its grains standing out sharper there. Walls facing the glow light up
-     lime and the ones facing away sink to a deeper blue, all in the same grain, and the slime slowly settles flat
-     again. */
+     as the screen's pixels, flecked with blue and turning yellower toward the top right. The cursor drags three
+     fingertips through it side by side: each scrapes the lime sugar off a furrow, so the blue slime under it shows
+     through, and pushes the sugar aside into heaps between and beside the furrows, their grains standing out sharper
+     there. Walls facing the glow light up lime and the ones facing away sink to a deeper blue, all in the same grain,
+     and the slime slowly settles flat again. */
   grit: {
     frame: 'full',
     init() {
@@ -2194,26 +2194,31 @@ void main() {
       const gn = gw * gh;
       this.H = new Float32Array(gn); this.LD = new Float32Array(gn); this.SD = new Float32Array(gn); this.KD = new Float32Array(gn); this.F = new Uint8Array(gn);
       this.box = null;
-      this.wg = clamp(CELL * .45, 10, 22); this.dir = [1, 0]; this.last = null; this.mt = 0;
+      this.wg = clamp(CELL * .28, 7, 14); this.dir = [1, 0]; this.last = null; this.mt = 0;
     },
-    // a fingertip drags a trench from (x0, y0) to (x1, y1) and heaps the sugar it pushes aside along both sides; a press
-    // without a drag sinks in a dimple with a ring heaped round it
+    // three fingertips side by side drag a trench each from (x0, y0) to (x1, y1) and heap the sugar they push aside
+    // along both sides of each, so it piles up between them; a press without a drag sinks in three dimples, each with a
+    // ring heaped round it
     carve(x0, y0, x1, y1) {
-      const G = this.G, gw = this.gw, gh = this.gh, H = this.H, wg = this.wg, D = wg * .9, Rm = wg * .5;
+      const G = this.G, gw = this.gw, gh = this.gh, H = this.H, wg = this.wg, sp = wg * 2.9, D = wg * .9, Rm = wg * .5;
       let ux = x1 - x0, uy = y1 - y0;
       const L = Math.hypot(ux, uy), drag = L > .5;
       if (drag) { ux /= L; uy /= L; } else [ux, uy] = this.dir;
-      const reach = wg * 2.4;
+      const reach = sp + wg * 2.4;
       const i0 = Math.max(0, Math.floor((Math.min(x0, x1) - reach) / G)), i1 = Math.min(gw - 1, Math.ceil((Math.max(x0, x1) + reach) / G));
       const j0 = Math.max(0, Math.floor((Math.min(y0, y1) - reach) / G)), j1 = Math.min(gh - 1, Math.ceil((Math.max(y0, y1) + reach) / G));
       if (i0 > i1 || j0 > j1) return;
       for (let j = j0; j <= j1; j++) for (let i = i0, o = j * gw + i0; i <= i1; i++, o++) {
         const px = i * G - x0, py = j * G - y0, a = px * ux + py * uy, u = py * ux - px * uy, da = a < 0 ? -a : a > L ? a - L : 0;
-        const du = Math.abs(u), d = Math.hypot(da, du) / wg, lo = d < 1 ? -D * (1 - d * d) ** 2 : 0;
-        // the heap runs beside the stroke and tapers off past both its ends, so the heaps of one step and the next run
-        // into each other round a bend
-        const r = (drag ? du / wg - 1.55 : d - 1.55) / .75;
-        const hi = r > -1 && r < 1 && (!drag || da < wg) ? Rm * (1 - r * r) ** 2 * (drag ? 1 - da / wg : 1) : 0;
+        let hi = 0, lo = 0;
+        for (let f = -1; f <= 1; f++) {
+          const du = Math.abs(u - f * sp), d = Math.hypot(da, du) / wg;
+          if (d < 1) lo = Math.min(lo, -D * (1 - d * d) ** 2);
+          // the heap runs beside the stroke and tapers off past both its ends, so the heaps of one step and the next
+          // run into each other round a bend
+          const r = (drag ? du / wg - 1.55 : d - 1.55) / .75;
+          if (r > -1 && r < 1 && (!drag || da < wg)) hi = Math.max(hi, Rm * (1 - r * r) ** 2 * (drag ? 1 - da / wg : 1));
+        }
         // a heap piles up onto slime that was flat or already heaped, and adds to an older trench it crosses, filling it
         // in by as much; a trench cuts into slime the same way, so a stroke over an old one blends into it without a seam
         if (hi) H[o] = H[o] < 0 ? H[o] + hi : Math.max(H[o], hi);
@@ -2230,7 +2235,7 @@ void main() {
     },
     hit(x, y, k, now) {
       // a drag carves as the cursor moves; keys, taps and the preview swipe have none, so a press soon after the last one
-      // drags the fingertip over to it and any other just sinks in
+      // drags the fingertips over to it and any other just sinks in
       if (now - this.mt < 150) return;
       const L = this.last, d = L ? Math.hypot(x - L.x, y - L.y) : 0, near = L && now - L.t < 400 && d < 220;
       if (near && d > .5) this.dir = [(x - L.x) / d, (y - L.y) / d];
@@ -2540,19 +2545,25 @@ function thumb(id) {
     }
     case 'sugar': {
       // the scene's grainy print in small, grain by grain: lime flecked with blue all over, yellower to the top right,
-      // and a path scraped across it down to the blue, with the sugar heaped along both sides, lit from the top right
-      // like the scene. Grains are 1.25 units, drawn on a grid scaled down by that much
+      // and three furrows raked across it down to the blue, with the sugar heaped between and beside them, lit from the
+      // top right like the scene. Grains are 1.25 units, drawn on a grid scaled down by that much
       const hf = (x, y) => {
-        // rounded off where the path begins and ends
-        const da = Math.max(0, 8 - x, x - 60), a = Math.hypot(da, y - 22 - Math.sin(x * .07 + .4) * 6) / 4.5, q = (a - 1.55) / .75;
-        return a < 1 ? -4 * (1 - a * a) ** 2 : q > -1 && q < 1 ? 2.25 * (1 - q * q) ** 2 : 0;
+        // rounded off where the furrows begin and end
+        const da = Math.max(0, 8 - x, x - 60);
+        let hi = 0, lo = 0;
+        for (let f = -1; f <= 1; f++) {
+          const a = Math.hypot(da, y - 20 - f * 7.2 - Math.sin(x * .07 + .4) * 5) / 2.5, q = (a - 1.55) / .75;
+          if (a < 1) lo = Math.min(lo, -2.25 * (1 - a * a) ** 2);
+          if (q > -1 && q < 1) hi = Math.max(hi, 1.25 * (1 - q * q) ** 2);
+        }
+        return lo || hi;
       };
       const n = () => r() + r() - 1, mix = (c, d, t) => c.map((v, i) => v + (d[i] - v) * t), grains = {};
       for (let j = 0; j < 40; j++) for (let i = 0; i < 64; i++) {
         const x = (i + .5) * 1.25, y = (j + .5) * 1.25, u = Math.max(0, 1 - (80 - x) / 56), v = y / 50;
         const gl = clamp(.85 * (.854 * u + .52 * v - .17), 0, .62);
         let c = [62, 166, 236], t = .64 + .3 * gl;
-        const h0 = hf(x, y), dig = clamp(-h0 / 4, 0, 1), kd = clamp(h0 / 2.25, 0, 1), lit = .7 * (hf(x, y + .6) - hf(x, y - .6) - hf(x + .6, y) + hf(x - .6, y)) / 1.2;
+        const h0 = hf(x, y), dig = clamp(-h0 / 2.25, 0, 1), kd = clamp(h0 / 1.25, 0, 1), lit = .7 * (hf(x, y + .6) - hf(x, y - .6) - hf(x + .6, y) + hf(x - .6, y)) / 1.2;
         const jt = n() * .4, s = clamp(-.35 * lit + .3 * dig, 0, 1);
         c = mix(mix(c, [228, 250, 116], clamp(t + jt + .4 * lit - .75 * dig + .18 * kd + kd * (t + jt - .75) * 1.2, 0, 1)), [63, 125, 230], s);
         const key = '#' + c.map(v => clamp(Math.round(v / 17), 0, 15).toString(16)).join('');
@@ -2610,7 +2621,7 @@ const STORY = {
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a path down to the paper. The shaved soap heaps up along its edges, and the cut slowly closes.', look: 'A bar of soap as a magenta halftone on cream, after a halftone print', hear: 'A crisp, rising shave and the patter of falling flakes' },
   snow: { try: 'Walk across it like still water: each step washes out a print and sends ripples that sweep the moiré bands across the lines.', look: 'Snow seen through a lenticular print, after a reference: fine olive and cream lines in wide arcs on periwinkle, beating into wavy moiré bands', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
-  sugar: { try: 'Drag through the slime: the lime sugar is scraped off down to the blue and heaps up along both sides.', look: 'Grainy lime slime flecked with blue, yellower toward one corner, after a grainy gradient print', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
+  sugar: { try: 'Rake three fingertips through the slime: the lime sugar is scraped off down to the blue and heaps up around the furrows.', look: 'Grainy lime slime flecked with blue, yellower toward one corner, after a grainy gradient print', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
 const storyEl = $('story');
 let storyFrom = null;
