@@ -752,27 +752,7 @@ const SCENES = {
       }
       this.x0 = this.y0 = -s2 * 1.5;
       this.rip = []; this.cur = { x: -999, y: -999, a: 0, t: 0 };
-      this.M = new Float32Array(w * h); this.mk = ''; this.mt = 0;
       paper(dc, '#69bca9', .07);
-    },
-    // the sheet flattens around the logo, the tally and the side arrows, so the rings close into rounded ends and part
-    // around them instead of running under them. Rebuilt whenever one of them moves or grows (the tally gains digits)
-    ui() {
-      const rs = [...document.querySelectorAll('.brand, .tally, .edge svg')].map(e => e.getBoundingClientRect()).filter(r => r.width);
-      const key = rs.map(r => [r.left, r.top, r.right, r.bottom].map(Math.round).join()).join('|');
-      if (key === this.mk) return;
-      this.mk = key;
-      const G = this.G, w = this.w, h = this.h, M = this.M, pad = 2, ramp = this.s * .45;
-      M.fill(1);
-      for (const r of rs) {
-        // each element is kept clear by a capsule around it: the distance to its middle segment, less its half-height
-        const rr = Math.min(r.width, r.height) / 2, l = r.left - FX + rr, t = r.top - FY + rr, R = r.right - FX - rr, B = r.bottom - FY - rr, reach = rr + pad + ramp;
-        const i0 = Math.max(0, Math.floor((l - reach) / G)), i1 = Math.min(w - 1, Math.ceil((R + reach) / G)), j0 = Math.max(0, Math.floor((t - reach) / G)), j1 = Math.min(h - 1, Math.ceil((B + reach) / G));
-        for (let j = j0; j <= j1; j++) for (let i = i0, o = j * w + i0; i <= i1; i++, o++) {
-          const x = i * G, y = j * G, q = clamp((Math.hypot(Math.max(l - x, 0, x - R), Math.max(t - y, 0, y - B)) - rr - pad) / ramp, 0, 1);
-          M[o] *= q * q * (3 - 2 * q);
-        }
-      }
     },
     move(x, y) { this.cur.x = x; this.cur.y = y; this.cur.t = performance.now(); },
     // the sheet sways: rows slide sideways (ox) and columns bob (oy), so the rows stretch into soft, uneven loops; and
@@ -846,8 +826,6 @@ const SCENES = {
       const c = this.cur, ca = clamp(1 - (now - c.t - 300) / 800, 0, 1);
       c.a += (ca - c.a) * Math.min(1, dt * .01);
       if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * Math.pow(1 - d / R, 2)); }
-      if (now > this.mt) { this.mt = now + 500; this.ui(); }
-      for (let o = 0, M = this.M; o < F.length; o++) F[o] *= M[o];
       // contour lines: four levels, each drawn at a steady width by dividing by the slope
       const P = this.px, L = 4, LW = .3;
       P.fill(0);
