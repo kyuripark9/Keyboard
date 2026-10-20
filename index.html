@@ -736,7 +736,7 @@ const SCENES = {
       const key = rs.map(r => [r.left, r.top, r.right, r.bottom].map(Math.round).join()).join('|');
       if (key === this.mk) return;
       this.mk = key;
-      const G = this.G, w = this.w, h = this.h, M = this.M, pad = 8, ramp = this.s * 1.1;
+      const G = this.G, w = this.w, h = this.h, M = this.M, pad = 2, ramp = this.s * .45;
       M.fill(1);
       for (const r of rs) {
         // each element is kept clear by a capsule around it: the distance to its middle segment, less its half-height
