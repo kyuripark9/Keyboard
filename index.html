@@ -28,7 +28,7 @@ body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; 
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="wax"]    { --bg: #c3c6db; --ink: #2d345d; --ink-soft: #60678b; --line: rgba(45,52,93,.15); --acc: #2d345d; --cursor: #2d345d; color-scheme: light; }
 body[data-scene="laser"]  { --bg: #d9d8de; --ink: #2a5fa8; --ink-soft: #747990; --line: rgba(42,95,168,.16); --acc: #f2803e; --cursor: #2a5fa8; color-scheme: light; }
-body[data-scene="gummy"]  { --bg: #efe6d8; --ink: #8f1029; --ink-soft: #8a6f5c; --line: rgba(143,16,41,.15); --acc: #e8344e; --cursor: #8f1029; color-scheme: light; }
+body[data-scene="gummy"]  { --bg: #e8ecea; --ink: #8c1f4f; --ink-soft: #a5486f; --line: rgba(140,31,79,.15); --acc: #8c1f4f; --cursor: #8c1f4f; color-scheme: light; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
 body[data-scene="soap"]   { --bg: #8ec8ea; --ink: #2b5f9f; --ink-soft: #3e75ae; --line: rgba(43,95,159,.15); --acc: #2b5f9f; --cursor: #2b5f9f; color-scheme: light; }
 body[data-scene="snow"]   { --bg: #f6f8fd; --ink: #2c62fb; --ink-soft: #6f86c4; --line: rgba(44,98,251,.16); --acc: #2c62fb; --cursor: #2c62fb; color-scheme: light; }
@@ -294,7 +294,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
       <p>Seventeen materials were built, played and cut along the way.</p>
       <h4>Three iterations</h4>
       <div class="st-iters">
-        <div class="st-card"><em>06 Chewy Jellies</em><p class="chain">Tanghulu <i>&rarr;</i> Sugar Gummies <i>&rarr;</i> <b>Chewy Jellies</b></p><p>Rubbing the sugar off a gummy wasn't the feeling. Squeezing gummies together, feeling them stick and peeling them apart was.</p></div>
+        <div class="st-card"><em>06 Chewy Jellies</em><p class="chain">Tanghulu <i>&rarr;</i> Sugar Gummies <i>&rarr;</i> <b>Chewy Jellies</b></p><p>Rubbing the sugar off a gummy wasn't the feeling. Squeezing gummies together, feeling them stick and peeling them apart was. Later the fruit colors and sugar gave way to one soft pink, out of focus, after a blurry reference.</p></div>
         <div class="st-card"><em>03 Cyanotype</em><p class="chain">Ringing twinkle <i>&rarr;</i> bubble blips <i>&rarr;</i> soft blips <i>&rarr;</i> <b>a breath of foam</b></p><p>Each try was softer, and each still sounded like shooting under a fast cursor. Filtered noise with slow attacks fixed it, and became the recipe for the calmer sounds that followed.</p></div>
         <div class="st-card"><em>04 Wax Ball</em><p class="chain">Cell foam <i>&rarr;</i> pebbles <i>&rarr;</i> line print <i>&rarr;</i> towers <i>&rarr;</i> halftone <i>&rarr;</i> <b>lime on lavender</b></p><p>Wax Ball went through eight looks and was cut once along the way. It came back as a black and white halftone of squares that the cursor presses into diamonds, then took the lime, lavender and fine grain of a second reference.</p></div>
       </div>
@@ -1245,36 +1245,31 @@ const SCENES = {
     }
   },
 
-  /* 06 Chewy Jellies: fruit gummies cut into soft cubes and dusted with sugar, packed into a tray so tight that they
-     press flat against each other and stick where they touch. The cursor catches the gummy under it and drags it along:
-     it squeezes into the one ahead, which flattens and shoves its own neighbours, and it pulls away from the one behind,
-     the two stretching a short, chewy neck of jelly between them that thins until it lets go (쩍) and both spring back
-     with a wobble. Dragged too far, a gummy slips off the cursor and bounces home, where it sticks again to whatever it
-     touches. Every step also presses down on the gummy under it, so it spreads and squeezes its neighbours. */
+  /* 06 Chewy Jellies: soft pink jelly cut into cubes on a pale grey tray, seen out of focus after a blurry reference:
+     one flat pink on one flat off-white, every edge soft. The cubes sit in clusters, packed so tight that they press
+     flat against each other and run together into one pink mass, with the tray peeking through only where their
+     rounded corners meet and in soft white glints on the jelly; between the clusters the tray shows. The cursor
+     catches the gummy under it and drags it along: it squeezes into the one ahead, which flattens and shoves its own
+     neighbours, and it pulls away from the one behind, the two stretching a short, chewy neck of jelly between them
+     that thins until it lets go (쩍) and both spring back with a wobble. Dragged too far, a gummy slips off the cursor
+     and bounces home, where it sticks again to whatever it touches. Every step also presses down on the gummy under it,
+     so it spreads and squeezes its neighbours, and leaves a white glint in the dent that fades as it fills back in. */
   gummy: {
     frame: 'full',
     init() {
       const s = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 5.6), 64, 150), N = this.N = 64;
-      // a sugar crystal: a small square turned by a, added to path p
-      const grain = (p, x, y, z, a) => {
-        const c = Math.cos(a) * z / 2, n = Math.sin(a) * z / 2;
-        p.moveTo(x + c - n, y + n + c); p.lineTo(x - c - n, y - n + c); p.lineTo(x - c + n, y - n - c); p.lineTo(x + c + n, y + n - c); p.closePath();
-      };
-      // the bed: warm paper stippled with loose crystals, each with a faint shadow
-      dc.fillStyle = '#efe6d8'; dc.fillRect(0, 0, SW, SH);
-      const bs = new Path2D(), bw = new Path2D();
-      for (let i = 0, n = SW * SH / 60; i < n; i++) {
-        const x = Math.random() * SW, y = Math.random() * SH, z = rand(.9, 2.4), a = rand(0, 1.571);
-        grain(bs, x + z * .3, y + z * .4, z, a); grain(bw, x, y, z, a);
-      }
-      dc.fillStyle = 'rgba(140,100,60,.2)'; dc.fill(bs); dc.fillStyle = 'rgba(255,255,255,.9)'; dc.fill(bw);
+      // the picture is drawn small into lo, blurred into lb and stretched back over the screen, so every edge goes soft
+      // as in the reference. q is how many screen pixels one small pixel covers, M a margin of small pixels around the
+      // screen so the blur doesn't fade out at its edges
+      const q = this.q = s / 40, M = this.M = 8;
+      for (const k of ['lo', 'lb']) { const c = this[k] || (this[k] = document.createElement('canvas')); c.width = Math.ceil(SW / q) + M * 2; c.height = Math.ceil(SH / q) + M * 2; }
+      this.lx = this.lo.getContext('2d'); this.bx = this.lb.getContext('2d');
       // a gummy's outline is N points around its middle, one for each direction on screen, so it can be pressed flat on
       // one side and pulled out into a neck on another
       this.cs = Float32Array.from({ length: N }, (_, k) => Math.cos(k / N * 6.2832));
       this.sn = Float32Array.from({ length: N }, (_, k) => Math.sin(k / N * 6.2832));
       // three cuts of cube: rounded squares, one a touch wide and one a touch tall
       const cr = s * .22, SHP = [[1, 1], [1.07, .94], [.95, 1.05]].map(([u, v]) => [s / 2 * u, s / 2 * v]);
-      const box = (hw, hh) => { const p = new Path2D(); roundPoly(p, [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]], cr); return p; };
       // how far a rounded square with half sides hw, hh reaches from its middle toward (c, n)
       const reach = (hw, hh, c, n) => {
         c = Math.abs(c); n = Math.abs(n);
@@ -1284,72 +1279,20 @@ const SCENES = {
         const B = ax * c + ay * n;
         return B + Math.sqrt(Math.max(0, B * B - ax * ax - ay * ay + cr * cr));
       };
-      // fruit colors: [jelly, its glow, its depth]
-      const COL = [['#e8344e', '#ff8f9b', '#8f1029'], ['#f7801e', '#ffc072', '#a8460a'], ['#f4c21a', '#ffe783', '#a07800'],
-        ['#5fb83a', '#a8e67f', '#2b6e14'], ['#8a46cc', '#c79cf2', '#4f1d86']];
-      const dk = COL.map(c => hexRGB(c[2]).join(','));
-      // the paints, set up around a gummy's middle: the jelly glowing through its middle and deepening toward the edge,
-      // a rounded edge lit from the top left, and its colored shadow on the sugar
-      this.fill = COL.map(([b, l, d]) => {
-        const g = sc.createRadialGradient(-s * .08, -s * .1, 0, 0, 0, s * .78);
-        g.addColorStop(0, mix(b, l, .75)); g.addColorStop(.45, b); g.addColorStop(1, mix(b, d, .75));
-        return g;
-      });
-      this.rim = dk.map(d => {
-        const e = sc.createLinearGradient(-s * .5, -s * .5, s * .5, s * .5);
-        e.addColorStop(0, 'rgba(255,255,255,.6)'); e.addColorStop(.45, 'rgba(255,255,255,0)'); e.addColorStop(.55, `rgba(${d},0)`); e.addColorStop(1, `rgba(${d},.9)`);
-        return e;
-      });
-      this.edge = dk.map(d => `rgba(${d},.14)`); this.line = dk.map(d => `rgba(${d},.4)`); this.shade = dk.map(d => `rgba(${d},.3)`); this.dk = dk;
-      const canvas = L => { const c = document.createElement('canvas'); c.width = c.height = Math.ceil(L * SDPR); return c; };
-      // light passing through the jelly gathers by the far edge
-      const Lw = this.Lw = Math.ceil(s * .7);
-      this.glow = COL.map(([, l]) => {
-        const c = canvas(Lw), x = c.getContext('2d'), m = Lw * SDPR / 2, g = x.createRadialGradient(m, m, 0, m, m, m);
-        g.addColorStop(0, l); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, m * 2, m * 2);
-        return c;
-      });
-      // a glossy shine on the top left, drawn on the quarter that runs from (-.45s, -.45s) to the middle
-      const Lg = this.Lg = Math.ceil(s * .45);
-      this.gloss = canvas(Lg);
-      { const x = this.gloss.getContext('2d'); x.setTransform(SDPR, 0, 0, SDPR, Lg * SDPR, Lg * SDPR);
-        x.filter = `blur(${s * .02 * SDPR}px)`; x.fillStyle = 'rgba(255,255,255,.7)';
-        x.beginPath(); x.ellipse(-s * .19, -s * .25, s * .19, s * .05, -.5, 0, 6.283); x.fill();
-        x.filter = 'none'; x.fillStyle = 'rgba(255,255,255,.85)';
-        x.beginPath(); x.ellipse(-s * .33, -s * .06, s * .03, s * .018, -1.2, 0, 6.283); x.fill(); }
-      // a light dusting of sugar: fine powder and coarser grains that catch the light, two patterns for every cut
-      const Lc = this.Lc = Math.ceil(s * 1.2);
-      this.sugar = [];
-      for (const [hw, hh] of SHP) for (let w = 0; w < 2; w++) {
-        const c = canvas(Lc), x = c.getContext('2d'), path = box(hw, hh), P = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
-        x.setTransform(SDPR, 0, 0, SDPR, Lc * SDPR / 2, Lc * SDPR / 2);
-        const add = (n, k, z0, z1) => {
-          for (let i = 0; i < n;) {
-            const X = rand(-hw, hw), Y = rand(-hh, hh), z = Math.max(rand(z0, z1) * s, k ? 1.6 : .9), a = rand(0, 1.571);
-            if (!x.isPointInPath(path, (X + Lc / 2) * SDPR, (Y + Lc / 2) * SDPR)) continue;
-            if (!k) grain(P[1], X, Y, z, a);
-            else { grain(P[0], X + z * .25, Y + z * .35, z, a); grain(P[2], X, Y, z, a); if (Math.random() < .3) grain(P[3], X - z * .2, Y - z * .2, z * .45, a); }
-            i++;
-          }
-        };
-        add(Math.round(hw * hh / 4), 0, .007, .012); add(Math.round(hw * hh / 7), 1, .014, .024);
-        x.fillStyle = 'rgba(70,30,20,.14)'; x.fill(P[0]); x.fillStyle = 'rgba(255,255,255,.42)'; x.fill(P[1]);
-        x.fillStyle = 'rgba(255,255,255,.75)'; x.fill(P[2]); x.fillStyle = '#fff'; x.fill(P[3]);
-        this.sugar.push(c);
-      }
       // a centred grid of gummies that runs off every edge, packed a little tighter than they are wide, each turned and
-      // sized a little its own way and its cut nudged out of true, and no two side by side or one above the other in the
-      // same color. R0 is its outline at rest
+      // sized a little its own way and its cut nudged well out of true, so the edges of the jelly wander. The tray isn't
+      // full: about a quarter of the places are left empty, alone or a few together, so the tray shows through the jelly
+      // in holes and bays. R0 is a gummy's outline at rest, hl its glints, flat ovals in units of s
       const p = s * .96, cx = SW / 2, cy = (ZT + ZB) / 2, nx = Math.ceil((cx + s * .6) / p), ny = Math.ceil((Math.max(cy, SH - cy) + s * .6) / p);
       this.g = []; const at = {};
       for (let j = -ny; j <= ny; j++) for (let i = -nx; i <= nx; i++) {
-        const near = [at[(i - 1) + ',' + j], at[i + ',' + (j - 1)]].map(g => g && g.c);
-        let c; do c = Math.floor(Math.random() * COL.length); while (near.includes(c));
-        const v = Math.floor(Math.random() * SHP.length), [hw, hh] = SHP[v], r = rand(-.1, .1), k = rand(.96, 1.03), w2 = rand(0, 6.28), w3 = rand(0, 6.28);
+        if (Math.random() < .25) continue;
+        const [hw, hh] = SHP[Math.floor(Math.random() * SHP.length)], r = rand(-.18, .18), k = rand(.94, 1.04), w2 = rand(0, 6.28), w3 = rand(0, 6.28);
         const R0 = new Float32Array(N);
-        for (let n = 0; n < N; n++) { const a = n / N * 6.2832 - r; R0[n] = reach(hw, hh, Math.cos(a), Math.sin(a)) * k * (1 + .015 * Math.sin(2 * a + w2) + .012 * Math.sin(3 * a + w3)); }
-        const hx = cx + i * p + rand(-.03, .03) * s, hy = cy + j * p + rand(-.03, .03) * s;
-        this.g.push(at[i + ',' + j] = { hx, hy, x: hx, y: hy, vx: 0, vy: 0, fx: 0, fy: 0, tx: 0, ty: 0, gx: 0, gy: 0, cool: 0, r, k, c, cv: v * 2 + (Math.random() < .5 ? 1 : 0),
+        for (let n = 0; n < N; n++) { const a = n / N * 6.2832 - r; R0[n] = reach(hw, hh, Math.cos(a), Math.sin(a)) * k * (1 + .04 * Math.sin(2 * a + w2) + .035 * Math.sin(3 * a + w3)); }
+        const hx = cx + i * p + rand(-.06, .06) * s, hy = cy + j * p + rand(-.06, .06) * s;
+        const hl = Array.from({ length: Math.floor(rand(0, 2.2)) }, () => { const rx = rand(.09, .24); return [rand(-.26, .26), rand(-.26, .26), rx, Math.max(.06, rx * rand(.4, .65)), rand(-.35, .35)]; });
+        this.g.push(at[i + ',' + j] = { hx, hy, x: hx, y: hy, vx: 0, vy: 0, fx: 0, fy: 0, tx: 0, ty: 0, gx: 0, gy: 0, cool: 0, hl,
           R0, t: new Float32Array(N), rr: new Float32Array(N), rv: new Float32Array(N), cm: new Float32Array(N), ex: new Float32Array(N),
           sq: 0, sv: 0, sz: 1, dn: [], necks: [] });
       }
@@ -1358,7 +1301,7 @@ const SCENES = {
       this.pairs = [];
       for (let j = -ny; j <= ny; j++) for (let i = -nx; i <= nx; i++) for (const [di, dj] of [[1, 0], [0, 1], [1, 1], [-1, 1]]) {
         const A = at[i + ',' + j], B = at[(i + di) + ',' + (j + dj)];
-        if (!B) continue;
+        if (!A || !B) continue;
         const a = Math.atan2(B.hy - A.hy, B.hx - A.hx), ra = this.rest(A, a), rb = this.rest(B, a + Math.PI), o0 = ra + rb - Math.hypot(B.hx - A.hx, B.hy - A.hy);
         const can = !(di && dj) && o0 > -s * .08;
         this.pairs.push({ A, B, ra, rb, o0: Math.max(o0, 0), g0: Math.max(-o0, 0), can, on: can, h0: s * .24 });
@@ -1397,7 +1340,7 @@ const SCENES = {
       // the step presses down on the gummy under it: it spreads into its neighbours and keeps a dent that fills back in
       const g = this.under(x, y);
       if (!g) return;
-      g.sv += .025; g.dn.push({ x: x - g.x, y: y - g.y, t0: now }); if (g.dn.length > 4) g.dn.shift();
+      g.sv += .025; g.dn.push({ x: x - g.x, y: y - g.y, a: rand(-.4, .4), t0: now }); if (g.dn.length > 4) g.dn.shift();
     },
     // a neck of jelly lets go; close snaps share one sound
     peel(now) {
@@ -1449,7 +1392,6 @@ const SCENES = {
       }
     },
     draw(now, dt) {
-      sc.drawImage(deco, 0, 0, SW, SH);
       const s = this.s, N = this.N, G = this.g, cs = this.cs, sn = this.sn, gmax = s * .16, H = this.hold;
       // firm but chewy: every gummy springs back to its place (the one on the cursor to where the cursor drags it), the
       // ones pressed together push apart, and stuck ones pull back together until they're stretched too far
@@ -1492,47 +1434,30 @@ const SCENES = {
         }
         paths.push(p);
       }
-      // the shadows go down first, so none falls across a gummy already drawn
-      for (let n = 0; n < G.length; n++) {
-        const g = G[n]; sc.save(); sc.translate(g.x + s * .03, g.y + s * .05); sc.fillStyle = this.shade[g.c]; sc.fill(paths[n]); sc.restore();
-      }
-      const Lw = this.Lw, Lg = this.Lg, Lc = this.Lc;
-      for (let n = 0; n < G.length; n++) {
-        const g = G[n], P = paths[n], c = g.c;
-        sc.save(); sc.translate(g.x, g.y);
-        sc.fillStyle = this.fill[c]; sc.fill(P);
-        sc.clip(P);
-        sc.globalAlpha = .55; sc.drawImage(this.glow[c], s * .28 - Lw / 2, s * .3 - Lw / 2, Lw, Lw); sc.globalAlpha = 1;
-        sc.lineWidth = s * .24; sc.strokeStyle = this.edge[c]; sc.stroke(P);
-        sc.lineWidth = s * .12; sc.strokeStyle = this.rim[c]; sc.stroke(P);
-        // dents sink in quickly and fill back in slowly: shaded on the wall facing away from the light, lit on the far one
+      // flat pink jelly on the off-white tray, drawn small: gummies pressed together run into one pink mass
+      const lx = this.lx, bx = this.bx, q = this.q, M = this.M, W = this.lo.width, Hh = this.lo.height;
+      lx.setTransform(1, 0, 0, 1, 0, 0); lx.fillStyle = '#e8ecea'; lx.fillRect(0, 0, W, Hh);
+      lx.fillStyle = '#fc94bc';
+      for (let n = 0; n < G.length; n++) { lx.setTransform(1 / q, 0, 0, 1 / q, M + G[n].x / q, M + G[n].y / q); lx.fill(paths[n]); }
+      // the tray shows through in soft white glints on the jelly, and in a dent under each step that sinks in quickly
+      // and fills back in slowly, its glint fading as it goes
+      lx.fillStyle = '#e8ecea';
+      for (const g of G) {
+        lx.setTransform(1 / q, 0, 0, 1 / q, M + g.x / q, M + g.y / q);
+        lx.beginPath();
+        for (const [x, y, rx, ry, a] of g.hl) { const X = x * s * g.sz, Y = y * s * g.sz; lx.moveTo(X + rx * s * Math.cos(a), Y + rx * s * Math.sin(a)); lx.ellipse(X, Y, rx * s, ry * s, a, 0, 6.283); }
+        lx.fill();
         g.dn = g.dn.filter(d => now - d.t0 < 2600);
         for (const d of g.dn) {
-          const age = now - d.t0, dp = (1 - Math.exp(-age / 45)) * Math.exp(-age / 800), rd = s * .2;
-          const a = sc.createRadialGradient(d.x - rd * .25, d.y - rd * .25, 0, d.x, d.y, rd);
-          a.addColorStop(0, `rgba(${this.dk[c]},${.5 * dp})`); a.addColorStop(.6, `rgba(${this.dk[c]},${.2 * dp})`); a.addColorStop(1, `rgba(${this.dk[c]},0)`);
-          sc.fillStyle = a; sc.fillRect(d.x - rd, d.y - rd, rd * 2, rd * 2);
-          const b = sc.createRadialGradient(d.x + rd * .45, d.y + rd * .45, 0, d.x + rd * .45, d.y + rd * .45, rd * .5);
-          b.addColorStop(0, `rgba(255,255,255,${.45 * dp})`); b.addColorStop(1, 'rgba(255,255,255,0)');
-          sc.fillStyle = b; sc.fillRect(d.x - rd, d.y - rd, rd * 2, rd * 2);
+          const age = now - d.t0, dp = (1 - Math.exp(-age / 45)) * Math.exp(-age / 800);
+          lx.globalAlpha = Math.min(1, dp * 1.1); lx.beginPath(); lx.ellipse(d.x, d.y, s * .12, s * .065, d.a, 0, 6.283); lx.fill();
         }
-        sc.rotate(g.r); sc.drawImage(this.sugar[g.cv], -Lc * g.k / 2, -Lc * g.k / 2, Lc * g.k, Lc * g.k); sc.rotate(-g.r);
-        // a stretched neck is bare, glossy jelly: a streak of light runs down its lit side
-        const K = g.necks;
-        if (K.length) {
-          sc.lineCap = 'round'; sc.strokeStyle = 'rgba(255,255,255,.4)';
-          for (let i = 0; i < K.length; i += 5) {
-            const ux = K[i], uy = K[i + 1], b = K[i + 2], p = K[i + 3], w = K[i + 4];
-            if (p - b < s * .03) continue;
-            const sg = -uy + ux > 0 ? -1 : 1, nx = -uy * sg * w * .45, ny = ux * sg * w * .45;
-            sc.lineWidth = Math.max(1.5, w * .22);
-            sc.beginPath(); sc.moveTo(ux * (b - s * .04) + nx, uy * (b - s * .04) + ny); sc.lineTo(ux * p + nx, uy * p + ny); sc.stroke();
-          }
-        }
-        sc.drawImage(this.gloss, -Lg, -Lg, Lg, Lg);
-        sc.lineWidth = s * .025; sc.strokeStyle = this.line[c]; sc.stroke(P);
-        sc.restore();
+        lx.globalAlpha = 1;
       }
+      // blurred and stretched back over the screen
+      bx.clearRect(0, 0, W, Hh); bx.filter = `blur(${(s * .065 / q).toFixed(2)}px)`; bx.drawImage(this.lo, 0, 0); bx.filter = 'none';
+      sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
+      sc.drawImage(this.lb, M, M, SW / q, SH / q, 0, 0, SW, SH);
     }
   },
 
@@ -2093,24 +2018,23 @@ function thumb(id) {
       return svg('#d9d8de', `<defs><filter id="laserHeat" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".4"/></filter><filter id="laserRing" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".65"/></filter></defs><g filter="url(#laserHeat)">${ghost}${blob}</g><g filter="url(#laserRing)" fill="#dfe8d6" stroke="#5f8fd0" stroke-width="1.4" stroke-opacity=".55">${at(P, 2.4)}</g>`);
     }
     case 'gummy': {
-      // fruit gummies packed so tight they press flat against each other: the middle one is pulled to the right, so it
-      // squeezes its neighbour narrow and draws a chewy neck of jelly out of the one on its left
-      const cols = ['#e8344e', '#f7801e', '#f4c21a', '#5fb83a', '#8a46cc'];
-      let dust = '', gloss = '';
-      const box = (x, y, w, h, c) => {
-        const gx = (x - w * .18).toFixed(1), gy = (y - h * .27).toFixed(1);
-        b += `<rect x="${(x - w / 2).toFixed(1)}" y="${(y - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3.6" fill="${c}"/>`;
-        gloss += `<ellipse cx="${gx}" cy="${gy}" rx="${(w * .19).toFixed(1)}" ry="1.1" transform="rotate(-22 ${gx} ${gy})"/>`;
-        for (let n = 0; n < 40; n++) dust += `M${(x + (r() - .5) * (w - 1.5)).toFixed(1)} ${(y + (r() - .5) * (h - 1.5)).toFixed(1)}h.8v.8h-.8z`;
+      // pink jelly cubes packed so tight they run together, out of focus on the off-white tray, with a bay of tray in one
+      // corner and soft white glints on the jelly: the middle one is pulled to the right, so it squeezes its neighbour
+      // narrow and draws a chewy neck of jelly out of the one on its left
+      let glint = '';
+      const box = (x, y, w, h) => {
+        b += `<rect x="${(x - w / 2).toFixed(1)}" y="${(y - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3.6"/>`;
+        if (r() < .7) { const gx = (x + (r() - .5) * 8).toFixed(1), gy = (y + (r() - .5) * 8).toFixed(1); glint += `<ellipse cx="${gx}" cy="${gy}" rx="${(1.4 + r() * 1.3).toFixed(1)}" ry=".9" transform="rotate(${((r() - .5) * 30).toFixed(0)} ${gx} ${gy})"/>`; }
       };
       for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) {
-        const c = cols[(i * 2 + j * 3) % 5], x = 7.6 + i * 16.2, y = 8.5 + j * 16.5;
-        if (j === 1 && i === 2) box(43.2, y, 14.3, 16.8, c);
-        else if (j === 1 && i === 3) box(57.5, y, 14.3, 18.2, c);
-        else box(x, y, 16.8, 16.8, c);
+        const x = 7.6 + i * 16.2, y = 8.5 + j * 16.5;
+        if ((j === 0 && i === 4) || (j === 2 && i < 2)) continue;
+        if (j === 1 && i === 2) box(43.2, y, 14.3, 16.8);
+        else if (j === 1 && i === 3) box(57.5, y, 14.3, 18.2);
+        else box(x, y, 16.8, 16.8);
       }
-      b += `<path d="M31.5 20.6Q33 23 34.1 23.3V26.7Q33 27 31.5 29.4Z" fill="${cols[0]}"/><path d="M36.8 20.6Q35.2 23 34.1 23.3V26.7Q35.2 27 36.8 29.4Z" fill="${cols[2]}"/>`;
-      return svg('#efe6d8', `${b}<path d="${dust}" fill="#fff" opacity=".7"/><g fill="#fff" opacity=".65">${gloss}</g><path d="M32.4 24.3H35.8" stroke="#fff" stroke-width=".5" opacity=".6"/>`);
+      b += `<path d="M31.5 20.6Q33 23 34.1 23.3V26.7Q33 27 31.5 29.4ZM36.8 20.6Q35.2 23 34.1 23.3V26.7Q35.2 27 36.8 29.4Z"/>`;
+      return svg('#e8ecea', `<filter id="gummySoft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation=".8"/></filter><g filter="url(#gummySoft)"><g fill="#fc94bc">${b}</g><g fill="#e8ecea">${glint}</g></g>`);
     }
     case 'pudding':
       // the scene's reference picture: blurred green rounds and turned red squares packed on cream
@@ -2208,7 +2132,7 @@ const STORY = {
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
   thock: { try: 'Your cursor is a heat laser: holes burn open, their heat runs together in bands, and it cools back through blue, pink and orange.', look: 'A perforated sheet seen through its heat, after a thermal print: pale lime, blue, pink and orange on grainy grey paper', hear: 'A deep, muffled thock and a light tick as the key springs back' },
-  gummy: { try: 'Drag a gummy into its neighbors, then pull them apart until the jelly snaps.', look: 'Sugar-dusted fruit gummies packed so tight they stick together', hear: 'A round, chewy squish (쫀득) and a tacky peel (쩍)' },
+  gummy: { try: 'Drag a gummy into its neighbors, then pull them apart until the jelly snaps.', look: 'Soft pink jelly cubes packed so tight they run together, out of focus on an off-white tray, after a blurry reference', hear: 'A round, chewy squish (쫀득) and a tacky peel (쩍)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a clean path through the beads. They tumble off, and the cut slowly closes.', look: 'Pale soap crusted with sky blue seed beads, after a photo', hear: 'A crisp, rising shave and the patter of falling beads' },
   snow: { try: 'Walk across fresh snow and leave a trail of boot prints.', look: 'Fresh snow with wind-packed drifts and a twinkle of glitter', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
