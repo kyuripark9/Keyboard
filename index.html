@@ -711,8 +711,9 @@ function roundPoly(p, P, r) {
 const SCENES = {
   /* 01 Bubble Wrap: the sheet drawn as a contour map in pale grey on mint paper, after a photo. Every bubble is a
      hill of rings: big droplets of mixed sizes packed close, each nudged off its row and stretched and tilted its own
-     way, so no two match; where two press together their rings meet in a crease. The sheet sways gently, and a pop
-     flattens its hill and sends a ripple through the neighbours' rings that bounces back off the screen's edges. */
+     way, so no two match; where two press together their rings meet in a crease. The screen's edges hold the sheet
+     like a membrane, and bubbles that reach one squash flat against it. The sheet sways gently, and a pop flattens its
+     hill and sends a ripple through the neighbours' rings that bounces back off the membrane and shakes it. */
   wrap: {
     frame: 'full',
     init() {
@@ -740,6 +741,10 @@ const SCENES = {
         this.amp[q] = this.base[q] = A;
       }
       this.x0 = this.y0 = -s2 * 1.5;
+      // a membrane runs along the screen's edges: the hills press flat against it, so a bubble that reaches an edge
+      // squashes into a D, its rings closing along the edge instead of being cut off there
+      const wall = (n, S) => Float32Array.from({ length: n }, (_, i) => { const e = clamp(Math.min(i * G, S - i * G) / (s2 * .5), 0, 1); return 1 - (1 - e) * (1 - e); });
+      this.mx = wall(w, SW); this.my = wall(h, SH);
       this.rip = []; this.cur = { x: -999, y: -999, a: 0, t: 0 };
       paper(dc, '#69bca9', .07);
     },
@@ -797,9 +802,10 @@ const SCENES = {
           K[o] = top;
         }
       }
-      for (let j = 0, o = 0; j < h; j++) {
-        const r0 = (j >> 1) * W2, r1 = j & 1 ? r0 + W2 : r0;
-        for (let i = 0; i < w; i++, o++) { const a = i >> 1, b = i & 1 ? a + 1 : a; F[o] = (K[r0 + a] + K[r0 + b] + K[r1 + a] + K[r1 + b]) * .25; }
+      // filled in from K and pressed flat against the membrane at the edges; ripples come after, so one that hits it shakes it
+      for (let j = 0, o = 0, mx = this.mx; j < h; j++) {
+        const r0 = (j >> 1) * W2, r1 = j & 1 ? r0 + W2 : r0, my = this.my[j] * .25;
+        for (let i = 0; i < w; i++, o++) { const a = i >> 1, b = i & 1 ? a + 1 : a; F[o] = (K[r0 + a] + K[r0 + b] + K[r1 + a] + K[r1 + b]) * my * mx[i]; }
       }
       // ripples: a ring that runs out from each pop and bends the contour lines it passes through. It bounces off the
       // screen's edges like water off a wall: each edge sends it back as a ring from the pop's mirror image beyond it,
