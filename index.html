@@ -840,13 +840,15 @@ const SCENES = {
 
   /* 02 Crunchy Slime: a sheet of + stitches that crumples like paper. Every step folds the sheet along a straight
      crease with flat facets on each side, so the grid kinks at sharp angles instead of rippling. Stitches follow
-     the stretch and squeeze of the sheet, and the creases slowly flatten out. */
+     the stretch and squeeze of the sheet, and the creases slowly flatten out. The sheet sits between the top row and
+     the tally, with the same gap above and below, so no stitch runs through the count. */
   cloth: {
     frame: 'full',
     init() {
       const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 24), 18, 34), m = s2 * 1.4;
-      const cols = this.cols = Math.floor((SW - m * 2) / s2) + 1, rows = this.rows = Math.floor((ZB - ZT - m * 1.6) / s2) + 1;
-      const x0 = (SW - (cols - 1) * s2) / 2, y0 = ZT + (ZB - ZT - (rows - 1) * s2) / 2, n = cols * rows;
+      const zh = Math.min(ZB, document.querySelector('.tally').getBoundingClientRect().top - FY) - ZT;
+      const cols = this.cols = Math.floor((SW - m * 2) / s2) + 1, rows = this.rows = Math.floor((zh - m * 1.6) / s2) + 1;
+      const x0 = (SW - (cols - 1) * s2) / 2, y0 = ZT + (zh - (rows - 1) * s2) / 2, n = cols * rows;
       this.hx = new Float32Array(n); this.hy = new Float32Array(n); this.px = new Float32Array(n); this.py = new Float32Array(n);
       for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { const q = j * cols + i; this.hx[q] = x0 + i * s2; this.hy[q] = y0 + j * s2; }
       this.folds = []; this.dir = [1, 0];
