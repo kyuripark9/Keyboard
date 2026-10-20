@@ -2240,7 +2240,7 @@ $('next').addEventListener('click', () => step(1));
 /* a little preview swipe across the middle when a sound is picked */
 function demo() {
   initAudio();
-  const n = 6, gap = 110, my = FY + (ZT + ZB) / 2;
+  const n = 2, gap = 110, my = FY + (ZT + ZB) / 2;
   for (let i = 0; i < n; i++) setTimeout(() => {
     const k = cellAt(FX + SW * (.38 + .24 * i / (n - 1)), my + Math.sin(i * 1.3) * CELL * .8);
     if (!k) return;
