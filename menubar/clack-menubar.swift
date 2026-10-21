@@ -177,7 +177,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
   private var cameFrom: NSRunningApplication?
 
-  private var phase = Phase.idle, reason = "", online = true
+  private var phase = Phase.idle, reason = "", online = true, busy = 0
   private var waitAt = Date(), breathFrom: CFTimeInterval = 0, doneAt: CFTimeInterval = 0, ringAtDone: CGFloat = 1
   private var timer: Timer?
   private var shown: (CGFloat, CGFloat, Bool)?
@@ -251,20 +251,28 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private func handle(_ e: [String: Any]) {
     let type = e["type"] as? String
     let at = (e["at"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) } ?? Date()
+    // how many sessions are still working, and since when the longest of them has been (older bridges don't say)
+    let since = (e["since"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) }
+    if let n = e["working"] as? Int { busy = n }
     if type == "hello" {
       // what the bridge knows on (re)connecting; a done from before shows its dot without filling it in again
       switch e["phase"] as? String {
-      case "wait": (phase, waitAt, breathFrom) = (.wait, at, CACurrentMediaTime())
+      case "wait": (phase, waitAt, breathFrom) = (.wait, since ?? at, CACurrentMediaTime())
       case "done": (phase, doneAt) = (.done, 0)
       default: phase = .idle
       }
     } else if type == "start" {
-      if phase != .wait { (waitAt, breathFrom) = (at, CACurrentMediaTime()) }
+      // Claude waking itself up in one session leaves the dot of another one that finished
+      if phase == .done, e["auto"] as? Bool == true { return render() }
+      if phase != .wait { (waitAt, breathFrom) = (since ?? at, CACurrentMediaTime()) }
       phase = .wait
     } else if type == "done", phase == .wait {
       // like the page, a done with no wait behind it changes nothing
       ringAtDone = ringAlpha(CACurrentMediaTime())
       (phase, reason, doneAt) = (.done, e["reason"] as? String ?? "Stop", CACurrentMediaTime())
+    } else if type == "tally", phase == .wait, busy == 0 {
+      // the last working session closed or was stopped with Esc: you're at it already, so the wait just ends
+      phase = .idle
     }
     render()
   }
@@ -326,8 +334,10 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     case .idle: return "no agent running"
     case .wait:
       let s = max(0, Int(Date().timeIntervalSince(waitAt)))
-      return String(format: "agent working · %d:%02d", s / 60, s % 60)
-    case .done: return reason == "Notification" ? "agent needs you" : "agent done"
+      return (busy > 1 ? "\(busy) agents" : "agent") + String(format: " working · %d:%02d", s / 60, s % 60)
+    case .done:
+      let word = ["Notification": "agent needs you", "StopFailure": "agent stopped"][reason] ?? "agent done"
+      return busy > 0 ? "\(word) · \(busy) still working" : word
     }
   }
 

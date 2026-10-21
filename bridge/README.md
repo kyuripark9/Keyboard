@@ -16,7 +16,7 @@ It takes a few seconds and:
 1. puts clack in `~/Library/Application Support/clack`
 2. runs it in the background from now on, also after a restart
 3. puts clack's ring in your menu bar (`~/Applications/clack menu bar.app`, built on your Mac)
-4. asks whether to connect it to Claude Code (three small hooks in `~/.claude/settings.json`, backed up first)
+4. asks whether to connect it to Claude Code (five small hooks in `~/.claude/settings.json`, backed up first)
 5. opens clack under the ring
 
 Run the same line again any time to update to the latest clack.
@@ -39,10 +39,13 @@ bar app). If they are missing, the installer opens Apple's window to install the
 
 ## What it knows, and what it keeps
 
-Claude Code's hooks tell the bridge three things: that you sent a prompt, that Claude stopped (and whether it left
-background tasks running), and that it needs your permission for something. clack uses that to know when you're waiting
-and when to let go. The bridge looks at a prompt only to tell yours apart from Claude waking itself up, never stores
-it, and never sees your code. Nothing leaves your Mac: the bridge only listens on `localhost`. How quickly you went back is kept in your browser, and only shown as your last and typical return.
+Claude Code's hooks tell the bridge that you sent a prompt, that Claude stopped (and whether it left work of its own
+running in the background, such as a shell command or a subagent) or stopped on an error, that it needs your permission
+for something, and that a session closed. clack uses that to know when you're waiting and when to let go. With several
+sessions working at once, the first to finish lets go of you; once you've gone back, clack holds you again while the
+others work, and the next to finish lets go again. The bridge looks at a prompt only to tell yours apart from Claude
+waking itself up, and at the last lines of a working session's transcript only to see whether you stopped it with Esc,
+which no hook reports. It stores neither, and never sees your code. Nothing leaves your Mac: the bridge only listens on `localhost`. How quickly you went back is kept in your browser, and only shown as your last and typical return.
 
 ## Remove
 

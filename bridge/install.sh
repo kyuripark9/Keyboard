@@ -65,7 +65,7 @@ if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
   answer="n"
   if { exec 3</dev/tty; } 2>/dev/null; then
     printf '\n  Connect clack to Claude Code, so it knows when your agent starts and finishes?\n'
-    printf '  This adds three small hooks to ~/.claude/settings.json and backs it up first. [Y/n] '
+    printf '  This adds five small hooks to ~/.claude/settings.json and backs it up first. [Y/n] '
     read -r answer <&3 || answer="n"
     exec 3<&-
   fi

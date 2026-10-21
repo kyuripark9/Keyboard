@@ -6,7 +6,11 @@ Same behaviour as clack-bridge.js, for Macs without Node. Standard library only.
 Claude Code hooks POST to this server:
   UserPromptSubmit -> /start   (you handed off a task: the wait begins)
   Stop             -> /done    (the agent finished: go back)
+  StopFailure      -> /done    (the agent stopped on an error)
   Notification     -> /done    (the agent needs you, e.g. a permission prompt)
+  SessionEnd       -> /end     (the session closed: its wait is over, with nothing to go back to)
+
+Several sessions can work at once: any one finishing calls you back, and the wait goes on while the others work.
 
 Usage:
   python3 clack-bridge.py            start on port 4545
@@ -18,6 +22,7 @@ Usage:
   python3 clack-bridge.py --uninstall-hooks  take the hooks back out of ~/.claude/settings.json
 """
 import json, os, queue, sys, threading, time
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 args = sys.argv[1:]
@@ -46,7 +51,8 @@ def hooks_block(port):
         return [{'hooks': [{'type': 'command', 'command': cmd}]}]
     # Notification only for permission prompts: Claude Code also notifies after 60s of idle input, which isn't a call back
     notify = [{'matcher': 'permission_prompt', 'hooks': entry('done')[0]['hooks']}]
-    return {'hooks': {'UserPromptSubmit': entry('start'), 'Stop': entry('done'), 'Notification': notify}}
+    return {'hooks': {'UserPromptSubmit': entry('start'), 'Stop': entry('done'), 'StopFailure': entry('done'),
+                      'Notification': notify, 'SessionEnd': entry('end')}}
 
 
 if '--hooks' in args:
@@ -112,7 +118,7 @@ if '--autostart' in args or '--no-autostart' in args:
 
 def is_clack_hook(h):
     c = h.get('command', '')
-    return 'curl' in c and '--data-binary @-' in c and ('/start' in c or '/done' in c) and 'localhost:' in c
+    return 'curl' in c and '--data-binary @-' in c and ('/start' in c or '/done' in c or '/end' in c) and 'localhost:' in c
 
 
 if '--uninstall-hooks' in args:
@@ -172,7 +178,8 @@ if '--install' in args:
         print(f'clack hooks are already in {path}')
         sys.exit(0)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    if text is not None:
+    # adding hooks a newer clack brings keeps the backup from before clack's first ones
+    if text is not None and not os.path.exists(path + '.before-clack'):
         with open(path + '.before-clack', 'w') as f:
             f.write(text)
     with open(path, 'w') as f:
@@ -183,8 +190,67 @@ if '--install' in args:
 
 lock = threading.RLock()  # re-entrant: broadcast() runs inside handlers that already hold it
 clients = set()            # one queue per open clack tab
-working = set()
-state = {'phase': 'idle', 'at': int(time.time() * 1000), 'sessions': []}
+working = {}               # each session the agent is working in: since when, when you last prompted it, its transcript
+state = {'phase': 'idle', 'at': int(time.time() * 1000), 'sessions': [], 'working': 0, 'since': None}
+# background work that is the agent's own and wakes it when it ends. A monitor (the comment watch every published
+# artifact keeps, say) waits on other people and can run all day, so a turn that leaves only that behind is done
+AGENT_WORK = ('shell', 'subagent', 'workflow', 'MCP task', 'cloud session')
+
+
+def settle(now, kind):
+    # the wait goes on while any session still works, so one finishing doesn't end the others' wait
+    state.update(phase='wait' if working else 'done' if kind == 'done' else 'idle', at=now, sessions=sorted(working),
+                 working=len(working), since=min((w['since'] for w in working.values()), default=None))
+
+
+def tagged(event):
+    # every event says how many sessions are still working, and since when the longest of them has been
+    return {**event, 'working': state['working'], 'since': state['since']}
+
+
+def interrupted(w):
+    """Esc stops the agent without a Stop hook; its transcript then ends on the interruption, after your last prompt."""
+    try:
+        with open(w['transcript'], 'rb') as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 65536))
+            lines = f.read().decode('utf-8', 'replace').splitlines()
+    except (OSError, TypeError, KeyError):
+        return False
+    for line in reversed(lines):
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if e.get('type') not in ('user', 'assistant') or e.get('isSidechain'):
+            continue
+        content = (e.get('message') or {}).get('content')
+        texts = [content] if isinstance(content, str) else [c.get('text', '') for c in content or [] if isinstance(c, dict)]
+        if not any(str(t).startswith('[Request interrupted by user') for t in texts):
+            return False
+        try:
+            at = datetime.strptime(e['timestamp'], '%Y-%m-%dT%H:%M:%S.%f%z').timestamp() * 1000
+        except (KeyError, ValueError):
+            return False
+        return at > w['prompted']
+    return False
+
+
+def watch():
+    # no hook reports Esc, so every few seconds the transcripts show which sessions were stopped that way
+    while True:
+        time.sleep(5)
+        with lock:
+            gone = [s for s, w in working.items() if interrupted(w)]
+            if not gone:
+                continue
+            now = int(time.time() * 1000)
+            for s in gone:
+                del working[s]
+            settle(now, 'end')
+            event = tagged({'type': 'tally', 'at': now, 'session': gone[0], 'reason': 'interrupt'})
+            broadcast(event)
+            log(event, len(clients))
 
 CORS = {
     'Access-Control-Allow-Origin': '*',
@@ -203,9 +269,14 @@ def broadcast(event):
 def log(e, n):
     if e['type'] == 'hold':
         what = f"agent still running: {e['reason']}"
+    elif e['type'] == 'tally':
+        what = 'agent stopped with Esc' if e['reason'] == 'interrupt' else 'agent closed'
+    elif e['type'] == 'start':
+        what = 'agent working'
     else:
-        what = 'agent working' if e['type'] == 'start' else 'agent needs you' if e['reason'] == 'Notification' else 'agent done'
-    print(f"{time.strftime('%I:%M:%S %p')}  {what}  ({n} clack tab{'' if n == 1 else 's'} listening)", flush=True)
+        what = {'Notification': 'agent needs you', 'StopFailure': 'agent stopped on an error'}.get(e['reason'], 'agent done')
+    busy = f"{state['working']} working · " if state['working'] else ''
+    print(f"{time.strftime('%I:%M:%S %p')}  {what}  ({busy}{n} clack tab{'' if n == 1 else 's'} listening)", flush=True)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -281,7 +352,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = self.path.split('?')[0]
-        if path not in ('/start', '/done'):
+        if path not in ('/start', '/done', '/end'):
             return self.send(404, {'Content-Type': 'text/plain'}, b'not found')
         n = int(self.headers.get('Content-Length') or 0)
         try:
@@ -295,9 +366,19 @@ class Handler(BaseHTTPRequestHandler):
             record(kind, hook)
         # Claude resuming on its own when a background task finishes isn't you handing off something new
         auto = kind == 'start' and str(hook.get('prompt', '')).lstrip().startswith('<task-notification>')
-        # Claude ending its turn with background tasks still running isn't done: it will wake again by itself
-        bg = [t for t in hook.get('background_tasks') or [] if t.get('status') == 'running']
+        # Claude ending its turn with its own background work still running isn't done: it will wake again by itself
+        bg = [t for t in hook.get('background_tasks') or []
+              if t.get('status') in ('running', 'pending') and t.get('type') in AGENT_WORK]
         with lock:
+            if kind == 'end':
+                # a session closed (or cleared) mid-turn: you're already at it, so its wait just ends
+                if working.pop(session, None) is None:
+                    return self.send(204)
+                settle(now, kind)
+                event = tagged({'type': 'tally', 'at': now, 'session': session, 'reason': 'SessionEnd'})
+                broadcast(event)
+                log(event, len(clients))
+                return self.send(204)
             stop = hook.get('hook_event_name') == 'Stop'
             # a session already running when the bridge started (or when its hooks were added) was never seen to
             # start: its first Stop shows it was working all along, so it's taken up from there
@@ -305,22 +386,24 @@ class Handler(BaseHTTPRequestHandler):
             # any other "done" for a session that wasn't working (an idle reminder) is nothing to report
             if kind == 'done' and session not in working and not adopt:
                 return self.send(204)
-            if kind == 'done' and bg:
-                count = len(clients)
-                if adopt:
-                    working.add(session)
-                    state.update(phase='wait', at=now, sessions=sorted(working))
-                    broadcast({'type': 'start', 'at': now, 'session': session, 'reason': 'Stop', 'auto': True})
-                log({'type': 'hold', 'reason': ', '.join(t.get('description') or t.get('command') or 'task' for t in bg)}, count)
-                return self.send(204)
-            if adopt:
-                broadcast({'type': 'start', 'at': now, 'session': session, 'reason': 'Stop', 'auto': True})
             if auto and session in working:
                 return self.send(204)
-            (working.add if kind == 'start' else working.discard)(session)
-            state.update(phase='wait' if kind == 'start' else 'done', at=now, sessions=sorted(working))
+            w = working.get(session) or {'since': now, 'prompted': now}
+            w['transcript'] = hook.get('transcript_path') or w.get('transcript')
+            if kind == 'start' and not auto:
+                w['prompted'] = now
+            working[session] = w
+            settle(now, 'start')
+            if adopt:
+                broadcast(tagged({'type': 'start', 'at': now, 'session': session, 'reason': 'Stop', 'auto': True}))
+            if kind == 'done' and bg:
+                log({'type': 'hold', 'reason': ', '.join(t.get('description') or t.get('command') or 'task' for t in bg)}, len(clients))
+                return self.send(204)
+            if kind == 'done':
+                del working[session]
+                settle(now, kind)
+            event = tagged({'type': kind, 'at': now, 'session': session, 'reason': hook.get('hook_event_name') or kind, 'auto': auto})
             count = len(clients)
-        event = {'type': kind, 'at': now, 'session': session, 'reason': hook.get('hook_event_name') or kind, 'auto': auto}
         broadcast(event)
         log(event, count)
         self.send(204)
@@ -367,6 +450,7 @@ print(f'clack is listening at http://localhost:{PORT}', flush=True)
 print(f'Hooks not set up yet? Run: python3 {os.path.basename(__file__)} --hooks', flush=True)
 if DEBUG:
     print(f'debug: recording every hook to {DEBUG_FILE}', flush=True)
+threading.Thread(target=watch, daemon=True).start()
 try:
     srv.serve_forever()
 except KeyboardInterrupt:

@@ -2866,7 +2866,10 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
    - served by clack-bridge on localhost (or opened with ?bridge=http://localhost:4545): Claude Code hooks tell the
      bridge when you hand off a prompt (start) and when the agent stops or needs you (done), and it streams that here
    - anywhere else, such as the hosted portfolio copy: a demo agent you start yourself, so a visitor can feel the release
-   Return time is measured from "done" to the moment you leave this tab or window (or send the agent a new prompt).
+   With several sessions at once, the first to finish lets go of you, as it's waiting for you whatever the others do; once
+   you've gone back, clack holds you again while any of them is still working, and the next to finish lets go again.
+   Return time is measured from "done" (or from coming back to clack, if it let go while you were away) to the moment you
+   leave this tab or window (or send the agent a new prompt); a release you never saw isn't timed.
    It's kept in this browser only, and only ever shown as your last return and your typical (median) one */
 (() => {
   const RELEASE_MS = 5000, DEMO_MS = 12000, BACK_SHOW_MS = 10000, LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/;
@@ -2874,7 +2877,7 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   const q = new URLSearchParams(location.search);
   const bridge = q.get('bridge') || (LOCAL.test(location.hostname) && location.port ? location.origin : null);
   Object.assign(AG, { mode: bridge ? 'bridge' : 'demo', state: 'idle', offline: false, startAt: 0, doneAt: 0, reason: '',
-    backMs: null, backAt: 0, demoT: 0 });
+    backMs: null, backAt: 0, demoT: 0, busy: 0, since: 0, here: !document.hidden && document.hasFocus(), hereAt: 0, seen: false });
 
   let returns = [];
   try { returns = JSON.parse(localStorage.getItem('clack-returns') || '[]').filter(n => typeof n === 'number'); } catch (e) {}
@@ -2892,48 +2895,67 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   function hold() { setGrip(1); document.body.classList.remove('letting-go'); }
 
   function start(auto) {
-    // a new prompt means you went back, even if this tab never lost focus; Claude waking itself up doesn't
-    if (AG.state === 'done' && !auto) back('prompt');
+    if (AG.state === 'done') {
+      // Claude waking itself up in one session doesn't take back the release another one finishing began
+      if (auto) return;
+      back('prompt'); // a new prompt means you went back, even if this tab never lost focus
+    }
     clearTimeout(AG.demoT);
-    Object.assign(AG, { state: 'wait', startAt: Date.now() });
+    // a second session starting joins the wait already running rather than restarting its clock
+    if (AG.state !== 'wait') Object.assign(AG, { state: 'wait', startAt: AG.since || Date.now() });
     hold(); render();
     if (AG.mode === 'demo') AG.demoT = setTimeout(() => done('Stop'), DEMO_MS);
   }
   function done(reason) {
     if (AG.state !== 'wait') return; // a "done" with no wait behind it (an idle reminder, say) changes nothing
-    Object.assign(AG, { state: 'done', doneAt: Date.now(), reason: reason || 'Stop' });
+    Object.assign(AG, { state: 'done', doneAt: Date.now(), reason: reason || 'Stop', seen: AG.here });
     document.body.classList.add('letting-go');
     render();
   }
   function back(how) {
     if (AG.state !== 'done') return;
-    const ms = Date.now() - AG.doneAt;
-    returns.push(ms); keep();
-    Object.assign(AG, { state: 'idle', backMs: ms, backAt: 0 });
+    // timed from the release, or from when you came back to find it had let go; if you never saw it, there's nothing to time
+    const ms = AG.seen ? Date.now() - Math.max(AG.doneAt, AG.hereAt) : null;
+    if (ms != null) { returns.push(ms); keep(); }
+    // other sessions still working: clack is theirs again, ready for when you come back
+    Object.assign(AG, { state: AG.busy > 0 ? 'wait' : 'idle', startAt: AG.since || Date.now(), backMs: ms, backAt: 0 });
     hold(); render();
   }
   function reset() { clearTimeout(AG.demoT); AG.state = 'idle'; hold(); render(); }
 
-  // leaving the tab or the window is going back to work
-  addEventListener('blur', () => back('blur'));
-  document.addEventListener('visibilitychange', () => { if (document.hidden) back('hidden'); else onReturn(); });
-  addEventListener('focus', onReturn);
-  function onReturn() { if (AG.backMs != null && !AG.backAt) { AG.backAt = Date.now(); render(); } }
+  // you're here while this page has the focus or your pointer; leaving the tab or the window is going back to work
+  function arrive() {
+    if (AG.here) return;
+    Object.assign(AG, { here: true, hereAt: Date.now() });
+    if (AG.state === 'done') AG.seen = true;
+    if (AG.backMs != null && !AG.backAt) AG.backAt = Date.now();
+    render();
+  }
+  function leave(how) { back(how); AG.here = false; }
+  addEventListener('blur', () => leave('blur'));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) leave('hidden'); else arrive(); });
+  addEventListener('focus', arrive);
+  ['pointermove', 'pointerdown'].forEach(t => addEventListener(t, arrive, { passive: true }));
+  // played in without ever taking the focus (a window behind your terminal, say), clack is left when the pointer goes
+  document.addEventListener('mouseout', e => { if (!e.relatedTarget && !document.hasFocus()) leave('pointer'); });
 
   let lastHtml = null;
   function render() {
     const now = Date.now(), s = AG.state;
+    const backNew = AG.backMs != null && AG.backAt && now - AG.backAt < BACK_SHOW_MS;
     el.className = 'agent ' + s;
     let html = '';
-    if (s === 'wait') {
-      html = `<i class="dot"></i><span>${AG.mode === 'demo' ? 'demo agent' : 'agent'} working · ${clock(now - AG.startAt)}</span>`;
+    // coming back while others still work, your return shows first and then their wait
+    if (s === 'wait' && !backNew) {
+      const who = AG.mode === 'demo' ? 'demo agent' : AG.busy > 1 ? AG.busy + ' agents' : 'agent';
+      html = `<i class="dot"></i><span>${who} working · ${clock(now - AG.startAt)}</span>`;
     } else if (s === 'done') {
-      const gone = AG.grip <= 0.02, need = AG.reason === 'Notification';
-      if (!gone) html = `<i class="dot"></i><span>${need ? 'agent needs you' : 'agent done'} · go back</span>`;
+      const gone = AG.grip <= 0.02, word = { Notification: 'agent needs you', StopFailure: 'agent stopped' }[AG.reason] || 'agent done';
+      if (!gone) html = `<i class="dot"></i><span>${word} · go back</span>`;
       else if (now - AG.doneAt < RELEASE_MS + 9000) html = `<span>clack let go · ${AG.mode === 'demo' ? 'tab away to go back' : 'your agent is waiting'}</span>`;
       else if (AG.mode === 'demo') html = `<span>still here?</span><button type="button" data-a="again">try again</button>`;
       else html = `<span>clack let go · your agent is waiting</span>`;
-    } else if (AG.backMs != null && AG.backAt && now - AG.backAt < BACK_SHOW_MS) {
+    } else if (backNew) {
       const typ = returns.length >= 3 ? ` · typical ${secs(median(returns))}` : '';
       html = `<span>back in ${secs(AG.backMs)}${typ}</span>`;
     } else if (AG.mode === 'demo') {
@@ -2967,9 +2989,13 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
     es.onmessage = m => {
       let e; try { e = JSON.parse(m.data); } catch (err) { return; }
       AG.offline = false;
-      if (e.type === 'hello') { if (e.phase === 'wait' && AG.state === 'idle') { start(); AG.startAt = e.at || AG.startAt; } }
+      // how many sessions are still working, and since when the longest of them has been (older bridges don't say)
+      if (typeof e.working === 'number') Object.assign(AG, { busy: e.working, since: e.since || 0 });
+      if (e.type === 'hello') { if (e.phase === 'wait' && AG.state === 'idle') { start(); AG.startAt = AG.since || e.at || AG.startAt; } }
       else if (e.type === 'start') start(e.auto);
       else if (e.type === 'done') done(e.reason);
+      // the last working session closed or was stopped with Esc: you're at it already, so the wait just ends
+      else if (e.type === 'tally' && AG.state === 'wait' && !AG.busy) AG.state = 'idle';
       render();
     };
   }
