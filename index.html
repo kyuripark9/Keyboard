@@ -439,7 +439,7 @@ function tack(t, n, spread, o = {}) {
   for (let i = 0; i < n; i++) { const f = rand(lo, hi); hiss(t + Math.random() * spread, { f, f2: f * 0.72, ft: 0.01, q, a: 0.002, d: rand(d / 2, d), g: rand(0.5, 1) * g }); }
 }
 const SOUNDS = {
-  bubble: { name: 'Bubble Wrap', desc: 'Pop pale rings printed on blue twill', scene: 'wrap', noTrail: true,
+  bubble: { name: 'Bubble Wrap', desc: 'Pop white rings on blue twill', scene: 'wrap', noTrail: true,
     // a gentle, muffled pop that sounds like a drop of water: its note swoops up as the bubble bursts (the bloop), and
     // now and then a smaller droplet plinks after it
     down(k, t, j) {
@@ -748,7 +748,7 @@ function roundPoly(p, P, r) {
 
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
-  /* 01 Bubble Wrap: the sheet drawn as a contour map, after a photo, printed in pale lines on periwinkle twill, after a
+  /* 01 Bubble Wrap: the sheet drawn as a contour map, after a photo, in crisp white lines on periwinkle twill, after a
      print on cloth. Every bubble is a hill with one ring or two: irregular droplets (beans, eggs, blobs) of mixed sizes packed close, each pushed well
      off its row and stretched and tilted its own way, so no two match; where two press together their rings meet in
      a crease. The screen's edges hold the sheet like a membrane, and bubbles that reach one squash flat against it.
@@ -832,9 +832,8 @@ const SCENES = {
     ramp(k) { return k < .35 ? [138 + 80 * k, 166 + 37 * k, 193 + 11 * k] : [166 + 92 * (k - .35), 179 + 75 * (k - .35), 197 + 51 * (k - .35)]; },
     // the print in a fragment shader, on the screen's own pixels: a line wherever the sheet is within a px or two of
     // either level (the grid holds how far each point is from each, read smooth in between), and the cloth from its
-    // tile. A line doesn't cover the cloth but bleaches it most of the way to the pale, and it takes on the raised pale
-    // threads further out than on the blue between them, so its edges break up along the weave. Just downhill of each
-    // line the cloth is a shade bluer, as if the print stood up from it
+    // tile. A line is near white, 2 px wide with its edge filtered over the screen pixel's width, so it stays crisp,
+    // and just downhill of each line the cloth is a shade bluer, as if the print stood up from it
     glInit() {
       const cv = document.createElement('canvas'), gl = cv.getContext('webgl2', { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true });
       if (!gl) return null;
@@ -843,10 +842,11 @@ const SCENES = {
 uniform vec3 uRes, uGrid; uniform sampler2D uV, uW; out vec4 o;
 void main() {
   vec2 f = floor(vec2(gl_FragCoord.x, uRes.y * uRes.z - gl_FragCoord.y)), s = texture(uV, ((f + .5) / uRes.z / uGrid.x + .5) / uGrid.yz).rg;
-  float w = texelFetch(uW, ivec2(mod(f, 252.)), 0).r, l = 1. - smoothstep(.9, 2., min(abs(s.r), abs(s.g)) - (w - .35) * 2.5);
+  float w = texelFetch(uW, ivec2(mod(f, 252.)), 0).r, l = 1. - smoothstep(1. - .6 / uRes.z, 1. + .6 / uRes.z, min(abs(s.r), abs(s.g)));
   float sh = max(smoothstep(-6., -3., s.r) * (1. - smoothstep(-2.5, -1., s.r)), smoothstep(-6., -3., s.g) * (1. - smoothstep(-2.5, -1., s.g)));
-  float k = w * (1. - .45 * sh) + (1. - w) * .75 * l;
-  o = vec4((k < .35 ? mix(vec3(138., 166., 193.), vec3(166., 179., 197.), k / .35) : mix(vec3(166., 179., 197.), vec3(226., 228., 230.), (k - .35) / .65)) / 255., 1.);
+  float k = w * (1. - .45 * sh);
+  vec3 c = k < .35 ? mix(vec3(138., 166., 193.), vec3(166., 179., 197.), k / .35) : mix(vec3(166., 179., 197.), vec3(226., 228., 230.), (k - .35) / .65);
+  o = vec4(mix(c, vec3(245., 246., 247.), l) / 255., 1.);
 }`]]) {
         const sh = gl.createShader(t); gl.shaderSource(sh, '#version 300 es\n' + s); gl.compileShader(sh); gl.attachShader(pr, sh);
       }
@@ -942,11 +942,12 @@ void main() {
       c.a += (ca - c.a) * Math.min(1, dt * .01);
       if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * Math.pow(1 - d / R, 2)); }
       // contour lines at two levels, .12 near a bubble's foot and .5 halfway up: how many px each point sits from each,
-      // up to 6, the height over its slope, so the lines come out a steady width
+      // up to 6, the height over its slope, so the lines come out a steady width. The slope along each axis is the
+      // steeper of the two sides, so a crease, where they slope opposite ways, doesn't read as flat
       const SD = this.SD;
       SD.fill(6);
       for (let j = 1; j < h - 1; j++) for (let i = 1, o = j * w + 1; i < w - 1; i++, o++) {
-        const f = F[o], gx = F[o + 1] - F[o - 1], gy = F[o + w] - F[o - w], g = Math.sqrt(gx * gx + gy * gy) / (2 * G) + 1e-6;
+        const f = F[o], gx = Math.max(Math.abs(F[o + 1] - f), Math.abs(f - F[o - 1])), gy = Math.max(Math.abs(F[o + w] - f), Math.abs(f - F[o - w])), g = Math.sqrt(gx * gx + gy * gy) / G + 1e-6;
         SD[o * 2] = clamp((f - .12) / g, -6, 6); SD[o * 2 + 1] = clamp((f - .5) / g, -6, 6);
       }
       if (this.gl) {
@@ -956,7 +957,7 @@ void main() {
       } else {
         // without WebGL2 the lines are laid over the cloth on small pixels G px across, scaled up soft
         const P = this.px;
-        for (let o = 0; o < w * h; o++) { const d = Math.min(Math.abs(SD[o * 2]), Math.abs(SD[o * 2 + 1])), k = clamp((2 - d) / 1.1, 0, 1); P[o] = (k * k * (3 - 2 * k) * 204) << 24 | 0xe6e4e2; }
+        for (let o = 0; o < w * h; o++) { const d = Math.min(Math.abs(SD[o * 2]), Math.abs(SD[o * 2 + 1])), k = clamp(2 - d, 0, 1); P[o] = (k * 255) << 24 | 0xf7f6f5; }
         this.oc.putImageData(this.img, 0, 0);
         sc.drawImage(deco, 0, 0, SW, SH); sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
       }
@@ -2465,14 +2466,14 @@ function thumb(id) {
   let b = '';
   switch (id) {
     case 'bubble':
-      // big droplets of mixed sizes in loose rows, each a ring or two stretched and tilted its own way, pale on
+      // big droplets of mixed sizes in loose rows, each a ring or two stretched and tilted its own way, white on
       // periwinkle cloth
       for (let j = 0; j < 5; j++) for (let i = 0; i < 7; i++) {
         const R = r() < .2 ? 3 + r() * 1.5 : 5 + r() * 3, e = .75 + r() * .6, a = (r() * 180).toFixed(0);
         const x = (i * 13 + (j % 2) * 6 + (r() - .5) * 4).toFixed(1), y = (1 + j * 12 + (r() - .5) * 4).toFixed(1);
         for (let k = 0, n = R > 6 ? 2 : 1; k < n; k++) b += `<ellipse cx="${x}" cy="${y}" rx="${(R * e * (1 - k * .42)).toFixed(1)}" ry="${(R / e * (1 - k * .42)).toFixed(1)}" transform="rotate(${a} ${x} ${y})"/>`;
       }
-      return svg('#a6b7ca', `<g fill="none" stroke="#e8eaec" stroke-width=".8">${b}</g>`);
+      return svg('#a6b7ca', `<g fill="none" stroke="#f5f6f7" stroke-width=".8">${b}</g>`);
     case 'slime':
       for (let j = 0; j < 7; j++) for (let i = 0; i < 12; i++) {
         const x = 8 + i * 6 + (j > 3 ? (j - 3) * (i < 5 ? 1.2 : .2) : 0), y = 6 + j * 6.2 - (i > 4 && i < 9 ? 1.2 : 0), a = j > 3 && i < 5 ? .25 : 0, l = j > 3 && i < 5 ? 1.2 : 1.7;
@@ -2629,7 +2630,7 @@ function demo() {
 // what each material asks you to try, what its picture is after and what it sounds like. A sound without an entry
 // falls back to its picker line
 const STORY = {
-  bubble: { try: 'Sweep across the sheet to pop the bubbles. Pop one near the edge and its ripple bounces back. They slowly fill back up.', look: 'Bubble wrap as a contour map printed in pale lines on periwinkle twill, after a print on cloth', hear: 'A muffled pop that swoops up like a water drop' },
+  bubble: { try: 'Sweep across the sheet to pop the bubbles. Pop one near the edge and its ripple bounces back. They slowly fill back up.', look: 'Bubble wrap as a contour map in crisp white lines on periwinkle twill, after a print on cloth', hear: 'A muffled pop that swoops up like a water drop' },
   slime: { try: 'Every step folds the sheet along a sharp crease, like crumpled paper.', look: 'A sheet of + stitches that creases into flat facets', hear: 'A wet press and a fizz of tiny crackles, like foam beads bursting' },
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
