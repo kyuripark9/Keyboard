@@ -410,6 +410,19 @@ function wobble(f, t, o = {}) {
   env(v, t, a, d, g); osc.connect(v); out(v, wet);
   osc.start(t); lfo.start(t); osc.stop(t + a + d + 0.05); lfo.stop(t + a + d + 0.05);
 }
+// filtered noise whose band and loudness shiver with a fading wobble, for jelly that jiggles without a note
+function jiggle(t, o = {}) {
+  const { f = 400, q = 2, a = 0.015, d = 0.2, g = 0.3, rate = 8, depth = 0.3, am = 0.5, wet = 0 } = o;
+  const C = A.ctx, s = C.createBufferSource(), fl = C.createBiquadFilter(), v = C.createGain(), w = C.createGain();
+  const lfo = C.createOscillator(), lf = C.createGain(), la = C.createGain();
+  s.buffer = A.noise; s.playbackRate.value = 0.9 + Math.random() * 0.2;
+  fl.type = 'bandpass'; fl.frequency.setValueAtTime(f, t); fl.Q.value = q;
+  lfo.frequency.value = rate; lf.gain.setValueAtTime(f * depth, t); lf.gain.exponentialRampToValueAtTime(f * depth * 0.05, t + a + d);
+  w.gain.value = 1 - am / 2; la.gain.value = am / 2;
+  lfo.connect(lf); lf.connect(fl.frequency); lfo.connect(la); la.connect(w.gain);
+  env(v, t, a, d, g); s.connect(fl); fl.connect(w); w.connect(v); out(v, wet);
+  s.start(t, Math.random() * 0.5); lfo.start(t); s.stop(t + a + d + 0.05); lfo.stop(t + a + d + 0.05);
+}
 const rand = (a, b) => a + Math.random() * (b - a);
 
 /* Each sound: scene = the picture it draws, desc = one line for the picker.
@@ -471,27 +484,41 @@ const SOUNDS = {
       tone('sine', 300 * j, at, { a: 0.001, d: 0.02, g: 0.1 });
     } },
   gummy: { name: 'Chewy Jellies', desc: 'Squish jellies and peel them apart', scene: 'gummy', noTrail: true,
-    // soft, squishy jelly close to the ear, as flat and grainy as the picture: rounded filtered noise with slow
-    // attacks and a faint fizz of tiny ticks for the grain, with no tone, creak or thump. Each step is a pillowy squish
-    // as the cursor presses into the jelly
-    down(k, t, j) {
-      const at = t + rand(0, 0.015);
+    // the jellies make every sound themselves as they move, so you hear what the picture does: soft, rounded filtered
+    // noise with slow attacks, as flat and soft as the pink, with no tone, creak or thump. A step or key landing on a
+    // jelly nobody holds presses it down with a pillowy squish
+    press(k, t, j) {
+      const at = t + rand(0, 0.01);
       hiss(at, { type: 'lowpass', f: 700 * j, f2: 420, ft: 0.08, q: 0.7, a: 0.02, d: 0.09, g: 0.2, wet: 0.05 });
-      crinkle(at + 0.01, 3 + Math.floor(Math.random() * 3), 0.08, { lo: 2500, hi: 6000, g: 0.02, q: 1, a: 0.001, d: 0.004 });
+      crinkle(at + 0.01, 2 + Math.floor(Math.random() * 3), 0.08, { lo: 2500, hi: 6000, g: 0.02, q: 1, a: 0.001, d: 0.004 });
     },
-    // the rest is played by the scene as the jellies move. Squeezed into a neighbour: a slow, soft squish as the jelly
-    // gives, with a fine tacky fizz where the two surfaces cling (쫀득)
+    // the cursor catches a jelly and it gives under the finger: a soft, low press (꾹)
+    grab(k, t, j) {
+      hiss(t, { type: 'lowpass', f: 560 * j, f2: 380, ft: 0.06, q: 1.1, a: 0.012, d: 0.07, g: 0.2, wet: 0.04 });
+    },
+    // pulled from a neighbour, the jelly between them draws out into a string: a fine tacky crackle that runs as fast as
+    // the string grows and climbs as it thins (k.n crackles this frame, k.x how thin the string is, 0 to 1)
+    pull(k, t, j) {
+      for (let i = 0; i < k.n; i++) hiss(t + rand(0, 0.016), { f: (1100 + 2000 * k.x) * rand(0.85, 1.15), q: 1.3, a: 0.0015, d: rand(0.003, 0.008), g: rand(0.5, 1) * (0.06 + 0.05 * k.x) });
+    },
+    // squeezed into a neighbour: a slow, soft squish as the jelly gives, with a fine tacky fizz where the two surfaces
+    // cling (쫀득)
     squeeze(k, t, j) {
-      hiss(t, { f: 380 * j, f2: 520, ft: 0.14, q: 1.1, a: 0.05, d: 0.16, g: 0.34, wet: 0.07 });
-      hiss(t + 0.02, { type: 'lowpass', f: 600 * j, q: 0.7, a: 0.04, d: 0.12, g: 0.16 });
-      crinkle(t + 0.03, 8 + Math.floor(Math.random() * 5), 0.16, { lo: 1600, hi: 3800, g: 0.03, q: 1.2, a: 0.002, d: 0.008 });
+      hiss(t, { f: 380 * j, f2: 520, ft: 0.14, q: 1.1, a: 0.05, d: 0.16, g: 0.26, wet: 0.07 });
+      hiss(t + 0.02, { type: 'lowpass', f: 600 * j, q: 0.7, a: 0.04, d: 0.12, g: 0.12 });
+      crinkle(t + 0.03, 6 + Math.floor(Math.random() * 4), 0.16, { lo: 1600, hi: 3800, g: 0.03, q: 1.2, a: 0.002, d: 0.008 });
     },
-    // a stretched string of jelly lets go: it unzips in a soft crackle, comes off in a gentle sticky pop (쪽) and the
-    // jelly settles back with a little squish
+    // the string lets go: a last tacky crackle, a gentle sticky pop (쪽), and the two halves spring back into their
+    // jellies with a quick wobble, as fast as their faces shiver back into shape
     peel(k, t, j) {
-      crinkle(t, 4 + Math.floor(Math.random() * 3), 0.04, { lo: 1500, hi: 3500, g: 0.05, q: 1.3, a: 0.0015, d: 0.006 });
-      hiss(t + 0.03, { f: 1000 * j, f2: 700, ft: 0.04, q: 1.4, a: 0.004, d: 0.045, g: 0.22, wet: 0.08 });
-      hiss(t + 0.04, { type: 'lowpass', f: 520 * j, q: 0.7, a: 0.012, d: 0.09, g: 0.18 });
+      crinkle(t, 3 + Math.floor(Math.random() * 3), 0.03, { lo: 1800, hi: 3600, g: 0.05, q: 1.3, a: 0.0015, d: 0.006 });
+      hiss(t + 0.02, { f: 1000 * j, f2: 700, ft: 0.04, q: 1.4, a: 0.004, d: 0.045, g: 0.22, wet: 0.08 });
+      jiggle(t + 0.03, { f: 520 * j, q: 1.8, a: 0.012, d: 0.16, g: 0.22, rate: 8.7, depth: 0.25, am: 0.6 });
+    },
+    // a jelly slips off the cursor and bounces home: a soft wobbling squish that rocks as it overshoots and settles
+    // (뽀용), louder the farther it flies back (k.amt, 0 to 1)
+    home(k, t, j) {
+      jiggle(t, { f: 400 * j, q: 1.6, a: 0.02, d: 0.24, g: 0.32 * k.amt, rate: 6.4, depth: 0.3, am: 0.7, wet: 0.06 });
     },
     // two touch again and stick with a light, soft tap (톡)
     stick(k, t, j) {
@@ -1350,8 +1377,8 @@ void main() {
      from the one behind: their faces draw out toward each other and a string of jelly stretches between them, thinning
      until it snaps (쩍) and each half springs back into its cube with a wobble. Dragged too far, a jelly slips off the
      cursor and bounces home, where it sticks again to whatever it touches. Every step also presses down on the jelly
-     under it, so it spreads into its neighbours and springs back. The squeezes, snaps and re-sticks play sounds of
-     their own. */
+     under it, so it spreads into its neighbours and springs back. Every sound comes from the jellies: the catch, the
+     squeeze, the string as it stretches and snaps, the bounce home and the re-stick each play their own. */
   gummy: {
     frame: 'full',
     init() {
@@ -1392,9 +1419,9 @@ void main() {
         if (!B) continue;
         const a = Math.atan2(B.hy - A.hy, B.hx - A.hx), ra = this.rest(A, a), rb = this.rest(B, a + Math.PI), o0 = ra + rb - Math.hypot(B.hx - A.hx, B.hy - A.hy);
         const can = !(di && dj) && o0 > -s * .08;
-        this.pairs.push({ A, B, ra, rb, o0: Math.max(o0, 0), g0: Math.max(-o0, 0), can, on: can, h0: s * .24, sq: 0 });
+        this.pairs.push({ A, B, ra, rb, o0: Math.max(o0, 0), g0: Math.max(-o0, 0), can, on: can, h0: s * .24, sq: 0, gl: 0 });
       }
-      this.hold = null; this.snaps = []; this.T = {};
+      this.hold = null; this.snaps = []; this.T = {}; this.ga = 0;
       this.grain = sc.createPattern(this.tile || (this.tile = this.grainTile(256)), 'repeat');
       this.shape();
       for (const g of this.g) g.rr.set(g.t);
@@ -1423,17 +1450,23 @@ void main() {
     move(x, y, dx, dy) {
       // the cursor catches the jelly under it and drags it along, a little behind; pulled too far, it slips off
       const now = performance.now(), s = this.s, g = Math.hypot(dx, dy) > 300 ? null : this.under(x, y), H = this.hold;
-      if (H && H !== g) { H.tx = H.ty = 0; this.hold = null; }
+      if (H && H !== g) { H.tx = H.ty = 0; this.hold = null; this.home(H, now); }
       if (!g || (!this.hold && now < g.cool)) return;
-      if (!this.hold) { this.hold = g; g.gx = x; g.gy = y; }
+      if (!this.hold) { this.hold = g; g.gx = x; g.gy = y; this.snd('grab', now, 60); }
       const tx = (x - g.gx) * .85, ty = (y - g.gy) * .85;
-      if (Math.hypot(tx, ty) > s * .55) { g.tx = g.ty = 0; g.cool = now + 160; this.hold = null; return; }
+      if (Math.hypot(tx, ty) > s * .55) { g.tx = g.ty = 0; g.cool = now + 160; this.hold = null; this.home(g, now); return; }
       g.tx = tx; g.ty = ty;
     },
     hit(x, y, k, now) {
-      // the step presses down on the jelly under it: it spreads into its neighbours and springs back
+      // the step presses down on the jelly under it: it spreads into its neighbours and springs back, with a squish of its
+      // own unless the cursor is already dragging it
       const g = this.under(x, y);
-      if (g) g.sv += .025;
+      if (g) { g.sv += .025; if (g !== this.hold) this.snd('press', now, 50); }
+    },
+    // a jelly let go of bounces home with a wobble, louder the farther it has to go
+    home(g, now) {
+      const amt = Math.min(1, Math.hypot(g.x - g.hx, g.y - g.hy) / (this.s * .45));
+      if (amt > .15) this.snd('home', now, 100, { amt });
     },
     // a tile of film grain T px across: every pixel a speck a little lighter or darker than what lies under it, most
     // of them faint, laid over jelly and tray alike
@@ -1447,10 +1480,11 @@ void main() {
       g.putImageData(img, 0, 0);
       return c;
     },
-    // plays one of the scene's own sounds (squeeze, peel or stick); close ones of a kind share one
-    snd(kind, now, gap) {
+    // plays one of the scene's own sounds (press, grab, squeeze, peel, home or stick), with o for the sound to read;
+    // close ones of a kind share one
+    snd(kind, now, gap, o) {
       if (now - (this.T[kind] || 0) < gap) return;
-      this.T[kind] = now; playKey({ code: kind, seed: Math.random() }, kind);
+      this.T[kind] = now; playKey({ code: kind, seed: Math.random(), ...o }, kind);
     },
     // presses jelly g flat against a plane p out from its middle toward (ux, uy)
     flat(g, ux, uy, p) {
@@ -1584,13 +1618,19 @@ void main() {
       for (let n = 0; n < G.length; n++) { const g = G[n]; sc.translate(g.x, g.y); sc.fill(paths[n]); sc.translate(-g.x, -g.y); }
       // every stuck pair is joined across its seam by jelly that thins into a string as they're pulled apart, then the
       // halves of the ones that just snapped spring back into their cubes as round bumps
-      const w0 = s * .3;
+      const w0 = s * .3; let grow = 0, thin = 0;
       for (const P of this.pairs) {
-        if (!P.on) continue;
-        const { A, B } = P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1;
-        const x = clamp((D - P.ra * A.sz - P.rb * B.sz - P.g0) / gmax, 0, 1);
+        if (!P.on) { P.gl = 0; continue; }
+        const { A, B } = P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, gp = Math.max(0, D - P.ra * A.sz - P.rb * B.sz - P.g0);
+        const x = Math.min(gp / gmax, 1);
+        // a string that grows this frame crackles as it stretches
+        if (gp > P.gl) { grow += gp - P.gl; thin = Math.max(thin, x); }
+        P.gl = gp;
         sc.fill(this.bridge(A, B, dx / D, dy / D, w0, w0 * (1 - .82 * x)));
       }
+      // one tacky crackle for every bit the strings grew, as many as they're stretched this frame
+      this.ga = grow ? Math.min(this.ga + grow / (s * .012), 6) : this.ga * .5;
+      if (this.ga >= 1) { const n = Math.floor(this.ga); this.ga -= n; playKey({ code: 'pull', seed: 0, n, x: thin }, 'pull'); }
       this.snaps = this.snaps.filter(c => now - c.t0 < 160);
       for (const c of this.snaps) {
         const { A, B } = c.P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, ux = dx / D, uy = dy / D, k = (now - c.t0) / 160;
@@ -2540,7 +2580,7 @@ const STORY = {
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
   thock: { try: 'Your cursor is a heat laser: the burn creeps outward from its path, the holes grow into each other, and it all cools through blue, pink and orange.', look: 'A perforated sheet seen through its heat, after a thermal print: lime holes in blue rims that merge as they burn, with pink and orange heat between them', hear: 'A deep, muffled thock and a light tick as the key springs back' },
-  gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge in one flat pink under a fine grain, after a pink and white reference', hear: 'A soft, slow squish with a fine tacky fizz as they cling (쫀득), and a gentle sticky pop when the string lets go (쪽)' },
+  gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge in one flat pink under a fine grain, after a pink and white reference', hear: 'Only what the jellies do: a soft press as one is caught (꾹), a slow squish as it squeezes into the next (쫀득), a tacky crackle that runs as fast as a string stretches, a sticky pop when it lets go (쪽) and a wobbling squish as a jelly bounces home (뽀용)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a path down to the paper. A few dots come loose and drop away like beads, the shaved soap heaps up along its edges, and the cut slowly closes.', look: 'A bar of soap as a magenta halftone on cream, after a halftone print', hear: 'A crisp, rising shave and the patter of falling flakes' },
   snow: { try: 'Walk across it like still water: each step washes out a print and sends ripples that sweep the moiré bands across the lines.', look: 'Snow seen through a lenticular print, after a reference: fine olive and cream lines in wide arcs on periwinkle, beating into wavy moiré bands', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
