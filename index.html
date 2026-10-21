@@ -812,8 +812,8 @@ const SCENES = {
         for (let j = 0; j < h; j++) { const s = Math.random() < .5 ? 1 : 0; let z = 0; for (let i = 0; i < w; i++) { if ((i + s) % 2 === 0) z = Math.random(); N[j * w + i] = .85 * z + .15 * Math.random(); } }
       }
     },
-    // the lines in a fragment shader, on the screen's own pixels: a level every .1 of height, read smooth off the grid,
-    // and a line wherever the sheet is within .15 of a level's spacing of one. So a line is thin where the ground is
+    // the lines in a fragment shader, on the screen's own pixels: a level every .18 of height, read smooth off the grid,
+    // and a line wherever the sheet is within .015 of one. So a line is thin where the ground is
     // steep and widens into a band where it levels out, though never thinner than a pixel or wider than 12 px. Each
     // row of pixels is cut into dashes 2.5 px long, starting at its own offset, and a dash is inked as a whole when the
     // line is dense enough there to clear its bar (z), so a line is thickest down its middle and frays into loose dashes
@@ -827,8 +827,8 @@ uniform vec3 uRes, uGrid; uniform sampler2D uF; out vec4 o;
 float hash(vec2 p) { vec3 q = fract(p.xyx * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
 void main() {
   vec2 f = floor(vec2(gl_FragCoord.x, uRes.y * uRes.z - gl_FragCoord.y));
-  float q = texture(uF, ((f + .5) / uRes.z / uGrid.x + .5) / uGrid.yz).r / .1, n = floor(q + .5), fw = max(fwidth(q), 1e-5);
-  float c = n < 1. ? 0. : 1. - abs(q - n) / clamp(.15, .55 * fw, 6. * uRes.z * fw);
+  float q = texture(uF, ((f + .5) / uRes.z / uGrid.x + .5) / uGrid.yz).r / .18, n = floor(q + .5), fw = max(fwidth(q), 1e-5);
+  float c = n < 1. ? 0. : 1. - abs(q - n) / clamp(.085, .55 * fw, 6. * uRes.z * fw);
   float L = 2.5 * uRes.z, d = floor((f.x + hash(vec2(f.y, 7.)) * L) / L), z = .85 * hash(vec2(d, f.y)) + .15 * hash(f);
   float k = clamp((c * .95 - z) * 4., 0., 1.) * (.4 + .55 * hash(vec2(d, f.y) + 3.1));
   o = vec4(mix(vec3(229.), vec3(114., 129., 233.), k) / 255., 1.);
@@ -934,10 +934,10 @@ void main() {
         const P = this.px, N = this.N;
         P.fill(0xffe5e5e5);
         for (let j = 1; j < h - 1; j++) for (let i = 1, o = j * w + 1; i < w - 1; i++, o++) {
-          const f = F[o], q = f / .1, n = Math.round(q);
+          const f = F[o], q = f / .18, n = Math.round(q);
           if (n < 1) continue;
-          const gx = Math.max(Math.abs(F[o + 1] - f), Math.abs(f - F[o - 1])), gy = Math.max(Math.abs(F[o + w] - f), Math.abs(f - F[o - w])), g = Math.sqrt(gx * gx + gy * gy) / .1;
-          const k = clamp(((1 - Math.abs(q - n) / clamp(.15, .5 * g, 3 * g)) * .95 - N[o]) * 4, 0, 1) * .75;
+          const gx = Math.max(Math.abs(F[o + 1] - f), Math.abs(f - F[o - 1])), gy = Math.max(Math.abs(F[o + w] - f), Math.abs(f - F[o - w])), g = Math.sqrt(gx * gx + gy * gy) / .18;
+          const k = clamp(((1 - Math.abs(q - n) / clamp(.085, .5 * g, 3 * g)) * .95 - N[o]) * 4, 0, 1) * .75;
           P[o] = 0xff000000 | (229 + (233 - 229) * k) << 16 | (229 - 100 * k) << 8 | (229 - 115 * k);
         }
         this.oc.putImageData(this.img, 0, 0);
@@ -2478,7 +2478,7 @@ function thumb(id) {
       for (let j = 0; j < 5; j++) for (let i = 0; i < 7; i++) {
         const R = r() < .2 ? 3 + r() * 1.5 : 5 + r() * 3, e = .75 + r() * .6, a = (r() * 180).toFixed(0);
         const x = (i * 13 + (j % 2) * 6 + (r() - .5) * 4).toFixed(1), y = (1 + j * 12 + (r() - .5) * 4).toFixed(1);
-        for (let k = 0, n = Math.round(R / 1.6); k < n; k++) b += `<ellipse cx="${x}" cy="${y}" rx="${(R * e * (1 - k / n)).toFixed(1)}" ry="${(R / e * (1 - k / n)).toFixed(1)}" transform="rotate(${a} ${x} ${y})"/>`;
+        for (let k = 0, n = Math.round(R / 2.6); k < n; k++) b += `<ellipse cx="${x}" cy="${y}" rx="${(R * e * (1 - k / n)).toFixed(1)}" ry="${(R / e * (1 - k / n)).toFixed(1)}" transform="rotate(${a} ${x} ${y})"/>`;
       }
       return svg('#e5e5e5', `<g fill="none" stroke="#7281e9" stroke-width=".35">${b}</g>`);
     case 'slime':
