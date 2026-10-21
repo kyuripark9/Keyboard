@@ -1748,7 +1748,8 @@ void main() {
      Every jelly the cursor passes over turns into a tilted red square for a few seconds, then hops back into a green
      round. Every step taps the jelly under it: it spreads flat, springs back and jiggles out of shape, and the wobble
      ripples out through its neighbours a beat later, weaker the farther they sit. The jelly under a resting cursor stays
-     pressed in a little. */
+     pressed in a little. Once clack has let go, a jelly the cursor passes no longer pops into a square: it goes pale and
+     sags a little, slow and heavy, its wobble no longer reaches its neighbours, and it slowly fills back in. */
   jelly: {
     frame: 'full',
     init() {
@@ -1771,7 +1772,7 @@ void main() {
       const cols = nx * 2 + 1, rows = ny * 2 + 1, x0 = cx - nx * p, y0 = cy - ny * ph;
       for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
         this.p.push({ x: x0 + (i + (j & 1) * .5) * p + rand(-.1, .1) * p, y: y0 + j * ph + rand(-.1, .1) * p, k: 0, red: 0, r: rand(-.7, .7), g: rand(.96, 1.04),
-          sq: 0, sv: 0, ex: 0, evx: 0, ey: 0, evy: 0 });
+          sq: 0, sv: 0, ex: 0, evx: 0, ey: 0, evy: 0, off: 0, offT: 0 });
       }
       this.q = []; this.dir = [1, 0]; this.cur = { x: -999, y: -999, t: 0 };
       dc.fillStyle = '#eed9b1'; dc.fillRect(0, 0, SW, SH);
@@ -1781,14 +1782,16 @@ void main() {
       if (l > .5) this.dir = [dx / l, dy / l];
       this.cur = { x, y, t: now };
       // every jelly within reach of the path since the last move turns red, so a fast swipe leaves no gaps
-      const x0 = x - dx, y0 = y - dy, l2 = l * l, R = this.s * .55 * V();
+      const x0 = x - dx, y0 = y - dy, l2 = l * l, R = this.s * .55;
       for (const P of this.p) {
         const t = l2 ? clamp(((P.x - x0) * dx + (P.y - y0) * dy) / l2, 0, 1) : 1;
         if (Math.hypot(P.x - x0 - dx * t, P.y - y0 - dy * t) < R) this.paint(P, now);
       }
     },
-    // a round pops into a square with a little squash; one that is already red stays red a while longer
+    // a round pops into a square with a little squash; one that is already red stays red a while longer. Once clack has
+    // let go it goes pale instead and sags a little, and stays pale while the cursor keeps passing
     paint(P, now) {
+      if (Math.random() >= AG.grip) { const f = 1 - AG.grip; if (f > P.off) P.off = f; P.offT = now + 700; if (!P.k) P.sv -= .004 * f; return; }
       if (!P.k) { P.k = 1; P.sv += .012; }
       P.red = now + rand(3000, 3600);
     },
@@ -1801,28 +1804,32 @@ void main() {
         if (d > R) continue;
         const own = d < s * .5, a = own ? Math.atan2(this.dir[1], this.dir[0]) : Math.atan2(dy, dx);
         if (own) this.paint(P, now);
-        this.q.push({ P, t: now + (own ? 0 : d * 1.6), a: (own ? 1 : .5 * (1 - d / R)) * V(), c: Math.cos(2 * a), s: Math.sin(2 * a) });
+        this.q.push({ P, t: now + (own ? 0 : d * 1.6), a: (own ? 1 : .5 * (1 - d / R) * AG.grip) * V(), c: Math.cos(2 * a), s: Math.sin(2 * a) });
       }
       if (this.q.length > 400) this.q.splice(0, this.q.length - 400);
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
       this.q = this.q.filter(e => { if (now < e.t) return true; e.P.sv += .022 * e.a; e.P.evx += .016 * e.a * e.c; e.P.evy += .016 * e.a * e.s; return false; });
-      const s = this.s, cu = this.cur, rest = now - cu.t < 600;
+      // let go, the jellies move slow and heavy: their wobble dies out far sooner
+      const s = this.s, cu = this.cur, rest = now - cu.t < 600, dm = .006 + .014 * (1 - AG.grip), fo = Math.exp(-dt / 1600);
       for (const P of this.p) {
         if (P.k && now > P.red) { P.k = 0; P.sv += .01; }
-        const tg = rest && Math.hypot(cu.x - P.x, cu.y - P.y) < s * .45 ? .14 : 0;
+        if (P.off && now > P.offT) { P.off *= fo; if (P.off < .01) P.off = 0; }
+        // a pale one sags to a smaller size, and fills back out as its colour comes back
+        const tg = (rest && Math.hypot(cu.x - P.x, cu.y - P.y) < s * .45 ? .14 * AG.grip : 0) - .3 * P.off;
         for (let h = dt; h > 0; h -= 4) {
           const st = Math.min(4, h);
           P.sv += ((tg - P.sq) * .0026 - P.sv * .009) * st; P.sq += P.sv * st;
-          P.evx += (-P.ex * .0019 - P.evx * .006) * st; P.ex += P.evx * st;
-          P.evy += (-P.ey * .0019 - P.evy * .006) * st; P.ey += P.evy * st;
+          P.evx += (-P.ex * .0019 - P.evx * dm) * st; P.ex += P.evx * st;
+          P.evy += (-P.ey * .0019 - P.evy * dm) * st; P.ey += P.evy * st;
         }
       }
       for (const P of this.p) {
         // squash spreads the whole jelly; the jiggle stretches it along one line and narrows it across
         const img = this.img[P.k], n = img.width / SDPR, g = P.g * (1 + .25 * clamp(P.sq, -.45, .8)), u = clamp(P.ex, -.6, .6) * .3, v = clamp(P.ey, -.6, .6) * .3;
         sc.save(); sc.translate(P.x, P.y); sc.transform(g * (1 + u), g * v, g * v, g * (1 - u), 0, 0); sc.rotate(P.r);
+        if (P.off) sc.globalAlpha = 1 - .66 * P.off;
         sc.drawImage(img, -n / 2, -n / 2, n, n);
         sc.restore();
       }
@@ -1838,6 +1845,8 @@ void main() {
      the same square as it was printed, and tumbles as it hops and drops out of the frame like a bead, keeping its size
      all the way.
      After a while the soap creeps back in from the edges, its heap thinning as it comes, until the path is closed.
+     Once clack has let go the blade goes dull: it only scuffs the dots lighter in a narrower band, never down to the
+     paper, heaps up no soap, knocks no dots loose and lets go of the scuff sooner.
      With WebGL2 the dots are drawn at full resolution on the GPU; without it they are worked out in JS at half. */
   soap: {
     frame: 'full',
@@ -1872,7 +1881,7 @@ void main() {
         for (let k = Math.floor(rand(1, 5)); k--;) this.fleck(F0, x + rand(-2, 2) * c, y + rand(-2, 2) * c, c * rand(.5, 1), 1);
       }
       for (let o = 0; o < N; o++) base[o] *= 1 - F0[o];
-      this.DP = new Float32Array(N); this.HP = new Float32Array(N); this.FL = new Float32Array(N);
+      this.DP = new Float32Array(N); this.CV = new Float32Array(N); this.HP = new Float32Array(N); this.FL = new Float32Array(N);
       // TO: each cell's tone as last drawn, and GONE: until when its dot has fallen out of a path
       this.TO = new Float32Array(N); this.GONE = new Float64Array(N);
       // the dot screen: cos(πx/c)·cos(πy/c), inked wherever it rises above a threshold. TH turns a tone (0 paper to 1
@@ -1946,12 +1955,14 @@ void main() {
     move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; },
     hit(x, y, k, now) {
       // the blade shaves a band from the last step to this one, so the steps join into one even path. Half the time a
-      // fleck or a few fly off to one side and land in the soap past the heap
-      const c = this.c, w = c * rand(8, 10) * V(), p = this.last;
+      // fleck or a few fly off to one side and land in the soap past the heap. dep is how far down it gets: to the paper
+      // while clack holds you, and once it has let go only part way, so the dots are just scuffed lighter
+      const g = AG.grip, c = this.c, w = c * rand(8, 10) * (.6 + .4 * g), p = this.last;
       const s = p && now - p.t < 400 && Math.hypot(x - p.x, y - p.y) < CELL * 3 ? { x0: p.x, y0: p.y } : { x0: x, y0: y };
-      s.dx = x - s.x0; s.dy = y - s.y0; s.l2 = s.dx * s.dx + s.dy * s.dy; s.w = w; s.born = now; s.t0 = now + this.HOLD; s.fl = [];
+      s.dx = x - s.x0; s.dy = y - s.y0; s.l2 = s.dx * s.dx + s.dy * s.dy; s.w = w; s.born = now; s.t0 = now + this.HOLD * (.35 + .65 * g); s.fl = [];
+      s.dep = .45 + .55 * g;
       const l = Math.sqrt(s.l2), [ux, uy] = l ? [s.dx / l, s.dy / l] : this.dir;
-      if (Math.random() < .5) {
+      if (Math.random() < .5 * g) {
         const side = Math.random() < .5 ? 1 : -1, u = Math.random();
         const r = side * (w + this.R1 + this.R2 * rand(.5, 1.3)), fx = s.x0 + s.dx * u - uy * r, fy = s.y0 + s.dy * u + ux * r;
         for (let n = Math.floor(rand(1, 4)); n--;) s.fl.push([fx + rand(-1.5, 1.5) * c, fy + rand(-1.5, 1.5) * c, c * rand(.5, .9)]);
@@ -1969,7 +1980,7 @@ void main() {
         if (f >= 1 || now < GONE[q] || TO[q] < .1) continue;
         const t = Math.min(TO[q], .62), a = c * Math.sqrt(2 * t);
         GONE[q] = s.t0 + this.CLOSE * (1 - f);
-        if (Math.random() < .25 * V()) this.beads.push({ x: i * c, y: j * c, a, r: a * clamp(.55 - .9 * t, .08, .5), t0: now + this.OPEN * (1 - Math.cbrt(1 - f)),
+        if (Math.random() < .25 * g * g) this.beads.push({ x: i * c, y: j * c, a, r: a * clamp(.55 - .9 * t, .08, .5), t0: now + this.OPEN * (1 - Math.cbrt(1 - f)),
           an: 0, sp: (Math.random() < .5 ? -1 : 1) * rand(.002, .006), vx: ux * rand(.01, .05) + rand(-.02, .02), vy: uy * rand(.01, .05) - rand(0, .1) });
       }
       if (this.beads.length > 4000) this.beads.splice(0, this.beads.length - 4000);
@@ -1977,11 +1988,13 @@ void main() {
     },
     // every cell's tone from the soap and the paths open now, then its threshold
     field(now) {
-      const { c, nx, ny, E, DP, HP, FL, TO, base, pap, T, TH } = this, R = this.R1 * 1.9 + this.R2;
-      DP.fill(-1e9); HP.fill(0); FL.fill(0);
+      const { c, nx, ny, E, DP, CV, HP, FL, TO, base, pap, T, TH } = this, R = this.R1 * 1.9 + this.R2;
+      DP.fill(-1e9); CV.fill(0); HP.fill(0); FL.fill(0);
       for (const s of this.cuts) {
-        // a path opens fast, holds, then narrows to nothing, its heap thinning as it goes
-        const o = 1 - (1 - clamp((now - s.born) / this.OPEN, 0, 1)) ** 3, cl = clamp(1 - (now - s.t0) / this.CLOSE, 0, 1), w = s.w * o * cl, k = o * Math.sqrt(cl), amp = w * .45;
+        // a path opens fast, holds, then narrows to nothing, its heap thinning as it goes; a dull scuff (dep under 1)
+        // takes off only part of the tone and heaps up next to nothing
+        const o = 1 - (1 - clamp((now - s.born) / this.OPEN, 0, 1)) ** 3, cl = clamp(1 - (now - s.t0) / this.CLOSE, 0, 1), w = s.w * o * cl, amp = w * .45;
+        const dep = s.dep, k = o * Math.sqrt(cl) * dep ** 4;
         if (w < .5) continue;
         const reach = w + amp + R, x1 = s.x0 + s.dx, y1 = s.y0 + s.dy;
         const i0 = Math.max(0, Math.floor((Math.min(s.x0, x1) - reach) / c)), i1 = Math.min(nx - 1, Math.ceil((Math.max(s.x0, x1) + reach) / c));
@@ -1990,13 +2003,14 @@ void main() {
           const px = i * c - s.x0, py = j * c - s.y0, u = s.l2 ? clamp((px * s.dx + py * s.dy) / s.l2, 0, 1) : 0;
           const dd = Math.hypot(px - u * s.dx, py - u * s.dy) - w - E[q] * amp;
           if (-dd > DP[q]) DP[q] = -dd;
-          if (dd > 0 && dd < R) { const h = k * this.heap(dd, q); if (h > HP[q]) HP[q] = h; }
+          const cv = clamp(.5 - dd / c, 0, 1) * dep; if (cv > CV[q]) CV[q] = cv;
+          if (k && dd > 0 && dd < R) { const h = k * this.heap(dd, q); if (h > HP[q]) HP[q] = h; }
         }
         for (const [x, y, r] of s.fl) this.fleck(FL, x, y, r, k);
       }
       // the soap heaped and flecked, the paper with a few dots, a little more right at its edge, and the edge between them
       for (let q = 0; q < nx * ny; q++) {
-        const d = DP[q], cut = clamp(.5 + d / c, 0, 1), sea = (base[q] + (1 - base[q]) * HP[q]) * (1 - FL[q]);
+        const d = DP[q], cut = CV[q], sea = (base[q] + (1 - base[q]) * HP[q]) * (1 - FL[q]);
         const t = TO[q] = sea + (pap[q] + .12 * Math.exp(-Math.max(d, 0) / (c * .8)) - sea) * cut;
         T[q] = TH[Math.round(clamp(t, 0, 1) * 255)];
       }
@@ -2051,7 +2065,9 @@ void main() {
      Every step drops a boot print into it like a stone into still water, left and right in turn along the way the
      cursor walks: the lines wash out to plain periwinkle in a soft ball and heel, and ripples run out that bend them,
      which the moiré blows up into broad bands sweeping across the sheet before it settles. The prints slowly fill back
-     in. With WebGL2 the lines are drawn at full resolution on the GPU; without it they are worked out in JS at half. */
+     in. While clack holds you the sheet is a lenticular you tilt: moving the cursor sweeps the moiré bands across it,
+     and they swing back with a little overshoot when it stops; the ripples run deeper and further and the cursor
+     trails a wider wake. Once clack lets go the bands stay put and the water barely stirs. With WebGL2 the lines are drawn at full resolution on the GPU; without it they are worked out in JS at half. */
   snow: {
     frame: 'full',
     init() {
@@ -2089,7 +2105,8 @@ void main() {
         // the band's swell as a table over one beat, so it costs no cosine per pixel
         this.cosT = Float32Array.from({ length: 1024 }, (_, k) => .5 + .5 * Math.cos(k / 1024 * 6.2832));
       }
-      this.P = 34 * U; this.foot = 1; this.dir = [1, 0]; this.last = null; this.acc = 0; this.at = performance.now(); this.still = false;
+      // bs: how far the tilt has swept the bands (in beats) and bv how fast
+      this.P = 34 * U; this.foot = 1; this.dir = [1, 0]; this.last = null; this.acc = 0; this.at = performance.now(); this.still = false; this.bs = 0; this.bv = 0;
     },
     // the first ruling's phase, the beat (both in periods) and the swell at (x, y); the shader below works out the same
     phase(x, y) {
@@ -2107,13 +2124,13 @@ void main() {
       if (!gl) return null;
       const pr = gl.createProgram();
       for (const [t, s] of [[gl.VERTEX_SHADER, 'in vec2 v; void main() { gl_Position = vec4(v, 0., 1.); }'], [gl.FRAGMENT_SHADER, `precision highp float;
-uniform vec3 uRes, uGrid; uniform vec2 uC, uP; uniform vec4 uQ; uniform float uQ4; uniform sampler2D uT; out vec4 o;
+uniform vec3 uRes, uGrid; uniform vec2 uC, uP; uniform vec4 uQ; uniform float uQ4, uB; uniform sampler2D uT; out vec4 o;
 void main() {
   vec2 p = vec2(gl_FragCoord.x, uRes.y * uRes.z - gl_FragCoord.y) / uRes.z; float U = uP.y;
   vec2 rw = texture(uT, (p / uGrid.x + .5) / uGrid.yz).rg;
   float wp = 80. * U * sin(p.y / (260. * U) + uQ.x + .8 * sin(p.x / (340. * U) + uQ.y)) + 16. * U * sin(p.x / (180. * U) - p.y / (270. * U) + uQ.z);
   float F = (length(p - uC) + wp) / uP.x + rw.r;
-  float B = (p.y + 20. * U * sin(p.x / (110. * U) + uQ.w) + 34. * U * sin(p.x / (260. * U) - p.y / (320. * U) + uQ4)) / (48. * U) + .7 * sin(p.x / (420. * U) + p.y / (380. * U) + uQ.y * 2.) + rw.r;
+  float B = (p.y + 20. * U * sin(p.x / (110. * U) + uQ.w) + 34. * U * sin(p.x / (260. * U) - p.y / (320. * U) + uQ4)) / (48. * U) + .7 * sin(p.x / (420. * U) + p.y / (380. * U) + uQ.y * 2.) + rw.r + uB;
   float a = clamp(.16 + .48 * (.5 + .5 * cos(6.2832 * B)) + .14 * sin(p.x / (520. * U) - p.y / (430. * U) + uQ.z * 1.7), .08, .8); a += (1. - a) * rw.g;
   float ol = (1. - a) * .64, cr = 1. - a - ol, s = a * .5, dp = max(fwidth(F), 1e-4), u = F - dp * .5, v = u + dp, n = floor(v) - floor(u), uu = fract(u), vv = fract(v);
   float co = n * ol + clamp(vv - s, 0., ol) - clamp(uu - s, 0., ol), cc = n * cr + clamp(vv - s - ol, 0., cr) - clamp(uu - s - ol, 0., cr), cl = dp - co - cc;
@@ -2129,7 +2146,7 @@ void main() {
       gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
       for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
       const u = {};
-      for (const n of ['uRes', 'uC', 'uGrid', 'uP', 'uQ', 'uQ4']) u[n] = gl.getUniformLocation(pr, n);
+      for (const n of ['uRes', 'uC', 'uGrid', 'uP', 'uQ', 'uQ4', 'uB']) u[n] = gl.getUniformLocation(pr, n);
       return { c, gl, u };
     },
     // a soft round of radius r into a coarse grid, keeping whichever is stronger
@@ -2150,9 +2167,9 @@ void main() {
       this.at = performance.now(); this.still = false;
     },
     move(x, y, dx, dy) {
-      const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l];
-      // the cursor trails a faint wake through the water
-      if (l < 200) this.drop(x, y, Math.min(.1, l * .005) * V(), 1.4);
+      const l = Math.hypot(dx, dy), g = AG.grip; if (l > .5) this.dir = [dx / l, dy / l];
+      // the cursor trails a wake through the water, wider while clack holds you, and tilts the print so the bands sweep
+      if (l < 200) { this.drop(x, y, Math.min(.1 + .14 * g, l * (.005 + .006 * g)) * V(), 1.4 + .6 * g); this.bv += (dx * .8 + dy * .45) / (48 * this.U) * .0016 * g; }
     },
     hit(x, y, k, now) {
       // a print every stride, feet taking turns either side of the path, each pointing the way the cursor walks: the
@@ -2163,16 +2180,20 @@ void main() {
       const [ux, uy] = this.dir, f = this.foot = -this.foot, px = x - uy * P * .55 * f, py = y + ux * P * .55 * f;
       this.stamp(this.W, px + ux * P * .5, py + uy * P * .5, P * .62, .95 * V());
       this.stamp(this.W, px - ux * P * .75, py - uy * P * .75, P * .46, .95 * V());
-      this.drop(px, py, 1.1 * V(), 2);
+      this.drop(px, py, (1.1 + .5 * AG.grip) * V(), 2 + .5 * AG.grip);
     },
-    // one step of the ripple: each cell is pulled by its neighbours and keeps its swing, losing a little every step
+    // one step of the ripple: each cell is pulled by its neighbours and keeps its swing, losing a little every step, and
+    // less while clack holds you, so the ripples run further
     step() {
-      const nx = this.nx, ny = this.ny, a = this.H0, b = this.H1;
-      for (let j = 1; j < ny - 1; j++) for (let i = 1, o = j * nx + 1; i < nx - 1; i++, o++) b[o] = ((a[o - 1] + a[o + 1] + a[o - nx] + a[o + nx]) * .5 - b[o]) * .985;
+      const nx = this.nx, ny = this.ny, a = this.H0, b = this.H1, k = .985 + .006 * AG.grip;
+      for (let j = 1; j < ny - 1; j++) for (let i = 1, o = j * nx + 1; i < nx - 1; i++, o++) b[o] = ((a[o - 1] + a[o + 1] + a[o - nx] + a[o + nx]) * .5 - b[o]) * k;
       this.H0 = b; this.H1 = a;
     },
     draw(now, dt) {
       // once the water has stilled and the prints have filled in, the last picture is kept and only drawn again
+      // the tilt swings back to rest on a soft spring
+      for (let h = dt; h > 0; h -= 8) { const st = Math.min(8, h); this.bv += (-this.bs * 3.6e-5 - this.bv * .0036) * st; this.bs = clamp(this.bs + this.bv * st, -1.5, 1.5); }
+      if (Math.abs(this.bs) < 1e-3 && Math.abs(this.bv) < 1e-5) this.bs = this.bv = 0; else this.at = now;
       const idle = now - this.at > 15000;
       if (!idle || !this.still) {
         this.acc += dt;
@@ -2182,8 +2203,9 @@ void main() {
         const k = Math.exp(-dt / 3000), W = this.W, W0 = this.W0, Wc = this.Wc;
         for (let o = 0; o < W.length; o++) { W[o] *= k; Wc[o] = Math.max(W[o], W0[o]); }
         if (this.gl) {
-          const { gl } = this.gl, T = this.tx, H = this.H0;
+          const { gl, u } = this.gl, T = this.tx, H = this.H0;
           for (let o = 0; o < Wc.length; o++) { T[o * 2] = H[o]; T[o * 2 + 1] = Wc[o]; }
+          gl.uniform1f(u.uB, this.bs);
           gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.nx, this.ny, gl.RG, gl.FLOAT, T); gl.drawArrays(gl.TRIANGLES, 0, 3);
         } else this.render();
         this.still = idle;
@@ -2193,14 +2215,14 @@ void main() {
     },
     // without WebGL2: the shader's work in JS on the small pixels, reading the coarse grid at every fourth one
     render() {
-      const w = this.w, h = this.h, nx = this.nx, F = this.F, B = this.B, A = this.A, H = this.H0, Wc = this.Wc, P = this.px, T = this.cosT, dp = this.G / this.p;
+      const w = this.w, h = this.h, nx = this.nx, F = this.F, B = this.B, A = this.A, H = this.H0, Wc = this.Wc, P = this.px, T = this.cosT, dp = this.G / this.p, bs = this.bs;
       for (let j = 0, o = 0; j < h; j++) {
         const r0 = (j >> 2) * nx, fy = (j & 3) / 4;
         for (let i = 0; i < w; i++, o++) {
           const a00 = r0 + (i >> 2), fx = (i & 3) / 4, gx = 1 - fx, gy = 1 - fy;
           const d = (H[a00] * gx + H[a00 + 1] * fx) * gy + (H[a00 + nx] * gx + H[a00 + nx + 1] * fx) * fy;
           const wc = (Wc[a00] * gx + Wc[a00 + 1] * fx) * gy + (Wc[a00 + nx] * gx + Wc[a00 + nx + 1] * fx) * fy;
-          const bt = B[o] + d, m = T[((bt - Math.floor(bt)) * 1024) | 0];
+          const bt = B[o] + d + bs, m = T[((bt - Math.floor(bt)) * 1024) | 0];
           let a = clamp(.16 + .48 * m + A[o], .08, .8); a += (1 - a) * wc;
           const ol = (1 - a) * .64, cr = 1 - a - ol, s = a / 2, u = F[o] + d - dp / 2, v = u + dp, fu = Math.floor(u), fv = Math.floor(v), uu = u - fu, vv = v - fv;
           // how much of the pixel's span falls on the olive line (from s to s + ol) and on the cream one after it
