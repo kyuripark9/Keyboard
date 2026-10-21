@@ -73,8 +73,8 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 .stage { min-height: 0; min-width: 0; }
 
 /* The agent line: one quiet line over the tally that knows when your agent is working, when it's done and how fast you
-   went back. It never shows a best or a streak, so there is nothing to stay for. It keeps a fixed height so the pictures
-   that measure the tally never shift */
+   went back, and is empty the rest of the time. It never shows a best or a streak, so there is nothing to stay for. It
+   keeps a fixed height so the pictures that measure the tally never shift */
 .agent { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 18px; margin-bottom: 6px;
   font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap;
   transition: opacity .6s; }
@@ -2798,7 +2798,7 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   const el = $('agent');
   const q = new URLSearchParams(location.search);
   const bridge = q.get('bridge') || (LOCAL.test(location.hostname) && location.port ? location.origin : null);
-  Object.assign(AG, { mode: bridge ? 'bridge' : 'demo', state: 'idle', linked: false, startAt: 0, doneAt: 0, reason: '',
+  Object.assign(AG, { mode: bridge ? 'bridge' : 'demo', state: 'idle', offline: false, startAt: 0, doneAt: 0, reason: '',
     backMs: null, backAt: 0, demoT: 0 });
 
   let returns = [];
@@ -2863,8 +2863,9 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
       html = `<span>back in ${secs(AG.backMs)}${typ}</span>`;
     } else if (AG.mode === 'demo') {
       html = `<button type="button" data-a="try">try an agent wait</button>`;
-    } else {
-      html = AG.linked ? `<span>agent linked</span>` : `<span>bridge offline</span>`;
+    } else if (AG.offline) {
+      // with the bridge up and nothing to wait for, the line says nothing and the count stands alone
+      html = `<span>bridge offline</span>`;
       el.classList.add('dim');
     }
     if (lastHtml !== html) el.innerHTML = lastHtml = html;
@@ -2886,11 +2887,11 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
 
   if (AG.mode === 'bridge') {
     const es = new EventSource(bridge.replace(/\/$/, '') + '/events');
-    es.onopen = () => { AG.linked = true; render(); };
-    es.onerror = () => { AG.linked = false; render(); };
+    es.onopen = () => { AG.offline = false; render(); };
+    es.onerror = () => { AG.offline = true; render(); };
     es.onmessage = m => {
       let e; try { e = JSON.parse(m.data); } catch (err) { return; }
-      AG.linked = true;
+      AG.offline = false;
       if (e.type === 'hello') { if (e.phase === 'wait' && AG.state === 'idle') { start(); AG.startAt = e.at || AG.startAt; } }
       else if (e.type === 'start') start(e.auto);
       else if (e.type === 'done') done(e.reason);
