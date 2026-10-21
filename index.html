@@ -814,9 +814,10 @@ const SCENES = {
     },
     // the lines in a fragment shader, on the screen's own pixels: a level every .1 of height, read smooth off the grid,
     // and a line wherever the sheet is within .15 of a level's spacing of one. So a line is thin where the ground is
-    // steep and widens into a band where it levels out, though never thinner than a pixel or wider than 12 px. Each row of pixels is cut into dashes 2.5 px long, starting at its own offset, and a dash is inked as a
-    // whole when the line is dense enough there to clear its bar (z), so a line is thickest down its middle and frays
-    // into loose dashes at its edges, some inked lighter than others
+    // steep and widens into a band where it levels out, though never thinner than a pixel or wider than 12 px. Each
+    // row of pixels is cut into dashes 2.5 px long, starting at its own offset, and a dash is inked as a whole when the
+    // line is dense enough there to clear its bar (z), so a line is thickest down its middle and frays into loose dashes
+    // at its edges, some inked lighter than others
     glInit() {
       const cv = document.createElement('canvas'), gl = cv.getContext('webgl2', { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true });
       if (!gl) return null;
