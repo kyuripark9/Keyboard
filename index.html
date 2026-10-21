@@ -24,7 +24,7 @@
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   color-scheme: light;
 }
-body[data-scene="wrap"]   { --bg: #7281e9; --ink: #0d1240; --ink-soft: #10174a; --line: rgba(13,18,64,.2); --acc: #0d1240; --cursor: #0d1240; color-scheme: light; }
+body[data-scene="wrap"]   { --bg: #cbe3bc; --ink: #0d1240; --ink-soft: #10174a; --line: rgba(13,18,64,.2); --acc: #0d1240; --cursor: #0d1240; color-scheme: light; }
 body[data-scene="cyano"]  { --bg: #3557b0; --ink: #f2f5ff; --ink-soft: #c3d0f5; --line: rgba(242,245,255,.25); --acc: #f2f5ff; --cursor: #f2f5ff; color-scheme: dark; }
 body[data-scene="cloth"]  { --bg: #e6e6e6; --ink: #1a1a1a; --ink-soft: #6a6a6a; --line: rgba(26,26,26,.14); --acc: #1a1a1a; --cursor: #1a1a1a; color-scheme: light; }
 body[data-scene="wax"]    { --bg: #c3c6db; --ink: #2d345d; --ink-soft: #60678b; --line: rgba(45,52,93,.15); --acc: #2d345d; --cursor: #2d345d; color-scheme: light; }
@@ -764,8 +764,8 @@ function roundPoly(p, P, r) {
 
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
-  /* 01 Bubble Wrap: the sheet drawn as a contour map, after a print of one with its colours turned around: many fine
-     lines in pale grey on cornflower blue, each scratched in short sideways dashes, thin where the ground is steep
+  /* 01 Bubble Wrap: the sheet drawn as a contour map, after a print of one, on the pale lime of 05's hot holes: many
+     fine white lines, each scratched in short sideways dashes, thin where the ground is steep
      and spreading into hatched bands where it levels out, on hilltops and saddles. Every bubble is a hill: irregular
      droplets (beans, eggs, blobs) of mixed sizes packed close, each pushed well off its row and stretched and tilted
      its own way, so no two match, and where they overlap they add up into ridges with saddles between. The screen's
@@ -839,7 +839,7 @@ void main() {
   float c = n < 1. ? 0. : 1. - abs(q - n) / clamp(.1125, 1.8 * uRes.z * fw, 8. * uRes.z * fw);
   float L = 2.5 * uRes.z, d = floor((f.x + hash(vec2(f.y, 7.)) * L) / L), z = .85 * hash(vec2(d, f.y)) + .15 * hash(f);
   float k = clamp((c * 1.1 - z) * 4., 0., 1.) * (.5 + .5 * hash(vec2(d, f.y) + 3.1));
-  o = vec4(mix(vec3(114., 129., 233.), vec3(229.), k) / 255., 1.);
+  o = vec4(mix(vec3(203., 227., 188.), vec3(250., 252., 248.), k) / 255., 1.);
 }`]]) {
         const sh = gl.createShader(t); gl.shaderSource(sh, '#version 300 es\n' + s); gl.compileShader(sh); gl.attachShader(pr, sh);
       }
@@ -940,13 +940,13 @@ void main() {
       } else {
         // the shader's work in JS, the slope along each axis taken as the steeper of its two sides
         const P = this.px, N = this.N;
-        P.fill(0xffe98172);
+        P.fill(0xffbce3cb);
         for (let j = 1; j < h - 1; j++) for (let i = 1, o = j * w + 1; i < w - 1; i++, o++) {
           const f = F[o], q = f / .4, n = Math.round(q);
           if (n < 1) continue;
           const gx = Math.max(Math.abs(F[o + 1] - f), Math.abs(f - F[o - 1])), gy = Math.max(Math.abs(F[o + w] - f), Math.abs(f - F[o - w])), g = Math.sqrt(gx * gx + gy * gy) / .4;
           const k = clamp(((1 - Math.abs(q - n) / clamp(.1125, .9 * g, 4 * g)) * 1.1 - N[o]) * 4, 0, 1) * .8;
-          P[o] = 0xff000000 | (233 - 4 * k) << 16 | (129 + 100 * k) << 8 | (114 + 115 * k);
+          P[o] = 0xff000000 | (188 + 60 * k) << 16 | (227 + 25 * k) << 8 | (203 + 47 * k);
         }
         this.oc.putImageData(this.img, 0, 0);
         sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
@@ -2479,14 +2479,14 @@ function thumb(id) {
   let b = '';
   switch (id) {
     case 'bubble':
-      // hills of mixed sizes in loose rows, each stretched and tilted its own way, ringed by fine pale grey contour
-      // lines on cornflower blue
+      // hills of mixed sizes in loose rows, each stretched and tilted its own way, ringed by fine white contour
+      // lines on pale lime
       for (let j = 0; j < 5; j++) for (let i = 0; i < 7; i++) {
         const R = r() < .2 ? 3 + r() * 1.5 : 5 + r() * 3, e = .75 + r() * .6, a = (r() * 180).toFixed(0);
         const x = (i * 13 + (j % 2) * 6 + (r() - .5) * 4).toFixed(1), y = (1 + j * 12 + (r() - .5) * 4).toFixed(1);
         for (let k = 0, n = Math.max(1, Math.round(R / 5)); k < n; k++) b += `<ellipse cx="${x}" cy="${y}" rx="${(R * e * (1 - k / n)).toFixed(1)}" ry="${(R / e * (1 - k / n)).toFixed(1)}" transform="rotate(${a} ${x} ${y})"/>`;
       }
-      return svg('#7281e9', `<g fill="none" stroke="#e5e5e5" stroke-width="1">${b}</g>`);
+      return svg('#cbe3bc', `<g fill="none" stroke="#fafcf8" stroke-width="1">${b}</g>`);
     case 'slime':
       for (let j = 0; j < 7; j++) for (let i = 0; i < 12; i++) {
         const x = 8 + i * 6 + (j > 3 ? (j - 3) * (i < 5 ? 1.2 : .2) : 0), y = 6 + j * 6.2 - (i > 4 && i < 9 ? 1.2 : 0), a = j > 3 && i < 5 ? .25 : 0, l = j > 3 && i < 5 ? 1.2 : 1.7;
@@ -2643,7 +2643,7 @@ function demo() {
 // what each material asks you to try, what its picture is after and what it sounds like. A sound without an entry
 // falls back to its picker line
 const STORY = {
-  bubble: { try: 'Sweep across the sheet to pop the bubbles. Pop one near the edge and its ripple bounces back. They slowly fill back up.', look: 'Bubble wrap as a contour map scratched in fine pale grey lines on cornflower blue, after a print of one', hear: 'A muffled pop that swoops up like a water drop' },
+  bubble: { try: 'Sweep across the sheet to pop the bubbles. Pop one near the edge and its ripple bounces back. They slowly fill back up.', look: 'Bubble wrap as a contour map scratched in fine white lines on pale lime, after a print of one', hear: 'A muffled pop that swoops up like a water drop' },
   slime: { try: 'Every step folds the sheet along a sharp crease, like crumpled paper.', look: 'A sheet of + stitches that creases into flat facets', hear: 'A wet press and a fizz of tiny crackles, like foam beads bursting' },
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
