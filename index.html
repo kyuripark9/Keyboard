@@ -1692,9 +1692,9 @@ void main() {
      cream flecks in it. Every step shaves a path along the way the cursor travels, down to the cream paper with a
      ragged edge like a coastline: the shaved soap heaps up along it in solid magenta that opens into cream holes as it
      fades back into the checkerboard, the paper keeps a few dots close to the edge, and now and then a fleck of cream
-     flies off into the soap. After a while the soap creeps back in from the edges, its heap thinning as it comes, until
-     the path is closed. With WebGL2 the dots are drawn at full resolution on the GPU; without it they are worked out in
-     JS at half. */
+     flies off into the soap, while a few of the dots it shaves come loose like beads, hop and drop out of the frame.
+     After a while the soap creeps back in from the edges, its heap thinning as it comes, until the path is closed.
+     With WebGL2 the dots are drawn at full resolution on the GPU; without it they are worked out in JS at half. */
   soap: {
     frame: 'full',
     HOLD: 6000, CLOSE: 4000, OPEN: 160,
@@ -1751,7 +1751,7 @@ void main() {
         for (let j = 0, o = 0; j < h; j++) for (let i = 0; i < w; i++, o++) this.S[o] = Math.cos(Math.PI * (i + .5) * G / c) * Math.cos(Math.PI * (j + .5) * G / c);
         this.ci = Float32Array.from({ length: w }, (_, i) => (i + .5) * G / c); this.cj = Float32Array.from({ length: h }, (_, j) => (j + .5) * G / c);
       }
-      this.cuts = []; this.dir = [1, 0]; this.last = null; this.dirty = true;
+      this.cuts = []; this.beads = []; this.dir = [1, 0]; this.last = null; this.dirty = true;
     },
     // the heap of shaved soap in cell q, dd px past a path's edge: solid for about R1, then fading back into the soap
     // over R2
@@ -1803,11 +1803,21 @@ void main() {
       const c = this.c, w = c * rand(8, 10), p = this.last;
       const s = p && now - p.t < 400 && Math.hypot(x - p.x, y - p.y) < CELL * 3 ? { x0: p.x, y0: p.y } : { x0: x, y0: y };
       s.dx = x - s.x0; s.dy = y - s.y0; s.l2 = s.dx * s.dx + s.dy * s.dy; s.w = w; s.born = now; s.t0 = now + this.HOLD; s.fl = [];
+      const l = Math.sqrt(s.l2), [ux, uy] = l ? [s.dx / l, s.dy / l] : this.dir;
       if (Math.random() < .5) {
-        const l = Math.sqrt(s.l2), [ux, uy] = l ? [s.dx / l, s.dy / l] : this.dir, side = Math.random() < .5 ? 1 : -1, u = Math.random();
+        const side = Math.random() < .5 ? 1 : -1, u = Math.random();
         const r = side * (w + this.R1 + this.R2 * rand(.5, 1.3)), fx = s.x0 + s.dx * u - uy * r, fy = s.y0 + s.dy * u + ux * r;
         for (let n = Math.floor(rand(1, 4)); n--;) s.fl.push([fx + rand(-1.5, 1.5) * c, fy + rand(-1.5, 1.5) * c, c * rand(.5, .9)]);
       }
+      // one to three of the dots in the band come loose as beads, each from a dot of the screen: those sit on the grid
+      // of c where i + j is even
+      for (let n = Math.floor(rand(1, 4)); n--;) {
+        const u = Math.random(), v = w * rand(-.8, .8), bx = (s.x0 + s.dx * u - uy * v) / c, by = (s.y0 + s.dy * u + ux * v) / c;
+        let i = Math.round(bx), j = Math.round(by);
+        if ((i + j) & 1) { if (Math.abs(bx - i) > Math.abs(by - j)) i += bx > i ? 1 : -1; else j += by > j ? 1 : -1; }
+        this.beads.push({ x: i * c, y: j * c, r: c * rand(.8, 1.1), vx: ux * rand(.03, .12) + rand(-.03, .03), vy: uy * rand(.03, .1) - rand(.04, .14) });
+      }
+      if (this.beads.length > 400) this.beads.splice(0, this.beads.length - 400);
       this.last = { x, y, t: now }; this.cuts.push(s);
     },
     // every cell's tone from the soap and the paths open now, then its threshold
@@ -1848,6 +1858,16 @@ void main() {
       }
       sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
       if (this.gl) sc.drawImage(this.gl.cv, 0, 0, SW, SH); else sc.drawImage(this.off, 0, 0, this.w * this.G, this.h * this.G);
+      // the loose beads hop and fall out of the frame, each in a ring of paper so it shows over the soap
+      this.beads = this.beads.filter(b => b.y - b.r < SH);
+      if (this.beads.length) {
+        for (const b of this.beads) { b.vy += .0016 * dt; b.x += b.vx * dt; b.y += b.vy * dt; }
+        for (const [col, e] of [['#ebead6', this.c * .35], ['#bd4885', 0]]) {
+          sc.beginPath();
+          for (const b of this.beads) { sc.moveTo(b.x + b.r + e, b.y); sc.arc(b.x, b.y, b.r + e, 0, 6.283); }
+          sc.fillStyle = col; sc.fill();
+        }
+      }
     },
     // without WebGL2: the shader's work in JS on the small pixels
     render() {
@@ -2522,7 +2542,7 @@ const STORY = {
   thock: { try: 'Your cursor is a heat laser: the burn creeps outward from its path, the holes grow into each other, and it all cools through blue, pink and orange.', look: 'A perforated sheet seen through its heat, after a thermal print: lime holes in blue rims that merge as they burn, with pink and orange heat between them', hear: 'A deep, muffled thock and a light tick as the key springs back' },
   gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge in one flat pink under a fine grain, after a pink and white reference', hear: 'A soft, slow squish with a fine tacky fizz as they cling (쫀득), and a gentle sticky pop when the string lets go (쪽)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
-  soap: { try: 'Shave a path down to the paper. The shaved soap heaps up along its edges, and the cut slowly closes.', look: 'A bar of soap as a magenta halftone on cream, after a halftone print', hear: 'A crisp, rising shave and the patter of falling flakes' },
+  soap: { try: 'Shave a path down to the paper. A few dots come loose and drop away like beads, the shaved soap heaps up along its edges, and the cut slowly closes.', look: 'A bar of soap as a magenta halftone on cream, after a halftone print', hear: 'A crisp, rising shave and the patter of falling flakes' },
   snow: { try: 'Walk across it like still water: each step washes out a print and sends ripples that sweep the moiré bands across the lines.', look: 'Snow seen through a lenticular print, after a reference: fine olive and cream lines in wide arcs on periwinkle, beating into wavy moiré bands', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
   sugar: { try: 'Rake three fingertips through the slime: the lime sugar is scraped off down to the blue and heaps up around the furrows.', look: 'Grainy lime slime flecked with blue, yellower toward one corner, after a grainy gradient print', hear: 'A gentle, sandy 사각사각 (sa-gak sa-gak) and trickling sugar' },
 };
