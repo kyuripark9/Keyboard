@@ -1080,8 +1080,14 @@ void main() {
       for (let j = 0; j < H2; j++) ox[j] = this.ox(j * G2, t);
       for (let i = 0; i < W2; i++) { oy[i] = this.oy(i * G2, t); xs[i] = this.xs(i * G2); }
       const x0 = this.x0, y0 = this.y0, inv = 1 / s2, { bx, by, ca: cos, sa: sin, irx, iry, c1, c2, ph, B } = this;
+      // the ground's four swells, each split into a part along the row and one along the column (sin(a + b) = sin a cos b
+      // + cos a sin b), so a frame takes a few sines per row and column instead of four at every point
+      const SI = new Float64Array(W2 * 8), SJ = new Float64Array(H2 * 8);
+      const trig = (T, o, a0, a1, a2, a3) => { T[o] = Math.sin(a0); T[o + 1] = Math.cos(a0); T[o + 2] = Math.sin(a1); T[o + 3] = Math.cos(a1); T[o + 4] = Math.sin(a2); T[o + 5] = Math.cos(a2); T[o + 6] = Math.sin(a3); T[o + 7] = Math.cos(a3); };
+      for (let i = 0; i < W2; i++) { const U = (xs[i] - x0) * inv, P = oy[i] * inv; trig(SI, i * 8, U * 1.1, P * .9, U * .6 - P * .8, P * 1.5 + U * .5); }
+      for (let j = 0; j < H2; j++) { const O = ox[j] * inv, Y = (j * G2 - y0) * inv; trig(SJ, j * 8, O * 1.1 + ph[0], Y * .9 + ph[1], O * .6 - Y * .8 + ph[2], Y * 1.5 + O * .5 + ph[3]); }
       for (let j = 0, o = 0; j < H2; j++) {
-        const y = j * G2;
+        const y = j * G2, b8 = j * 8;
         for (let i = 0; i < W2; i++, o++) {
           // the four bubbles around this point, two from each nearby row (d2() inlined). The sheet is their sum, so
           // where they overlap they add up into ridges, with saddles between
@@ -1095,32 +1101,48 @@ void main() {
             if (d < 1) { const k = 1 - d; sum += amp[q] * k * k; }
           }
           K[o] = sum;
-          B[o] = 1.2 + .4 * Math.sin(u * 1.1 + ph[0]) * Math.sin(v * .9 + ph[1]) + .3 * Math.sin(u * .6 - v * .8 + ph[2]) + .2 * Math.sin(v * 1.5 + u * .5 + ph[3]);
+          const a8 = i * 8;
+          B[o] = 1.2 + .4 * (SI[a8] * SJ[b8 + 1] + SI[a8 + 1] * SJ[b8]) * (SI[a8 + 2] * SJ[b8 + 3] + SI[a8 + 3] * SJ[b8 + 2])
+            + .3 * (SI[a8 + 4] * SJ[b8 + 5] + SI[a8 + 5] * SJ[b8 + 4]) + .2 * (SI[a8 + 6] * SJ[b8 + 7] + SI[a8 + 7] * SJ[b8 + 6]);
         }
       }
-      // filled in from K, the hills pressed flat against the membrane at the edges, and set on the ground (B); ripples
-      // come after, so one that hits the membrane shakes it
+      // ripples: a ring that runs out from each pop and bends the contour lines it passes through. It bounces off the
+      // screen's edges like water off a wall: each edge sends it back as a ring from the pop's mirror image beyond it,
+      // and a corner from the image beyond both of its edges. A ring is far smoother than the coarse grid, so it goes
+      // into the ground there (where the membrane doesn't hold it, so one that hits the membrane shakes it), and only
+      // across its band: inside it, more than 2.5 widths behind the front, it has long since died out. The ring's
+      // profile, e^(-z²) sin 3.2z for z widths past the front, is read off a table every .005 of a width (RT)
+      this.rip = this.rip.filter(r => now - r.t0 < 2600);
+      const RW = s2 * .55, iW = 200 / RW, RT = this.RT || (this.RT = Float32Array.from({ length: 1101 }, (_, k) => { const z = k / 200 - 3; return Math.exp(-z * z) * Math.sin(z * 3.2); }));
+      const band = (o0, cx, dy2, xa, xb, front, A) => {
+        for (let i = Math.max(0, Math.ceil(xa / G2)), i1 = Math.min(W2 - 1, Math.floor(xb / G2)); i <= i1; i++) {
+          const z = (Math.sqrt((i * G2 - cx) ** 2 + dy2) - front) * iW + 600, k = z | 0;
+          B[o0 + i] += A * (RT[k] + (RT[k + 1] - RT[k]) * (z - k));
+        }
+      };
+      for (const r of this.rip) {
+        const age = (now - r.t0) / 1000, front = age * s2 * 2.4, A = .3 * r.a * Math.pow(1 - age / 2.6, 2);
+        const R = front + RW * 2, R0 = Math.max(0, front - RW * 2.5);
+        for (const x of [r.x, -r.x, SW * 2 - r.x]) for (const y of [r.y, -r.y, SH * 2 - r.y]) {
+          for (let j = Math.max(0, Math.ceil((y - R) / G2)), j1 = Math.min(H2 - 1, Math.floor((y + R) / G2)); j <= j1; j++) {
+            const dy2 = (j * G2 - y) ** 2, ho = Math.sqrt(Math.max(0, R * R - dy2)), hi = R0 * R0 > dy2 ? Math.sqrt(R0 * R0 - dy2) : 0;
+            if (hi) { band(j * W2, x, dy2, x - ho, x - hi, front, A); band(j * W2, x, dy2, x + hi, x + ho, front, A); }
+            else band(j * W2, x, dy2, x - ho, x + ho, front, A);
+          }
+        }
+      }
+      // filled in from K, the hills pressed flat against the membrane at the edges, and set on the ground (B)
       for (let j = 0, o = 0, mx = this.mx; j < h; j++) {
         const r0 = (j >> 1) * W2, r1 = j & 1 ? r0 + W2 : r0, my = this.my[j] * .25;
         for (let i = 0; i < w; i++, o++) { const a = i >> 1, b = i & 1 ? a + 1 : a; F[o] = (K[r0 + a] + K[r0 + b] + K[r1 + a] + K[r1 + b]) * my * mx[i] + (B[r0 + a] + B[r0 + b] + B[r1 + a] + B[r1 + b]) * .25; }
       }
-      // ripples: a ring that runs out from each pop and bends the contour lines it passes through. It bounces off the
-      // screen's edges like water off a wall: each edge sends it back as a ring from the pop's mirror image beyond it,
-      // and a corner from the image beyond both of its edges
-      this.rip = this.rip.filter(r => now - r.t0 < 2600);
-      const bump = (cx, cy, R, fn) => {
-        const i0 = Math.max(1, Math.floor((cx - R) / G)), i1 = Math.min(w - 2, Math.ceil((cx + R) / G)), j0 = Math.max(1, Math.floor((cy - R) / G)), j1 = Math.min(h - 2, Math.ceil((cy + R) / G));
-        for (let j = j0; j <= j1; j++) for (let i = i0, o = j * w + i0; i <= i1; i++, o++) { const d = Math.hypot(i * G - cx, j * G - cy); if (d < R) F[o] += fn(d); }
-      };
-      for (const r of this.rip) {
-        const age = (now - r.t0) / 1000, front = age * s2 * 2.4, A = .3 * r.a * Math.pow(1 - age / 2.6, 2), W = s2 * .55;
-        const ring = d => { const z = (d - front) / W; return A * Math.exp(-z * z) * Math.sin(z * 3.2); };
-        for (const x of [r.x, -r.x, SW * 2 - r.x]) for (const y of [r.y, -r.y, SH * 2 - r.y]) bump(x, y, front + W * 2, ring);
-      }
       // the cursor presses a soft dent into the sheet, and it lifts once the cursor rests
       const c = this.cur, ca = clamp(1 - (now - c.t - 300) / 800, 0, 1);
       c.a += (ca - c.a) * Math.min(1, dt * .01);
-      if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * V() * Math.pow(1 - d / R, 2)); }
+      if (c.a > .01) {
+        const R = s2 * .9, k = -.45 * c.a * V(), i0 = Math.max(1, Math.floor((c.x - R) / G)), i1 = Math.min(w - 2, Math.ceil((c.x + R) / G)), j0 = Math.max(1, Math.floor((c.y - R) / G)), j1 = Math.min(h - 2, Math.ceil((c.y + R) / G));
+        for (let j = j0; j <= j1; j++) for (let i = i0, o = j * w + i0; i <= i1; i++, o++) { const d = Math.sqrt((i * G - c.x) ** 2 + (j * G - c.y) ** 2); if (d < R) F[o] += k * (1 - d / R) ** 2; }
+      }
       if (this.gl) {
         const { gl } = this.gl;
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, w, h, gl.RED, gl.FLOAT, F); gl.drawArrays(gl.TRIANGLES, 0, 3);
