@@ -794,6 +794,42 @@ function blurText(ctx, text, x, y, size, color, blur, spacing) {
   if (spacing) { let cx = x; for (const ch of text) { ctx.fillText(ch, cx, y); cx += spacing; } } else ctx.fillText(text, x, y);
   ctx.restore();
 }
+// Safari, and the menu bar's web view with it, ignores a canvas filter and draws sharp; a dot blurred 2px fades to
+// almost nothing, one drawn sharp stays solid
+const CANVAS_BLUR = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 9;
+  const x = c.getContext('2d'); x.filter = 'blur(2px)'; x.fillRect(4, 4, 1, 1);
+  return x.getImageData(4, 4, 1, 1).data[3] < 128;
+})();
+// the same gaussian blur (r its deviation, in pixels) worked out on a canvas in place: three box blurs across and down,
+// on premultiplied colour so the clear margin doesn't darken the edge
+function blurCanvas(c, r) {
+  const w = c.width, h = c.height, x = c.getContext('2d'), img = x.getImageData(0, 0, w, h), d = img.data;
+  let a = new Float32Array(d.length), b = new Float32Array(d.length);
+  for (let i = 0; i < d.length; i += 4) { const k = d[i + 3] / 255; a[i] = d[i] * k; a[i + 1] = d[i + 1] * k; a[i + 2] = d[i + 2] * k; a[i + 3] = d[i + 3]; }
+  // one sweep of a box k each side along every line, with nothing past the ends
+  const box = (s, t, k, len, step, lines, lstep) => {
+    const iv = 1 / (2 * k + 1);
+    for (let l = 0; l < lines; l++) for (let ch = 0; ch < 4; ch++) {
+      const o = l * lstep + ch; let sum = 0;
+      for (let j = 0; j < k && j < len; j++) sum += s[o + j * step];
+      for (let j = 0; j < len; j++) {
+        if (j + k < len) sum += s[o + (j + k) * step];
+        t[o + j * step] = sum * iv;
+        if (j >= k) sum -= s[o + (j - k) * step];
+      }
+    }
+  };
+  // the three box widths that together come closest to the gaussian
+  let wl = Math.floor(Math.sqrt(4 * r * r + 1)); if (!(wl & 1)) wl--;
+  const m = Math.round((12 * r * r - 3 * wl * wl - 12 * wl - 9) / (-4 * wl - 4));
+  for (let n = 0; n < 3; n++) {
+    const k = ((n < m ? wl : wl + 2) - 1) / 2;
+    box(a, b, k, w, 4, h, w * 4); box(b, a, k, h, w * 4, w, 4);
+  }
+  for (let i = 0; i < d.length; i += 4) { const k = a[i + 3] / 255; d[i + 3] = a[i + 3]; if (k > 0) { d[i] = a[i] / k; d[i + 1] = a[i + 1] / k; d[i + 2] = a[i + 2] / k; } }
+  x.putImageData(img, 0, 0);
+}
 function wrapText(ctx, txt, x, y, w, lh) {
   let line = '', yy = y;
   for (const word of txt.split(' ')) { const t = line ? line + ' ' + word : word; if (ctx.measureText(t).width > w) { ctx.fillText(line, x, yy); line = word; yy += lh; } else line = t; }
@@ -1786,6 +1822,7 @@ void main() {
         const c = document.createElement('canvas'), n = Math.ceil((s + bl * 6) * SDPR), x = c.getContext('2d');
         c.width = c.height = n;
         x.filter = `blur(${bl * SDPR}px)`; x.translate(n / 2, n / 2); x.scale(SDPR, SDPR); x.fillStyle = fill; x.fill(path);
+        if (!CANVAS_BLUR) blurCanvas(c, bl * SDPR);
         return c;
       };
       const round = new Path2D(), box = new Path2D(), h = s * .4;
