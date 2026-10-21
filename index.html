@@ -911,7 +911,8 @@ const SCENES = {
   /* 02 Cyanotype: a cobalt print in camouflage patches, grainy solid blue next to a white halftone screen. Two slow
      layers of value noise decide where the screen shows; the cursor exposes the paper as it passes, so dots bloom
      open in noise-shaped patches along its path, swell into solid white where it passes again, and soon sink back into the blue; little glints
-     twinkle in its wake. */
+     twinkle in its wake. The screen's own patches keep clear of the white marks on the picture (the logo, the arrows and
+     the tally), so those always start on solid blue. */
   cyano: {
     frame: 'full',
     init() {
@@ -920,6 +921,18 @@ const SCENES = {
       this.L = new Float32Array(this.cols * this.rows); this.jit = new Float32Array(this.cols * this.rows);
       for (let i = 0; i < this.jit.length; i++) this.jit[i] = .85 + .3 * Math.random();
       this.G = new Float32Array(64 * 64); for (let i = 0; i < this.G.length; i++) this.G[i] = Math.random();
+      // how far each dot is from the logo, the arrows and the tally (wide enough for its longest agent line): 1 next to
+      // them, easing to 0 over a ragged band, so the patches drift around them instead of over them
+      const box = e => e.getBoundingClientRect(), lg = box(document.querySelector('.brand h1')), pg = box(document.getElementById('page')), ty = box(document.querySelector('.tally'));
+      const tw = Math.max(ty.width / 2, 150), keep = [[lg.left, Math.min(lg.top, pg.top), Math.max(lg.right, pg.right), lg.bottom],
+        box(document.getElementById('prev')), box(document.getElementById('next')), [ty.left + ty.width / 2 - tw, ty.top, ty.left + ty.width / 2 + tw, ty.bottom]]
+        .map(r => Array.isArray(r) ? r : [r.left, r.top, r.right, r.bottom]);
+      this.K = new Float32Array(this.cols * this.rows);
+      for (let j = 0; j < this.rows; j++) for (let i = 0; i < this.cols; i++) {
+        const x = i * p + (j & 1) * p / 2 - p / 2, y = j * p / 2 - p / 2;
+        let d = 1e9; for (const [l, t, r, b] of keep) d = Math.min(d, Math.hypot(Math.max(l - x, 0, x - r), Math.max(t - y, 0, y - b)));
+        this.K[j * this.cols + i] = 1 - clamp((d - 14 - 40 * this.vn(x / 30, y / 30)) / 50, 0, 1);
+      }
       // dot sprites, one per size step, so a full screen of dots is cheap to stamp
       this.spr = [];
       for (let l = 0; l <= 16; l++) {
@@ -967,7 +980,10 @@ const SCENES = {
         for (let i = 0; i < this.cols; i++) {
           const q = j * this.cols + i, x = i * p + (j & 1) * h - h;
           L[q] *= fade;
-          const v = .62 * this.vn(x / 170 + t, y / 170) + .38 * this.vn(x / 64, y / 64 - t * 1.6) + L[q] - .49;
+          let n = .62 * this.vn(x / 170 + t, y / 170) + .38 * this.vn(x / 64, y / 64 - t * 1.6);
+          // by the text the screen sinks to plain blue, which the cursor can still expose
+          if (this.K[q] && n > .38) n -= (n - .38) * this.K[q];
+          const v = n + L[q] - .49;
           if (v < -.02) continue;
           // dots stay apart in a single pass; going over the same spot again swells them until they run together into solid white
           const sz = clamp((v + .02) / .05, 0, 1) * (.4 + .6 * clamp(v / .28, 0, 1)) * (.7 + .3 * clamp((L[q] - .3) / .5, 0, 1)) * this.jit[q], l = Math.min(16, Math.round(sz * 16));
