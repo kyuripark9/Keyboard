@@ -5,8 +5,8 @@
 //   agent done (done)              the ring holds still and its dot fills in
 //   bridge offline                 the ring dims
 //
-// Click it to open clack (http://localhost:4545 in a popover), click again or anywhere else to close it; right-click
-// or Control-click for the menu. The state comes from the bridge's /events stream, the same one the page listens to.
+// Click it to open clack (http://localhost:4545 in a popover), which stays over your other apps while you work in them
+// until you click the ring again; right-click or Control-click for the menu. The state comes from the bridge's /events stream, the same one the page listens to.
 // Build it with build.sh next to this file.
 import AppKit
 import WebKit
@@ -99,6 +99,12 @@ final class Bridge: NSObject, URLSessionDataDelegate {
   }
 }
 
+// the popover stays open while you're in another app, so the first click back into clack plays as well as bringing
+// it forward, rather than being spent on the bringing forward alone
+final class Web: WKWebView {
+  override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+}
+
 // clack itself, kept loaded between openings so it opens at once and keeps its place
 final class Page: NSViewController, WKNavigationDelegate, WKUIDelegate {
   let web: WKWebView
@@ -107,7 +113,7 @@ final class Page: NSViewController, WKNavigationDelegate, WKUIDelegate {
   init() {
     let config = WKWebViewConfiguration()
     config.mediaTypesRequiringUserActionForPlayback = []
-    web = WKWebView(frame: NSRect(x: 0, y: 0, width: 420, height: 640), configuration: config)
+    web = Web(frame: NSRect(x: 0, y: 0, width: 420, height: 640), configuration: config)
     super.init(nibName: nil, bundle: nil)
     web.navigationDelegate = self
     web.uiDelegate = self
@@ -169,7 +175,6 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private let menu = NSMenu()
   private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
   private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
-  private var outside: Any?
   private var cameFrom: NSRunningApplication?
 
   private var phase = Phase.idle, reason = "", online = true
@@ -197,8 +202,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     popover.contentViewController = page
     popover.contentSize = NSSize(width: 420, height: 640)
-    // closed by hand rather than .transient, which closes on the mouse-down of a click on the ring and lets the
-    // mouse-up open it again
+    // closed only from the ring: clicks in other apps and switching apps leave it open, so clack stays beside your agent
     popover.behavior = .applicationDefined
     popover.animates = true
 
@@ -225,8 +229,10 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     let nc = NSWorkspace.shared.notificationCenter
     nc.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in self?.bridge.connect() }
-    NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
-      self?.close()
+    // the app you were last in, which gets the keyboard back when you close clack from the ring
+    cameFrom = NSWorkspace.shared.frontmostApplication.flatMap { $0 == .current ? nil : $0 }
+    nc.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] n in
+      if let a = n.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication, a != .current { self?.cameFrom = a }
     }
     render()
     if CommandLine.arguments.contains("--show") {
@@ -339,22 +345,17 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     guard let b = item.button else { return }
     if page.failed { page.load() }
     // the popover takes the keyboard, so clack's keys play; the app you were in gets it back when it closes
-    cameFrom = NSWorkspace.shared.frontmostApplication.flatMap { $0 == .current ? nil : $0 }
     NSApp.activate(ignoringOtherApps: true)
     popover.show(relativeTo: b.bounds, of: b, preferredEdge: .minY)
     popover.contentViewController?.view.window?.makeKey()
     popover.contentViewController?.view.window?.makeFirstResponder(page.web)
-    // a click in any other app closes it, as a menu would
-    outside = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in self?.close() }
   }
 
   private func close() {
-    if let m = outside { NSEvent.removeMonitor(m); outside = nil }
     guard popover.isShown else { return }
     popover.performClose(nil)
-    // closed from the ring (a click elsewhere has already moved on), the app you came from gets the keyboard back
+    // if clack still has the keyboard, the app you were last in gets it back
     if NSApp.isActive { cameFrom?.activate(options: []) }
-    cameFrom = nil
   }
 
   func menuNeedsUpdate(_ m: NSMenu) {
