@@ -1778,8 +1778,7 @@ void main() {
      ragged edge like a coastline: the shaved soap heaps up along it in solid magenta that opens into cream holes as it
      fades back into the checkerboard, the paper keeps a few dots close to the edge, and now and then a fleck of cream
      flies off into the soap. Every dot the path cuts away comes loose just as the cut reaches it, the same square as
-     it was printed, and tumbles as it drops away from the soap like a bead, shrinking to nothing within a short fall,
-     so it is gone before it can tangle with the dots below.
+     it was printed, and tumbles as it hops and drops out of the frame like a bead, keeping its size all the way.
      After a while the soap creeps back in from the edges, its heap thinning as it comes, until the path is closed.
      With WebGL2 the dots are drawn at full resolution on the GPU; without it they are worked out in JS at half. */
   soap: {
@@ -1913,8 +1912,7 @@ void main() {
         const t = Math.min(TO[q], .62), a = c * Math.sqrt(2 * t);
         GONE[q] = s.t0 + this.CLOSE * (1 - f);
         this.beads.push({ x: i * c, y: j * c, a, r: a * clamp(.55 - .9 * t, .08, .5), t0: now + this.OPEN * (1 - Math.cbrt(1 - f)),
-          life: rand(450, 750), an: 0, sp: (Math.random() < .5 ? -1 : 1) * rand(.002, .006),
-          vx: ux * rand(.01, .05) + rand(-.02, .02), vy: uy * rand(.01, .04) - rand(0, .06) });
+          an: 0, sp: (Math.random() < .5 ? -1 : 1) * rand(.002, .006), vx: ux * rand(.01, .05) + rand(-.02, .02), vy: uy * rand(.01, .05) - rand(0, .1) });
       }
       if (this.beads.length > 4000) this.beads.splice(0, this.beads.length - 4000);
       this.last = { x, y, t: now }; this.cuts.push(s);
@@ -1957,16 +1955,15 @@ void main() {
       }
       sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
       if (this.gl) sc.drawImage(this.gl.cv, 0, 0, SW, SH); else sc.drawImage(this.off, 0, 0, this.w * this.G, this.h * this.G);
-      // the loose beads, the same squares in the dots' own ink, tumble and drop away from the soap: they hop and fall
-      // a little way down the screen, shrinking slowly at first and then fast, as if falling away from the eye
-      this.beads = this.beads.filter(b => now < b.t0 + b.life);
+      // the loose beads, the same squares in the dots' own ink, tumble as they hop and fall out of the frame
+      this.beads = this.beads.filter(b => b.y - b.a < SH);
       if (this.beads.length) {
         sc.beginPath();
         for (const b of this.beads) {
           if (now < b.t0) continue;
-          b.vy += .0004 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.an += b.sp * dt;
+          b.vy += .0016 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.an += b.sp * dt;
           // a square with its corners cut back by about its rounding, as an octagon: e runs along a side, n across it
-          const u = (now - b.t0) / b.life, k = 1 - u * u, h = b.a * k / 2, m = h - b.r * k * .6, ex = Math.cos(b.an), ey = Math.sin(b.an);
+          const h = b.a / 2, m = h - b.r * .6, ex = Math.cos(b.an), ey = Math.sin(b.an);
           sc.moveTo(b.x - ex * m + ey * h, b.y - ey * m - ex * h);
           for (const [p, q] of [[m, -h], [h, -m], [h, m], [m, h], [-m, h], [-h, m], [-h, -m]]) sc.lineTo(b.x + ex * p - ey * q, b.y + ey * p + ex * q);
           sc.closePath();
