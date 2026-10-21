@@ -10,7 +10,7 @@ clack can sit beside your coding agent: it wakes when you hand Claude Code a tas
 curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n/bridge/install.sh | bash
 ```
 
-It runs clack in the background, offers to connect it to Claude Code, and opens it at http://localhost:4545, where Chrome or Safari can keep it as an app in your Dock. Everything stays on your Mac. See [bridge/README.md](bridge/README.md) for what it does, updating and removing it.
+It runs clack in the background, puts its ring in your menu bar, where one click opens clack from any app and the ring itself shows whether your agent is working or done, and offers to connect it to Claude Code. clack is also at http://localhost:4545, where Chrome or Safari can keep it as an app in your Dock. Everything stays on your Mac. See [bridge/README.md](bridge/README.md) for what it does, updating and removing it.
 
 ## The 10 sounds
 

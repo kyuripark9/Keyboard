@@ -3,15 +3,17 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n/bridge/install.sh | bash
 #
-# Puts clack in ~/Library/Application Support/clack, runs it in the background from login on, offers to connect it
-# to Claude Code, and opens it. Running it again updates clack to the latest version. Nothing leaves your Mac:
-# clack and its bridge only listen on localhost.
+# Puts clack in ~/Library/Application Support/clack, runs it in the background from login on, puts its ring in the menu
+# bar, offers to connect it to Claude Code, and opens it. Running it again updates clack to the latest version. Nothing
+# leaves your Mac: clack and its bridge only listen on localhost.
 set -euo pipefail
 
 SOURCE="${CLACK_SOURCE:-https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n}"
 PORT="${CLACK_PORT:-4545}"
 DIR="$HOME/Library/Application Support/clack"
-FILES="bridge/clack-bridge.py bridge/icon-192.png bridge/icon-512.png bridge/apple-touch-icon.png bridge/favicon-32.png index.html"
+FILES="bridge/clack-bridge.py bridge/icon-192.png bridge/icon-512.png bridge/apple-touch-icon.png bridge/favicon-32.png index.html menubar/clack-menubar.swift menubar/build.sh"
+# not ~/Applications/clack.app, which is where Safari's File > Add to Dock keeps clack as a web app
+MENUBAR="$HOME/Applications/clack menu bar.app"
 
 say() { printf '  %s\n' "$*"; }
 fail() { printf '\n  clack: %s\n\n' "$*" >&2; exit 1; }
@@ -45,6 +47,18 @@ mv "$TMP"/* "$DIR"/
 
 "$PY" "$DIR/clack-bridge.py" --autostart --port "$PORT" | sed 's/^/  /' || fail "the background bridge did not start. See ~/Library/Logs/clack-bridge.log"
 
+# the menu bar app: clack's ring at the top right of the screen, which opens clack from any app; it is built here with
+# the Swift compiler that comes with the Command Line Tools, and an older one keeps running until it is replaced
+say "Building the menu bar app…"
+if bash "$DIR/build.sh" "$MENUBAR" >/dev/null 2>"$TMP/menubar.log"; then
+  defaults write ink.clack.menubar port -int "$PORT"
+  pkill -f "clack menu bar.app/Contents/MacOS/clack" >/dev/null 2>&1 || true
+else
+  say "The menu bar app could not be built, so clack stays in your browser:"
+  tail -n 3 "$TMP/menubar.log" | sed 's/^/    /'
+  MENUBAR=""
+fi
+
 # Claude Code: only with the user's yes, read from the keyboard even though this script came in through a pipe
 if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
   # with nobody at the keyboard to say yes, Claude Code's settings are left alone
@@ -62,9 +76,18 @@ if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
   esac
 fi
 
-printf '\n  clack is ready at http://localhost:%s\n' "$PORT"
-say "Keep it as an app: in Chrome, click the install icon in the address bar; in Safari, choose File > Add to Dock."
-say "In the Claude app, open the side panel's browser (Cmd+Shift+B) and go to localhost:$PORT."
+if [ -n "$MENUBAR" ]; then
+  printf '\n  clack is in your menu bar: click its ring at the top right of the screen, from any app.\n'
+  say "The ring breathes while your agent works and fills in when it's done. Right-click it for more."
+else
+  printf '\n  clack is ready at http://localhost:%s\n' "$PORT"
+  say "Keep it as an app: in Chrome, click the install icon in the address bar; in Safari, choose File > Add to Dock."
+  say "In the Claude app, open the side panel's browser (Cmd+Shift+B) and go to localhost:$PORT."
+fi
 say "Remove it any time: curl -fsSL $SOURCE/bridge/uninstall.sh | bash"
 printf '\n'
-open "http://localhost:$PORT" >/dev/null 2>&1 || true
+if [ -n "$MENUBAR" ]; then
+  open "$MENUBAR" --args --show >/dev/null 2>&1 || true
+else
+  open "http://localhost:$PORT" >/dev/null 2>&1 || true
+fi

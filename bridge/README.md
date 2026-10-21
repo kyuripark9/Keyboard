@@ -15,16 +15,22 @@ It takes a few seconds and:
 
 1. puts clack in `~/Library/Application Support/clack`
 2. runs it in the background from now on, also after a restart
-3. asks whether to connect it to Claude Code (three small hooks in `~/.claude/settings.json`, backed up first)
-4. opens http://localhost:4545
+3. puts clack's ring in your menu bar (`~/Applications/clack menu bar.app`, built on your Mac)
+4. asks whether to connect it to Claude Code (three small hooks in `~/.claude/settings.json`, backed up first)
+5. opens clack under the ring
 
 Run the same line again any time to update to the latest clack.
 
-It needs macOS and Python 3, which comes with Apple's Command Line Tools. If they are missing, the installer opens
-Apple's window to install them; run the line again once that's done.
+It needs macOS and Python 3, which comes with Apple's Command Line Tools (so does the Swift compiler that builds the menu
+bar app). If they are missing, the installer opens Apple's window to install them; run the line again once that's done.
 
 ## Keep it beside your agent
 
+- **In the menu bar**: clack's ring sits at the top right of the screen whatever app you're in (Claude, ChatGPT, a
+  terminal). Click it and clack opens under it; click it again or anywhere else to close it. The ring shows your agent
+  without opening anything: it breathes while the agent works, holds still with its dot filled in when it's done, and
+  dims when the bridge is offline. Right-click it to open clack in your browser, reload it, choose whether it opens at
+  login (it does unless you turn that off) or quit it.
 - **As its own app**: open http://localhost:4545 in Chrome or Edge and click the install icon in the address bar, or in
   Safari choose *File > Add to Dock*. clack then opens from the Dock in its own window, which you can keep next to the
   Claude or ChatGPT app, a terminal or your editor.
@@ -43,7 +49,8 @@ it, and never sees your code. Nothing leaves your Mac: the bridge only listens o
 curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n/bridge/uninstall.sh | bash
 ```
 
-This stops the bridge, takes the hooks back out of Claude Code's settings and deletes clack's files.
+This quits the menu bar app, stops the bridge, takes the hooks back out of Claude Code's settings and deletes clack's
+files.
 
 ## Without the installer
 
@@ -54,3 +61,11 @@ git clone https://github.com/kyuripark9/Keyboard clack && cd clack
 python3 bridge/clack-bridge.py --install   # connect Claude Code
 python3 bridge/clack-bridge.py             # run it (or: node bridge/clack-bridge.js), then open http://localhost:4545
 ```
+
+On a Mac, build the menu bar app from the clone too:
+
+```sh
+bash menubar/build.sh && open menubar/build/clack.app
+```
+
+It listens on port 4545; for another, `defaults write ink.clack.menubar port -int 4600` (or start it with `CLACK_PORT`).
