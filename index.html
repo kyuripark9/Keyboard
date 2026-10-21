@@ -1468,6 +1468,8 @@ void main() {
      until it snaps (쩍) and each half springs back into its cube with a wobble. Dragged too far, a jelly slips off the
      cursor and bounces home, where it sticks again to whatever it touches. Every step also presses down on the jelly
      under it, so it spreads into its neighbours and springs back, and a key holds it pressed in until the key comes up.
+     While clack holds you it is at its chewiest: a jelly can be dragged further before it slips off, the strings draw
+     out longer and thinner before they snap, a press squishes it deeper and it wobbles longer as it springs back.
      Every sound comes from the jellies: the catch, the squeeze, two faces coming unstuck, the string as it stretches
      and snaps, the bounce home, the re-stick and the finger a key pushes in and pulls off each play their own. */
   gummy: {
@@ -1545,7 +1547,7 @@ void main() {
       if (!g || (!this.hold && now < g.cool)) return;
       if (!this.hold) { this.hold = g; g.gx = x; g.gy = y; this.snd('grab', now, 60); }
       const tx = (x - g.gx) * .85 * V(), ty = (y - g.gy) * .85 * V();
-      if (Math.hypot(tx, ty) > s * .55) { g.tx = g.ty = 0; g.cool = now + 160; this.hold = null; this.home(g, now); return; }
+      if (Math.hypot(tx, ty) > s * (.55 + .2 * AG.grip)) { g.tx = g.ty = 0; g.cool = now + 160; this.hold = null; this.home(g, now); return; }
       g.tx = tx; g.ty = ty;
     },
     hit(x, y, k, now) {
@@ -1555,7 +1557,7 @@ void main() {
       const g = this.under(x, y);
       if (!g) return;
       if (k.code !== 'Cell') { g.sv += .05 * V(); g.key = k; return; }
-      g.sv += .025 * V(); if (g !== this.hold) this.snd('press', now, 50);
+      g.sv += (.025 + .02 * AG.grip) * V(); if (g !== this.hold) this.snd('press', now, 50);
     },
     // a jelly let go of bounces home with a wobble, louder the farther it has to go
     home(g, now) {
@@ -1651,14 +1653,17 @@ void main() {
       return f;
     },
     draw(now, dt) {
-      const s = this.s, N = this.N, G = this.g, cs = this.cs, sn = this.sn, gmax = s * .24, H = this.hold;
+      // while clack holds you the jelly is at its chewiest: its strings draw out further before they snap, a press
+      // spreads it wider and its outline wobbles on longer
+      const ag = AG.grip, s = this.s, N = this.N, G = this.g, cs = this.cs, sn = this.sn, gmax = s * (.24 + .14 * ag), H = this.hold;
+      const sp = .12 + .06 * ag, od = .022 - .007 * ag;
       // firm but chewy: every jelly springs back to its place (the one on the cursor to where the cursor drags it), the
       // ones pressed together push apart, and stuck ones pull back together until they're stretched too far
       for (let h = dt; h > 0; h -= 4) {
         const st = Math.min(4, h);
         for (const g of G) {
           if (g.key && !g.key.holders.size) g.key = null;
-          g.sv += (-(g.sq - (g.key ? .5 : 0)) * .003 - g.sv * .05) * st; g.sq += g.sv * st; g.sz = 1 + .12 * clamp(g.sq, -.5, 1);
+          g.sv += (-(g.sq - (g.key ? .5 : 0)) * .003 - g.sv * .05) * st; g.sq += g.sv * st; g.sz = 1 + sp * clamp(g.sq, -.5, 1);
           const kk = g === H ? .012 : .0016;
           g.fx = -(g.x - g.hx - g.tx) * kk - g.vx * .03; g.fy = -(g.y - g.hy - g.ty) * kk - g.vy * .03;
         }
@@ -1685,7 +1690,7 @@ void main() {
             // stretched too far, the string of jelly between them snaps (쩍) and each half springs back into its cube
             if (gp > gmax) {
               P.on = false; this.snd('peel', now, 40);
-              this.snaps.push({ P, t0: now, l: -ov * .4, w: s * .08 });
+              this.snaps.push({ P, t0: now, l: -ov * .4, w: s * .08, life: 160 + 100 * ag });
             } else f = gp * .0005;
           }
           if (f) { const fx = f * dx / D, fy = f * dy / D; A.fx += fx; A.fy += fy; B.fx -= fx; B.fy -= fy; }
@@ -1703,7 +1708,7 @@ void main() {
         const t = g.t, r = g.rr, v = g.rv, cm = g.cm;
         for (let h = dt; h > 0; h -= 4) {
           const st = Math.min(4, h);
-          for (let k = 0; k < N; k++) { v[k] += ((t[k] - r[k]) * .003 - v[k] * .022) * st; r[k] += v[k] * st; }
+          for (let k = 0; k < N; k++) { v[k] += ((t[k] - r[k]) * .003 - v[k] * od) * st; r[k] += v[k] * st; }
         }
         for (let k = 0; k < N; k++) { if (r[k] > cm[k]) { r[k] = cm[k]; if (v[k] > 0) v[k] = 0; } if (r[k] < s * .15) r[k] = s * .15; }
         const p = new Path2D();
@@ -1728,14 +1733,14 @@ void main() {
         // a string that grows this frame crackles as it stretches
         if (gp > P.gl) { grow += gp - P.gl; thin = Math.max(thin, x); }
         P.gl = gp;
-        sc.fill(this.bridge(A, B, dx / D, dy / D, w0, w0 * (1 - .82 * x)));
+        sc.fill(this.bridge(A, B, dx / D, dy / D, w0, w0 * (1 - (.82 + .08 * ag) * x)));
       }
       // one sticky crackle for every bit the strings grew, as many as they're stretched this frame
       this.ga = grow ? Math.min(this.ga + grow / (s * .007), 10) : this.ga * .5;
       if (this.ga >= 1) { const n = Math.floor(this.ga); this.ga -= n; playKey({ code: 'pull', seed: 0, n, v: grow / s, x: thin }, 'pull'); }
-      this.snaps = this.snaps.filter(c => now - c.t0 < 160);
+      this.snaps = this.snaps.filter(c => now - c.t0 < c.life);
       for (const c of this.snaps) {
-        const { A, B } = c.P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, ux = dx / D, uy = dy / D, k = (now - c.t0) / 160;
+        const { A, B } = c.P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, ux = dx / D, uy = dy / D, k = (now - c.t0) / c.life;
         const l = c.l * (1 - k) ** 2, w = c.w * (1 - .3 * k), b = w0 * (1 - .4 * k);
         sc.fill(this.stub(A, ux, uy, l, b, w)); sc.fill(this.stub(B, -ux, -uy, l, b, w));
       }
@@ -2065,9 +2070,8 @@ void main() {
      Every step drops a boot print into it like a stone into still water, left and right in turn along the way the
      cursor walks: the lines wash out to plain periwinkle in a soft ball and heel, and ripples run out that bend them,
      which the moiré blows up into broad bands sweeping across the sheet before it settles. The prints slowly fill back
-     in. While clack holds you the sheet is a lenticular you tilt: moving the cursor sweeps the moiré bands across it,
-     and they swing back with a little overshoot when it stops; the ripples run deeper and further and the cursor
-     trails a wider wake. Once clack lets go the bands stay put and the water barely stirs. With WebGL2 the lines are drawn at full resolution on the GPU; without it they are worked out in JS at half. */
+     in. While clack holds you the trail is bigger: the prints come out half again as large, the cursor treads a soft
+     track between them, and they take longer to fill back in; once it lets go only faint prints are left. With WebGL2 the lines are drawn at full resolution on the GPU; without it they are worked out in JS at half. */
   snow: {
     frame: 'full',
     init() {
@@ -2105,8 +2109,7 @@ void main() {
         // the band's swell as a table over one beat, so it costs no cosine per pixel
         this.cosT = Float32Array.from({ length: 1024 }, (_, k) => .5 + .5 * Math.cos(k / 1024 * 6.2832));
       }
-      // bs: how far the tilt has swept the bands (in beats) and bv how fast
-      this.P = 34 * U; this.foot = 1; this.dir = [1, 0]; this.last = null; this.acc = 0; this.at = performance.now(); this.still = false; this.bs = 0; this.bv = 0;
+      this.P = 34 * U; this.foot = 1; this.dir = [1, 0]; this.last = null; this.acc = 0; this.at = performance.now(); this.still = false;
     },
     // the first ruling's phase, the beat (both in periods) and the swell at (x, y); the shader below works out the same
     phase(x, y) {
@@ -2124,13 +2127,13 @@ void main() {
       if (!gl) return null;
       const pr = gl.createProgram();
       for (const [t, s] of [[gl.VERTEX_SHADER, 'in vec2 v; void main() { gl_Position = vec4(v, 0., 1.); }'], [gl.FRAGMENT_SHADER, `precision highp float;
-uniform vec3 uRes, uGrid; uniform vec2 uC, uP; uniform vec4 uQ; uniform float uQ4, uB; uniform sampler2D uT; out vec4 o;
+uniform vec3 uRes, uGrid; uniform vec2 uC, uP; uniform vec4 uQ; uniform float uQ4; uniform sampler2D uT; out vec4 o;
 void main() {
   vec2 p = vec2(gl_FragCoord.x, uRes.y * uRes.z - gl_FragCoord.y) / uRes.z; float U = uP.y;
   vec2 rw = texture(uT, (p / uGrid.x + .5) / uGrid.yz).rg;
   float wp = 80. * U * sin(p.y / (260. * U) + uQ.x + .8 * sin(p.x / (340. * U) + uQ.y)) + 16. * U * sin(p.x / (180. * U) - p.y / (270. * U) + uQ.z);
   float F = (length(p - uC) + wp) / uP.x + rw.r;
-  float B = (p.y + 20. * U * sin(p.x / (110. * U) + uQ.w) + 34. * U * sin(p.x / (260. * U) - p.y / (320. * U) + uQ4)) / (48. * U) + .7 * sin(p.x / (420. * U) + p.y / (380. * U) + uQ.y * 2.) + rw.r + uB;
+  float B = (p.y + 20. * U * sin(p.x / (110. * U) + uQ.w) + 34. * U * sin(p.x / (260. * U) - p.y / (320. * U) + uQ4)) / (48. * U) + .7 * sin(p.x / (420. * U) + p.y / (380. * U) + uQ.y * 2.) + rw.r;
   float a = clamp(.16 + .48 * (.5 + .5 * cos(6.2832 * B)) + .14 * sin(p.x / (520. * U) - p.y / (430. * U) + uQ.z * 1.7), .08, .8); a += (1. - a) * rw.g;
   float ol = (1. - a) * .64, cr = 1. - a - ol, s = a * .5, dp = max(fwidth(F), 1e-4), u = F - dp * .5, v = u + dp, n = floor(v) - floor(u), uu = fract(u), vv = fract(v);
   float co = n * ol + clamp(vv - s, 0., ol) - clamp(uu - s, 0., ol), cc = n * cr + clamp(vv - s - ol, 0., cr) - clamp(uu - s - ol, 0., cr), cl = dp - co - cc;
@@ -2146,7 +2149,7 @@ void main() {
       gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
       for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
       const u = {};
-      for (const n of ['uRes', 'uC', 'uGrid', 'uP', 'uQ', 'uQ4', 'uB']) u[n] = gl.getUniformLocation(pr, n);
+      for (const n of ['uRes', 'uC', 'uGrid', 'uP', 'uQ', 'uQ4']) u[n] = gl.getUniformLocation(pr, n);
       return { c, gl, u };
     },
     // a soft round of radius r into a coarse grid, keeping whichever is stronger
@@ -2167,45 +2170,47 @@ void main() {
       this.at = performance.now(); this.still = false;
     },
     move(x, y, dx, dy) {
-      const l = Math.hypot(dx, dy), g = AG.grip; if (l > .5) this.dir = [dx / l, dy / l];
-      // the cursor trails a wake through the water, wider while clack holds you, and tilts the print so the bands sweep
-      if (l < 200) { this.drop(x, y, Math.min(.1 + .14 * g, l * (.005 + .006 * g)) * V(), 1.4 + .6 * g); this.bv += (dx * .8 + dy * .45) / (48 * this.U) * .0016 * g; }
+      const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l];
+      // the cursor trails a faint wake through the water, and while clack holds you it treads a soft track, washing
+      // the lines out partway along its path
+      if (l < 200) {
+        this.drop(x, y, Math.min(.1, l * .005) * V(), 1.4);
+        const g = AG.grip;
+        if (g > .05) for (let n = Math.ceil(l / (this.C * 1.5)), i = n - 1; i >= 0; i--) this.stamp(this.W, x - dx * i / n, y - dy * i / n, this.P * .55, .7 * g);
+      }
     },
     hit(x, y, k, now) {
       // a print every stride, feet taking turns either side of the path, each pointing the way the cursor walks: the
-      // ball ahead and the heel behind wash out to plain periwinkle, and the step drops a stone into the water
-      const P = this.P, l = this.last;
+      // ball ahead and the heel behind wash out to plain periwinkle, and the step drops a stone into the water. While
+      // clack holds you the foot is half again as big, and the stride with it
+      const P = this.P * (1 + .5 * AG.grip), l = this.last;
       if (l && now - l.t < 2000 && Math.hypot(l.x - x, l.y - y) < P * 2.6) return;
       this.last = { x, y, t: now };
       const [ux, uy] = this.dir, f = this.foot = -this.foot, px = x - uy * P * .55 * f, py = y + ux * P * .55 * f;
       this.stamp(this.W, px + ux * P * .5, py + uy * P * .5, P * .62, .95 * V());
       this.stamp(this.W, px - ux * P * .75, py - uy * P * .75, P * .46, .95 * V());
-      this.drop(px, py, (1.1 + .5 * AG.grip) * V(), 2 + .5 * AG.grip);
+      this.drop(px, py, 1.1 * V(), 2);
     },
-    // one step of the ripple: each cell is pulled by its neighbours and keeps its swing, losing a little every step, and
-    // less while clack holds you, so the ripples run further
+    // one step of the ripple: each cell is pulled by its neighbours and keeps its swing, losing a little every step
     step() {
-      const nx = this.nx, ny = this.ny, a = this.H0, b = this.H1, k = .985 + .006 * AG.grip;
-      for (let j = 1; j < ny - 1; j++) for (let i = 1, o = j * nx + 1; i < nx - 1; i++, o++) b[o] = ((a[o - 1] + a[o + 1] + a[o - nx] + a[o + nx]) * .5 - b[o]) * k;
+      const nx = this.nx, ny = this.ny, a = this.H0, b = this.H1;
+      for (let j = 1; j < ny - 1; j++) for (let i = 1, o = j * nx + 1; i < nx - 1; i++, o++) b[o] = ((a[o - 1] + a[o + 1] + a[o - nx] + a[o + nx]) * .5 - b[o]) * .985;
       this.H0 = b; this.H1 = a;
     },
     draw(now, dt) {
       // once the water has stilled and the prints have filled in, the last picture is kept and only drawn again
-      // the tilt swings back to rest on a soft spring
-      for (let h = dt; h > 0; h -= 8) { const st = Math.min(8, h); this.bv += (-this.bs * 3.6e-5 - this.bv * .0036) * st; this.bs = clamp(this.bs + this.bv * st, -1.5, 1.5); }
-      if (Math.abs(this.bs) < 1e-3 && Math.abs(this.bv) < 1e-5) this.bs = this.bv = 0; else this.at = now;
-      const idle = now - this.at > 15000;
+      const idle = now - this.at > 22000;
       if (!idle || !this.still) {
         this.acc += dt;
         let n = 0;
         for (; this.acc >= 16 && n < 3; n++) { this.step(); this.acc -= 16; }
         if (n === 3) this.acc = 0;
-        const k = Math.exp(-dt / 3000), W = this.W, W0 = this.W0, Wc = this.Wc;
+        // the prints fill back in, more slowly while clack holds you
+        const k = Math.exp(-dt / (3000 + 2000 * AG.grip)), W = this.W, W0 = this.W0, Wc = this.Wc;
         for (let o = 0; o < W.length; o++) { W[o] *= k; Wc[o] = Math.max(W[o], W0[o]); }
         if (this.gl) {
-          const { gl, u } = this.gl, T = this.tx, H = this.H0;
+          const { gl } = this.gl, T = this.tx, H = this.H0;
           for (let o = 0; o < Wc.length; o++) { T[o * 2] = H[o]; T[o * 2 + 1] = Wc[o]; }
-          gl.uniform1f(u.uB, this.bs);
           gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.nx, this.ny, gl.RG, gl.FLOAT, T); gl.drawArrays(gl.TRIANGLES, 0, 3);
         } else this.render();
         this.still = idle;
@@ -2215,14 +2220,14 @@ void main() {
     },
     // without WebGL2: the shader's work in JS on the small pixels, reading the coarse grid at every fourth one
     render() {
-      const w = this.w, h = this.h, nx = this.nx, F = this.F, B = this.B, A = this.A, H = this.H0, Wc = this.Wc, P = this.px, T = this.cosT, dp = this.G / this.p, bs = this.bs;
+      const w = this.w, h = this.h, nx = this.nx, F = this.F, B = this.B, A = this.A, H = this.H0, Wc = this.Wc, P = this.px, T = this.cosT, dp = this.G / this.p;
       for (let j = 0, o = 0; j < h; j++) {
         const r0 = (j >> 2) * nx, fy = (j & 3) / 4;
         for (let i = 0; i < w; i++, o++) {
           const a00 = r0 + (i >> 2), fx = (i & 3) / 4, gx = 1 - fx, gy = 1 - fy;
           const d = (H[a00] * gx + H[a00 + 1] * fx) * gy + (H[a00 + nx] * gx + H[a00 + nx + 1] * fx) * fy;
           const wc = (Wc[a00] * gx + Wc[a00 + 1] * fx) * gy + (Wc[a00 + nx] * gx + Wc[a00 + nx + 1] * fx) * fy;
-          const bt = B[o] + d + bs, m = T[((bt - Math.floor(bt)) * 1024) | 0];
+          const bt = B[o] + d, m = T[((bt - Math.floor(bt)) * 1024) | 0];
           let a = clamp(.16 + .48 * m + A[o], .08, .8); a += (1 - a) * wc;
           const ol = (1 - a) * .64, cr = 1 - a - ol, s = a / 2, u = F[o] + d - dp / 2, v = u + dp, fu = Math.floor(u), fv = Math.floor(v), uu = u - fu, vv = v - fv;
           // how much of the pixel's span falls on the olive line (from s to s + ol) and on the cream one after it
