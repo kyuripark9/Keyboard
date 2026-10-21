@@ -911,8 +911,8 @@ const SCENES = {
   /* 02 Cyanotype: a cobalt print in camouflage patches, grainy solid blue next to a white halftone screen. Two slow
      layers of value noise decide where the screen shows; the cursor exposes the paper as it passes, so dots bloom
      open in noise-shaped patches along its path, swell into solid white where it passes again, and soon sink back into the blue; little glints
-     twinkle in its wake. The screen's own patches keep clear of the white marks on the picture (the logo, the arrows and
-     the tally), so those always start on solid blue. */
+     twinkle in its wake. No dot or glint comes near the white marks on the picture (the logo, the arrows and the
+     tally): around them the print stays solid blue, whether the screen's patches drift by or the cursor passes. */
   cyano: {
     frame: 'full',
     init() {
@@ -922,7 +922,7 @@ const SCENES = {
       for (let i = 0; i < this.jit.length; i++) this.jit[i] = .85 + .3 * Math.random();
       this.G = new Float32Array(64 * 64); for (let i = 0; i < this.G.length; i++) this.G[i] = Math.random();
       // how far each dot is from the logo, the arrows and the tally (wide enough for its longest agent line): 1 next to
-      // them, easing to 0 over a ragged band, so the patches drift around them instead of over them
+      // them, easing to 0 over a ragged band, so the dots thin out around them and never cover them
       const box = e => e.getBoundingClientRect(), lg = box(document.querySelector('.brand h1')), pg = box(document.getElementById('page')), ty = box(document.querySelector('.tally'));
       const tw = Math.max(ty.width / 2, 150), keep = [[lg.left, Math.min(lg.top, pg.top), Math.max(lg.right, pg.right), lg.bottom],
         box(document.getElementById('prev')), box(document.getElementById('next')), [ty.left + ty.width / 2 - tw, ty.top, ty.left + ty.width / 2 + tw, ty.bottom]]
@@ -965,10 +965,11 @@ const SCENES = {
         this.L[q] = Math.min(1.1, this.L[q] + amt * Math.exp(-dd / s2) * (.3 + 1.4 * this.vn(px / 26, py / 26)));
       }
     },
-    sparkle(x, y, now) { this.sp.push({ x, y, t0: now, life: rand(350, 800), r: rand(3, 8) }); if (this.sp.length > 90) this.sp.shift(); },
+    at(x, y) { return clamp(Math.round((y + this.p / 2) / (this.p / 2)), 0, this.rows - 1) * this.cols + clamp(Math.round((x + this.p / 2) / this.p), 0, this.cols - 1); },
+    sparkle(x, y, now) { if (this.K[this.at(x, y)] > .3) return; this.sp.push({ x, y, t0: now, life: rand(350, 800), r: rand(3, 8) }); if (this.sp.length > 90) this.sp.shift(); },
     move(x, y, dx, dy) {
       // glints scatter in the cursor's wake, more where the print is already exposed
-      const now = performance.now(), q = this.L[clamp(Math.round((y + this.p / 2) / (this.p / 2)), 0, this.rows - 1) * this.cols + clamp(Math.round((x + this.p / 2) / this.p), 0, this.cols - 1)];
+      const now = performance.now(), q = this.L[this.at(x, y)];
       if (Math.random() < V()) for (let i = 0, n = Math.random() < .5 + q ? 2 : 1; i < n; i++) this.sparkle(x + rand(-50, 50), y + rand(-50, 50), now);
       this.expose(x, y, 64, clamp(Math.hypot(dx, dy) / 70, .04, .22) * V()); },
     hit(x, y, k, now) { this.expose(x + rand(-20, 20), y + rand(-20, 20), rand(80, 120), .45 * V()); for (let i = 0, n = Math.round(4 * V()); i < n; i++) this.sparkle(x + rand(-70, 70), y + rand(-70, 70), now); },
@@ -980,10 +981,9 @@ const SCENES = {
         for (let i = 0; i < this.cols; i++) {
           const q = j * this.cols + i, x = i * p + (j & 1) * h - h;
           L[q] *= fade;
-          let n = .62 * this.vn(x / 170 + t, y / 170) + .38 * this.vn(x / 64, y / 64 - t * 1.6);
-          // by the text the screen sinks to plain blue, which the cursor can still expose
-          if (this.K[q] && n > .38) n -= (n - .38) * this.K[q];
-          const v = n + L[q] - .49;
+          let v = .62 * this.vn(x / 170 + t, y / 170) + .38 * this.vn(x / 64, y / 64 - t * 1.6) + L[q] - .49;
+          // by the text the print sinks to plain blue, however much it has been exposed
+          if (this.K[q]) v = lerp(v, -.03, this.K[q]);
           if (v < -.02) continue;
           // dots stay apart in a single pass; going over the same spot again swells them until they run together into solid white
           const sz = clamp((v + .02) / .05, 0, 1) * (.4 + .6 * clamp(v / .28, 0, 1)) * (.7 + .3 * clamp((L[q] - .3) / .5, 0, 1)) * this.jit[q], l = Math.min(16, Math.round(sz * 16));
