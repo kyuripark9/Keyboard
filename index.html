@@ -1732,7 +1732,8 @@ void main() {
      cream flecks in it. Every step shaves a path along the way the cursor travels, down to the cream paper with a
      ragged edge like a coastline: the shaved soap heaps up along it in solid magenta that opens into cream holes as it
      fades back into the checkerboard, the paper keeps a few dots close to the edge, and now and then a fleck of cream
-     flies off into the soap, while a few of the dots it shaves come loose like beads, hop and drop out of the frame.
+     flies off into the soap, while a few of the dots it shaves come loose like beads, hop and drop out of the frame,
+     the dots around each one thinning out as it passes.
      After a while the soap creeps back in from the edges, its heap thinning as it comes, until the path is closed.
      With WebGL2 the dots are drawn at full resolution on the GPU; without it they are worked out in JS at half. */
   soap: {
@@ -1768,7 +1769,7 @@ void main() {
         for (let k = Math.floor(rand(1, 5)); k--;) this.fleck(F0, x + rand(-2, 2) * c, y + rand(-2, 2) * c, c * rand(.5, 1), 1);
       }
       for (let o = 0; o < N; o++) base[o] *= 1 - F0[o];
-      this.DP = new Float32Array(N); this.HP = new Float32Array(N); this.FL = new Float32Array(N);
+      this.DP = new Float32Array(N); this.HP = new Float32Array(N); this.FL = new Float32Array(N); this.BD = new Float32Array(N);
       // the dot screen: cos(πx/c)·cos(πy/c), inked wherever it rises above a threshold. TH turns a tone (0 paper to 1
       // solid, in 256 steps) into the threshold that inks that share of the screen, read off the sorted screen values
       const n = 128, sv = new Float32Array(n * n);
@@ -1855,15 +1856,15 @@ void main() {
         const u = Math.random(), v = w * rand(-.8, .8), bx = (s.x0 + s.dx * u - uy * v) / c, by = (s.y0 + s.dy * u + ux * v) / c;
         let i = Math.round(bx), j = Math.round(by);
         if ((i + j) & 1) { if (Math.abs(bx - i) > Math.abs(by - j)) i += bx > i ? 1 : -1; else j += by > j ? 1 : -1; }
-        this.beads.push({ x: i * c, y: j * c, r: c * rand(.8, 1.1), vx: ux * rand(.03, .12) + rand(-.03, .03), vy: uy * rand(.03, .1) - rand(.04, .14) });
+        this.beads.push({ x: i * c, y: j * c, r: c * rand(.55, .7), vx: ux * rand(.03, .12) + rand(-.03, .03), vy: uy * rand(.03, .1) - rand(.04, .14) });
       }
       if (this.beads.length > 400) this.beads.splice(0, this.beads.length - 400);
       this.last = { x, y, t: now }; this.cuts.push(s);
     },
     // every cell's tone from the soap and the paths open now, then its threshold
     field(now) {
-      const { c, nx, ny, E, DP, HP, FL, base, pap, T, TH } = this, R = this.R1 * 1.9 + this.R2;
-      DP.fill(-1e9); HP.fill(0); FL.fill(0);
+      const { c, nx, ny, E, DP, HP, FL, BD, base, pap, T, TH } = this, R = this.R1 * 1.9 + this.R2;
+      DP.fill(-1e9); HP.fill(0); FL.fill(0); BD.fill(0);
       for (const s of this.cuts) {
         // a path opens fast, holds, then narrows to nothing, its heap thinning as it goes
         const o = 1 - (1 - clamp((now - s.born) / this.OPEN, 0, 1)) ** 3, cl = clamp(1 - (now - s.t0) / this.CLOSE, 0, 1), w = s.w * o * cl, k = o * Math.sqrt(cl), amp = w * .45;
@@ -1879,18 +1880,24 @@ void main() {
         }
         for (const [x, y, r] of s.fl) this.fleck(FL, x, y, r, k);
       }
-      // the soap heaped and flecked, the paper with a few dots, a little more right at its edge, and the edge between them
+      // a falling bead thins the dots around it, so it shows as a dot of its own in a small soft clearing
+      for (const b of this.beads) this.fleck(BD, b.x, b.y, b.r + c * 1.6, 1);
+      // the soap heaped and flecked, the paper with a few dots, a little more right at its edge, and the edge between
+      // them, all thinned out round the beads
       for (let q = 0; q < nx * ny; q++) {
         const d = DP[q], cut = clamp(.5 + d / c, 0, 1), sea = (base[q] + (1 - base[q]) * HP[q]) * (1 - FL[q]);
-        const t = sea + (pap[q] + .12 * Math.exp(-Math.max(d, 0) / (c * .8)) - sea) * cut;
+        const t = (sea + (pap[q] + .12 * Math.exp(-Math.max(d, 0) / (c * .8)) - sea) * cut) * (1 - .8 * BD[q]);
         T[q] = TH[Math.round(clamp(t, 0, 1) * 255)];
       }
     },
     draw(now, dt) {
       this.cuts = this.cuts.filter(s => now < s.t0 + this.CLOSE);
-      // once the last path has closed, the picture is drawn once more and then kept
-      if (this.cuts.length || this.dirty) {
-        this.field(now); this.dirty = this.cuts.length > 0;
+      // the loose beads hop and fall out of the frame
+      this.beads = this.beads.filter(b => b.y - b.r < SH);
+      for (const b of this.beads) { b.vy += .0016 * dt; b.x += b.vx * dt; b.y += b.vy * dt; }
+      // once the last path has closed and the last bead has gone, the picture is drawn once more and then kept
+      if (this.cuts.length || this.beads.length || this.dirty) {
+        this.field(now); this.dirty = this.cuts.length + this.beads.length > 0;
         if (this.gl) {
           const { gl } = this.gl;
           gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.nx, this.ny, gl.RED, gl.FLOAT, this.T); gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -1898,15 +1905,11 @@ void main() {
       }
       sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
       if (this.gl) sc.drawImage(this.gl.cv, 0, 0, SW, SH); else sc.drawImage(this.off, 0, 0, this.w * this.G, this.h * this.G);
-      // the loose beads hop and fall out of the frame, each in a ring of paper so it shows over the soap
-      this.beads = this.beads.filter(b => b.y - b.r < SH);
+      // the beads, solid in the dots' own ink
       if (this.beads.length) {
-        for (const b of this.beads) { b.vy += .0016 * dt; b.x += b.vx * dt; b.y += b.vy * dt; }
-        for (const [col, e] of [['#ebead6', this.c * .35], ['#bd4885', 0]]) {
-          sc.beginPath();
-          for (const b of this.beads) { sc.moveTo(b.x + b.r + e, b.y); sc.arc(b.x, b.y, b.r + e, 0, 6.283); }
-          sc.fillStyle = col; sc.fill();
-        }
+        sc.beginPath();
+        for (const b of this.beads) { sc.moveTo(b.x + b.r, b.y); sc.arc(b.x, b.y, b.r, 0, 6.283); }
+        sc.fillStyle = '#bd4885'; sc.fill();
       }
     },
     // without WebGL2: the shader's work in JS on the small pixels
