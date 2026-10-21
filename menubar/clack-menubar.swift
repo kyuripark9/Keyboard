@@ -6,7 +6,7 @@
 //   bridge offline                 the ring dims
 //
 // Click it to open clack (http://localhost:4545 in a popover), which stays over your other apps while you work in them
-// until you click the ring again; right-click or Control-click for the menu. The state comes from the bridge's /events stream, the same one the page listens to.
+// until you click the ring again or press Esc in it; right-click or Control-click for the menu. The state comes from the bridge's /events stream, the same one the page listens to.
 // Build it with build.sh next to this file.
 import AppKit
 import WebKit
@@ -233,6 +233,12 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     cameFrom = NSWorkspace.shared.frontmostApplication.flatMap { $0 == .current ? nil : $0 }
     nc.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] n in
       if let a = n.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication, a != .current { self?.cameFrom = a }
+    }
+    // Esc closes it while clack has the keyboard (53 is Esc's key code); clack's own keys never use it
+    NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+      guard let self, e.keyCode == 53, self.popover.isShown, e.window === self.page.view.window else { return e }
+      self.close()
+      return nil
     }
     render()
     if CommandLine.arguments.contains("--show") {
