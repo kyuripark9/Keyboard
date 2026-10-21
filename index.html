@@ -491,8 +491,9 @@ const SOUNDS = {
     } },
   gummy: { name: 'Chewy Jellies', desc: 'Squish jellies and peel them apart', scene: 'gummy', noTrail: true,
     // the jellies make every sound themselves as they move, so you hear what the picture does: chewy jelly close to the
-    // ear (쫀득쫀득), soft rounded squishes with slow attacks and wet, sticky ticks where the surfaces cling and let go,
-    // with no tone, creak or thump. A step or key landing on a jelly nobody holds presses it down with a soft squish
+    // ear (쫀득쫀득) that keeps sticking and coming unstuck, soft rounded squishes with slow attacks and wet, sticky ticks
+    // where the surfaces cling and let go, with no tone, creak or thump. A step or key landing on a jelly nobody holds
+    // presses it down with a soft squish
     press(k, t, j) {
       const at = t + rand(0, 0.01);
       hiss(at, { type: 'lowpass', f: 700 * j, f2: 420, ft: 0.08, q: 0.7, a: 0.02, d: 0.09, g: 0.2, wet: 0.05 });
@@ -503,39 +504,47 @@ const SOUNDS = {
       hiss(t, { type: 'lowpass', f: 560 * j, f2: 380, ft: 0.06, q: 1.1, a: 0.012, d: 0.07, g: 0.2, wet: 0.04 });
       tack(t + 0.02, 2, 0.03, { lo: 800, hi: 1300, g: 0.045 });
     },
-    // pulled from a neighbour, the jelly between them draws out into a string (쭈욱): a soft, elastic stretch that rises
-    // as the string thins, and wet, sticky ticks that run as fast as it grows (k.n ticks this frame, k.x how thin the
-    // string is, 0 to 1)
+    // two faces stuck together start to come apart: they unstick with a sticky tear and a wet drag as the jelly between
+    // them begins to draw out (쩍)
+    part(k, t, j) {
+      hiss(t, { f: 650 * j, f2: 950, ft: 0.06, q: 1.6, a: 0.008, d: 0.07, g: 0.16 });
+      tack(t, 4 + Math.floor(Math.random() * 3), 0.05, { lo: 700, hi: 1300, g: 0.11, d: 0.014 });
+    },
+    // the string draws out (쭈욱): a soft, elastic stretch that rises as it thins, and wet, sticky ticks that run as fast
+    // as it grows (k.n ticks this frame, k.x how thin the string is, 0 to 1)
     pull(k, t, j) {
       const f = 650 + 900 * k.x;
-      hiss(t, { f: (320 + 380 * k.x) * j, q: 1.4, a: 0.012, d: 0.05, g: 0.035 * Math.min(k.n, 3) });
+      hiss(t, { f: (320 + 380 * k.x) * j, q: 1.4, a: 0.012, d: 0.05, g: 0.03 * Math.min(k.n, 3) });
       tack(t, k.n, 0.016, { lo: f, hi: f * 1.35, g: 0.07 + 0.05 * k.x, d: 0.016 });
     },
     // squeezed into a neighbour, in two beats: the jelly gives under the press (쫀), then the faces that stuck together
     // let go with a wet, sticky smack and a few tacky ticks (득)
     squeeze(k, t, j) {
-      hiss(t, { f: 340 * j, f2: 480, ft: 0.12, q: 1.2, a: 0.045, d: 0.13, g: 0.26, wet: 0.07 });
-      hiss(t + 0.02, { type: 'lowpass', f: 600 * j, q: 0.7, a: 0.04, d: 0.1, g: 0.12 });
+      hiss(t, { f: 340 * j, f2: 480, ft: 0.12, q: 1.2, a: 0.045, d: 0.13, g: 0.17, wet: 0.07 });
+      hiss(t + 0.02, { type: 'lowpass', f: 600 * j, q: 0.7, a: 0.04, d: 0.1, g: 0.085 });
       const at = t + rand(0.1, 0.13);
       hiss(at, { f: 1100 * j, f2: 650, ft: 0.025, q: 2, a: 0.003, d: 0.035, g: 0.16, wet: 0.05 });
       tack(at - 0.01, 3 + Math.floor(Math.random() * 3), 0.05, { lo: 800, hi: 1500, g: 0.055 });
     },
-    // the string lets go: its last threads peel off in a quickening run of sticky ticks (쩌억), it comes away in a wet
-    // suck (쪽), and the two halves spring back into their jellies with a quick wobble, as fast as their faces shiver
+    // the string comes unstuck for good: its last threads peel off in a quickening run of sticky ticks, it comes away in
+    // a wet suck (쪽), and the two halves spring back into their jellies with a quick wobble, as fast as their faces shiver
     peel(k, t, j) {
-      for (let i = 0; i < 5; i++) tack(t + 0.045 * (1 - Math.pow((5 - i) / 5, 0.7)), 1, 0.004, { lo: 900, hi: 1700, g: 0.05 + 0.012 * i });
-      hiss(t + 0.05, { f: 1300 * j, f2: 600, ft: 0.035, q: 2.2, a: 0.003, d: 0.05, g: 0.2, wet: 0.08 });
-      jiggle(t + 0.06, { f: 480 * j, q: 1.8, a: 0.012, d: 0.16, g: 0.2, rate: 8.7, depth: 0.25, am: 0.6 });
+      for (let i = 0; i < 5; i++) tack(t + 0.045 * (1 - Math.pow((5 - i) / 5, 0.7)), 1, 0.004, { lo: 900, hi: 1700, g: 0.08 + 0.018 * i });
+      hiss(t + 0.05, { f: 1400 * j, f2: 600, ft: 0.03, q: 2.4, a: 0.003, d: 0.06, g: 0.38, wet: 0.08 });
+      jiggle(t + 0.06, { f: 480 * j, q: 1.8, a: 0.012, d: 0.16, g: 0.18, rate: 8.7, depth: 0.25, am: 0.6 });
     },
     // a jelly slips off the cursor and bounces home: a soft wobbling squish that rocks as it overshoots and settles
     // (뽀용), louder the farther it flies back (k.amt, 0 to 1)
     home(k, t, j) {
-      jiggle(t, { f: 380 * j, q: 1.6, a: 0.02, d: 0.24, g: 0.32 * k.amt, rate: 6.4, depth: 0.3, am: 0.7, wet: 0.06 });
+      jiggle(t, { f: 380 * j, q: 1.6, a: 0.02, d: 0.24, g: 0.22 * k.amt, rate: 6.4, depth: 0.3, am: 0.7, wet: 0.06 });
     },
-    // two touch again and stick with a light, soft tap and a moist little smack (톡)
+    // two touch again and stick: a wet little slap as the moist faces meet (착), louder the harder they come together
+    // (k.amt, 0 to 1)
     stick(k, t, j) {
-      hiss(t, { type: 'lowpass', f: 1100 * j, q: 0.8, a: 0.005, d: 0.03, g: 0.12 });
-      tack(t + 0.008, 1, 0.01, { lo: 900, hi: 1400, g: 0.05 });
+      const g = k.amt;
+      hiss(t, { f: 950 * j, f2: 600, ft: 0.02, q: 1.4, a: 0.004, d: 0.035, g: 0.3 * g });
+      hiss(t, { type: 'lowpass', f: 800 * j, q: 0.8, a: 0.004, d: 0.05, g: 0.2 * g });
+      tack(t + 0.006, 1 + Math.floor(Math.random() * 2), 0.015, { lo: 900, hi: 1400, g: 0.09 * g });
     } },
   pudding: { name: 'Pudding', desc: 'Tap soft jellies till they jiggle', scene: 'jelly',
     // a spoon tapping custard: a soft wet slap and a low wobble that shivers as the pudding jiggles
@@ -1431,7 +1440,8 @@ void main() {
      until it snaps (쩍) and each half springs back into its cube with a wobble. Dragged too far, a jelly slips off the
      cursor and bounces home, where it sticks again to whatever it touches. Every step also presses down on the jelly
      under it, so it spreads into its neighbours and springs back. Every sound comes from the jellies: the catch, the
-     squeeze, the string as it stretches and snaps, the bounce home and the re-stick each play their own. */
+     squeeze, two faces coming unstuck, the string as it stretches and snaps, the bounce home and the re-stick each
+     play their own. */
   gummy: {
     frame: 'full',
     init() {
@@ -1472,7 +1482,7 @@ void main() {
         if (!B) continue;
         const a = Math.atan2(B.hy - A.hy, B.hx - A.hx), ra = this.rest(A, a), rb = this.rest(B, a + Math.PI), o0 = ra + rb - Math.hypot(B.hx - A.hx, B.hy - A.hy);
         const can = !(di && dj) && o0 > -s * .08;
-        this.pairs.push({ A, B, ra, rb, o0: Math.max(o0, 0), g0: Math.max(-o0, 0), can, on: can, h0: s * .24, sq: 0, gl: 0 });
+        this.pairs.push({ A, B, ra, rb, o0: Math.max(o0, 0), g0: Math.max(-o0, 0), can, on: can, h0: s * .24, sq: 0, gl: 0, pt: 0 });
       }
       this.hold = null; this.snaps = []; this.T = {}; this.ga = 0;
       this.grain = sc.createPattern(this.tile || (this.tile = this.grainTile(256)), 'repeat');
@@ -1533,7 +1543,7 @@ void main() {
       g.putImageData(img, 0, 0);
       return c;
     },
-    // plays one of the scene's own sounds (press, grab, squeeze, peel, home or stick), with o for the sound to read;
+    // plays one of the scene's own sounds (press, grab, squeeze, part, peel, home or stick), with o for the sound to read;
     // close ones of a kind share one
     snd(kind, now, gap, o) {
       if (now - (this.T[kind] || 0) < gap) return;
@@ -1623,8 +1633,14 @@ void main() {
         for (const P of this.pairs) {
           const { A, B } = P, dx = B.x - A.x, dy = B.y - A.y, D = Math.hypot(dx, dy) || 1, ov = P.ra * A.sz + P.rb * B.sz - D;
           let f = 0;
-          // two that touch again stick together with a soft tacky tap
-          if (P.can && !P.on && ov > s * .005) { P.on = true; this.snd('stick', now, 90); }
+          // two that touch again stick together with a wet slap, louder the faster they meet
+          if (P.can && !P.on && ov > s * .005) {
+            P.on = true;
+            const v = ((A.vx - B.vx) * dx + (A.vy - B.vy) * dy) / D;
+            this.snd('stick', now, 45, { amt: clamp(v / .4, .35, 1) });
+          }
+          // two stuck faces that start to come apart unstick (쩍) once, until they touch again
+          if (P.pt && -ov - P.g0 < s * .004) P.pt = 0;
           if (ov > P.o0) {
             f = -(ov - P.o0) * .0022;
             // squeezed hard into each other, they squish softly and cling (쫀득)
@@ -1633,6 +1649,7 @@ void main() {
           }
           else if (P.on && -ov > P.g0) {
             const gp = -ov - P.g0;
+            if (!P.pt && gp > s * .03) { P.pt = 1; this.snd('part', now, 50); }
             // stretched too far, the string of jelly between them snaps (쩍) and each half springs back into its cube
             if (gp > gmax) {
               P.on = false; this.snd('peel', now, 40);
@@ -2647,7 +2664,7 @@ const STORY = {
   cyano: { try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', look: 'A cobalt sun print in camouflage patches of grain and halftone dots', hear: 'A soft breath of foam with a faint sizzle' },
   wax: { try: 'Press through the squares like a thumb into clay. They shrink to diamonds and swell back.', look: 'The 왁뿌볼 wax-crushing ball as a halftone of lime squares on lavender, in a fine felt grain, after reference images', hear: 'A dry snap, a rush of brittle crackles and a soft squish' },
   thock: { try: 'Your cursor is a heat laser: the burn creeps outward from its path, the holes grow into each other, and it all cools through blue, pink and orange.', look: 'A perforated sheet seen through its heat, after a thermal print: lime holes in blue rims that merge as they burn, with pink and orange heat between them', hear: 'A deep, muffled thock and a light tick as the key springs back' },
-  gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge in one flat pink under a fine grain, after a pink and white reference', hear: 'Only what the jellies do, chewy and sticky (쫀득쫀득): a soft press as one is caught (꾹), a squish and a wet smack as it squeezes into the next and lets go (쫀득), an elastic stretch with sticky ticks as a string draws out (쭈욱), a wet suck when it lets go (쪽) and a wobbling squish as a jelly bounces home (뽀용)' },
+  gummy: { try: 'Drag a jelly into its neighbors, then pull them apart until the string of jelly snaps.', look: 'Firm pink jelly cubes packed edge to edge in one flat pink under a fine grain, after a pink and white reference', hear: 'Only what the jellies do, chewy and sticky, always sticking and coming unstuck: a sticky tear as two faces come apart (쩍), an elastic stretch with sticky ticks as the string draws out (쭈욱), a wet suck when it lets go (쪽), a wet slap when two stick again (착), a squish and a smack as one squeezes into the next (쫀득) and a wobbling squish as a jelly bounces home (뽀용)' },
   pudding: { try: 'Brush over the jellies: each one jiggles and turns red for a moment.', look: 'Green jelly rounds on cream, soft as if seen through frosted glass', hear: 'A soft wet slap and a low, shivering wobble' },
   soap: { try: 'Shave a path down to the paper. Every dot you shave off drops away like a bead, the shaved soap heaps up along the edges, and the cut slowly closes.', look: 'A bar of soap as a magenta halftone on cream, after a halftone print', hear: 'A crisp, rising shave and the patter of falling flakes' },
   snow: { try: 'Walk across it like still water: each step washes out a print and sends ripples that sweep the moiré bands across the lines.', look: 'Snow seen through a lenticular print, after a reference: fine olive and cream lines in wide arcs on periwinkle, beating into wavy moiré bands', hear: 'A hush and the fine creak of packing crystals (뽀드득)' },
