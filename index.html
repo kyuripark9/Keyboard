@@ -72,6 +72,27 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 .tally span { font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
 .stage { min-height: 0; min-width: 0; }
 
+/* The agent line: one quiet line over the tally that knows when your agent is working, when it's done and how fast you
+   went back. It never shows a best or a streak, so there is nothing to stay for. It keeps a fixed height so the pictures
+   that measure the tally never shift */
+.agent { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 18px; margin-bottom: 6px;
+  font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap;
+  transition: opacity .6s; }
+.agent.dim { opacity: .55; }
+.agent .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.agent.wait .dot { animation: agentPulse 1.6s ease-in-out infinite; }
+.agent.done { color: var(--ink); }
+@keyframes agentPulse { 50% { opacity: .25; transform: scale(.7); } }
+.agent button { pointer-events: auto; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--ink);
+  background: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; cursor: pointer; }
+.agent button:hover { border-color: var(--ink); }
+body.custom-cursor .agent button { cursor: none !important; }
+/* letting go: once the agent is done, the picture loses its colour and the cursor fades with the sound */
+#scene { transition: filter .3s linear; }
+body.letting-go #scene { filter: saturate(var(--grip-sat, 1)); }
+body.letting-go .cursor.on { opacity: var(--grip-op, 1); }
+@media (prefers-reduced-motion: reduce) { .agent.wait .dot { animation: none; } }
+
 /* custom cursor + trail canvas: a ring in each picture's own --cursor color */
 #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 .cursor {
@@ -225,6 +246,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
   <main class="stage" id="stage"></main>
 
   <div class="tally" aria-live="off">
+    <div class="agent" id="agent" role="status" aria-live="polite"></div>
     <b id="count">0</b>
     <span>CLACKS</span>
   </div>
@@ -349,6 +371,12 @@ function save() {
     try { const { mode, sound, volume, muted, count } = S; localStorage.setItem('clack', JSON.stringify({ mode, sound, volume, muted, count })); } catch (e) {}
   }, 300);
 }
+
+/* the agent's state, read by press() on every step; the agent section near the end drives it */
+const AG = { grip: 1, vis: 1 };
+// how strongly the pictures answer a step: full while clack holds you, down to a faint trace once it has let go, so
+// every material still stirs a little but plainly less
+const V = () => AG.vis;
 
 /* ---------- audio ---------- */
 const A = { ctx: null };
@@ -658,11 +686,10 @@ function press(k, src) {
   const was = k.holders.size;
   k.holders.add(src);
   if (was) return;
+  // once the agent is done, clack lets go: fewer steps land, and at the end none do
   k.downAt = performance.now();
-  playKey(k, 'down');
-  S.count++;
-  renderCount();
-  save();
+  playKey(k, 'down'); // its loudness follows the grip through the master gain
+  if (AG.grip > 0.02) { S.count++; renderCount(); save(); }
   sceneHit(k);
   pulseCursor();
 }
@@ -682,7 +709,7 @@ const lastPt = new Map();
 const pressed = new Set();
 function keyAt(x, y) {
   const el = document.elementFromPoint(x, y);
-  return el && el.closest('.edge, .top, .story') ? null : cellAt(x, y);
+  return el && el.closest('.edge, .top, .story, .agent button') ? null : cellAt(x, y);
 }
 function enter(id, k) {
   const cur = active.get(id);
@@ -804,7 +831,7 @@ const SCENES = {
     hit(x, y, k, now) {
       // crease runs across the direction of travel, give or take a random tilt, so a swipe pushes the sheet into folds
       const a = Math.atan2(this.dir[1], this.dir[0]) + rand(-.6, .6), s2 = this.s;
-      this.folds.push({ x, y, nx: Math.cos(a), ny: Math.sin(a), A: s2 * rand(.45, .9), B: s2 * rand(-.7, .7), L: s2 * rand(1.2, 2.6), R: s2 * rand(4, 7), t0: now });
+      this.folds.push({ x, y, nx: Math.cos(a), ny: Math.sin(a), A: s2 * rand(.45, .9) * V(), B: s2 * rand(-.7, .7) * V(), L: s2 * rand(1.2, 2.6), R: s2 * rand(4, 7), t0: now });
       if (this.folds.length > 48) this.folds.shift();
     },
     draw(now) {
@@ -893,9 +920,9 @@ const SCENES = {
     move(x, y, dx, dy) {
       // glints scatter in the cursor's wake, more where the print is already exposed
       const now = performance.now(), q = this.L[clamp(Math.round((y + this.p / 2) / (this.p / 2)), 0, this.rows - 1) * this.cols + clamp(Math.round((x + this.p / 2) / this.p), 0, this.cols - 1)];
-      for (let i = 0, n = Math.random() < .5 + q ? 2 : 1; i < n; i++) this.sparkle(x + rand(-50, 50), y + rand(-50, 50), now);
-      this.expose(x, y, 64, clamp(Math.hypot(dx, dy) / 70, .04, .22)); },
-    hit(x, y, k, now) { this.expose(x + rand(-20, 20), y + rand(-20, 20), rand(80, 120), .45); for (let i = 0; i < 4; i++) this.sparkle(x + rand(-70, 70), y + rand(-70, 70), now); },
+      if (Math.random() < V()) for (let i = 0, n = Math.random() < .5 + q ? 2 : 1; i < n; i++) this.sparkle(x + rand(-50, 50), y + rand(-50, 50), now);
+      this.expose(x, y, 64, clamp(Math.hypot(dx, dy) / 70, .04, .22) * V()); },
+    hit(x, y, k, now) { this.expose(x + rand(-20, 20), y + rand(-20, 20), rand(80, 120), .45 * V()); for (let i = 0, n = Math.round(4 * V()); i < n; i++) this.sparkle(x + rand(-70, 70), y + rand(-70, 70), now); },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
       const p = this.p, h = p / 2, t = now * .000012, L = this.L, fade = Math.exp(-dt / 1300);
@@ -950,7 +977,7 @@ const SCENES = {
       this.ro = Float32Array.from({ length: rows }, Math.random);
       this.bx = new Float32Array(n); this.by = new Float32Array(n); this.ca = new Float32Array(n); this.sa = new Float32Array(n);
       this.irx = new Float32Array(n); this.iry = new Float32Array(n); this.c1 = new Float32Array(n); this.c2 = new Float32Array(n);
-      this.amp = new Float32Array(n); this.base = new Float32Array(n); this.back = new Float64Array(n);
+      this.amp = new Float32Array(n); this.base = new Float32Array(n); this.back = new Float64Array(n); this.dep = new Float32Array(n);
       for (let j = 0, q = 0; j < rows; j++) for (let i = 0; i < cols; i++, q++) {
         const R = Math.random() < .2 ? rand(.3, .48) : rand(.55, .95), e = rand(.75, 1.35), a = rand(0, Math.PI);
         const c1 = rand(-.16, .16), c2 = rand(-.18, .18), cap = .8 * Math.sqrt(1 - Math.abs(c1) - Math.abs(c2));
@@ -1035,8 +1062,8 @@ void main() {
         const d = this.d2(p, u, v); if (d < best && this.base[p]) { best = d; q = p; }
       }
       if (q < 0 || this.back[q]) return;
-      this.back[q] = now + 9000 + Math.random() * 6000;
-      this.rip.push({ x, y, t0: now });
+      this.back[q] = now + 9000 + Math.random() * 6000; this.dep[q] = V();
+      this.rip.push({ x, y, t0: now, a: V() });
       if (this.rip.length > 24) this.rip.shift();
     },
     draw(now, dt) {
@@ -1044,7 +1071,7 @@ void main() {
       // popped hills sink fast, refilled ones swell back slowly
       for (let q = 0; q < amp.length; q++) {
         if (this.back[q] && now > this.back[q]) this.back[q] = 0;
-        const target = this.back[q] ? this.base[q] * .25 : this.base[q];
+        const target = this.back[q] ? this.base[q] * (1 - .75 * this.dep[q]) : this.base[q];
         amp[q] += (target - amp[q]) * Math.min(1, dt * (this.back[q] ? .02 : .0025));
       }
       // the hills are worked out on a grid twice as coarse (K) and filled in between, as they are smooth at that scale
@@ -1086,14 +1113,14 @@ void main() {
         for (let j = j0; j <= j1; j++) for (let i = i0, o = j * w + i0; i <= i1; i++, o++) { const d = Math.hypot(i * G - cx, j * G - cy); if (d < R) F[o] += fn(d); }
       };
       for (const r of this.rip) {
-        const age = (now - r.t0) / 1000, front = age * s2 * 2.4, A = .3 * Math.pow(1 - age / 2.6, 2), W = s2 * .55;
+        const age = (now - r.t0) / 1000, front = age * s2 * 2.4, A = .3 * r.a * Math.pow(1 - age / 2.6, 2), W = s2 * .55;
         const ring = d => { const z = (d - front) / W; return A * Math.exp(-z * z) * Math.sin(z * 3.2); };
         for (const x of [r.x, -r.x, SW * 2 - r.x]) for (const y of [r.y, -r.y, SH * 2 - r.y]) bump(x, y, front + W * 2, ring);
       }
       // the cursor presses a soft dent into the sheet, and it lifts once the cursor rests
       const c = this.cur, ca = clamp(1 - (now - c.t - 300) / 800, 0, 1);
       c.a += (ca - c.a) * Math.min(1, dt * .01);
-      if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * Math.pow(1 - d / R, 2)); }
+      if (c.a > .01) { const R = s2 * .9; bump(c.x, c.y, R, d => -.45 * c.a * V() * Math.pow(1 - d / R, 2)); }
       if (this.gl) {
         const { gl } = this.gl;
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, w, h, gl.RED, gl.FLOAT, F); gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -1182,16 +1209,16 @@ void main() {
         this.E[q] = Math.min(1, this.E[q] + amt * Math.exp(-(dx * dx + dy * dy) / s2));
       }
     },
-    move(x, y, dx, dy) { this.press(x, y, this.p * 1.8, clamp(Math.hypot(dx, dy) / 130, .02, .12)); },
+    move(x, y, dx, dy) { this.press(x, y, this.p * 1.8, clamp(Math.hypot(dx, dy) / 130, .02, .12) * V()); },
     hit(x, y, k, now) {
       // a step cracks the chips around it: each one snaps round one way or the other, harder near the middle
       const p = this.p, R = p * 1.9;
-      this.press(x, y, R, .12);
+      this.press(x, y, R, .12 * V());
       const i0 = Math.max(0, Math.floor((x - R - this.x0) / p)), i1 = Math.min(this.cols - 1, Math.ceil((x + R - this.x0) / p));
       const j0 = Math.max(0, Math.floor((y - R - this.y0) / p)), j1 = Math.min(this.rows - 1, Math.ceil((y + R - this.y0) / p));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
         const q = j * this.cols + i, d = Math.hypot(this.x0 + i * p - x, this.y0 + j * p - y);
-        if (d < R) this.V[q] += (Math.random() < .5 ? -1 : 1) * rand(.06, .14) * (1 - d / R);
+        if (d < R) this.V[q] += (Math.random() < .5 ? -1 : 1) * rand(.06, .14) * (1 - d / R) * V();
       }
     },
     draw(now, dt) {
@@ -1317,9 +1344,11 @@ void main() {
     // the point it lands on
     move(x, y, dx, dy) {
       const now = performance.now(), n = Math.min(60, Math.ceil(Math.hypot(dx, dy) / (this.s * .4)));
-      for (let i = n; i >= 0; i--) this.paint(x - dx * i / (n || 1), y - dy * i / (n || 1), 2.4, now);
+      for (let i = n; i >= 0; i--) this.paint(x - dx * i / (n || 1), y - dy * i / (n || 1), this.beam(2.4), now);
     },
-    hit(x, y, k, now) { this.paint(x, y, k.code === 'Cell' ? 2.4 : 2.7, now); },
+    hit(x, y, k, now) { this.paint(x, y, this.beam(k.code === 'Cell' ? 2.4 : 2.7), now); },
+    // let go, the laser weakens to a faint beam that only warms the holes right under it
+    beam(P) { return .45 + (P - .45) * V(); },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
       const { s, cols, E, T, th, on, a0, ig, fl, h, gh, hr, g, gm, sp, c, fw, F, M, FH, FW, GV, GA, GM, NZ, SPK, lut } = this, fade = Math.exp(-dt / 3500);
@@ -1515,7 +1544,7 @@ void main() {
       if (H && H !== g) { H.tx = H.ty = 0; this.hold = null; this.home(H, now); }
       if (!g || (!this.hold && now < g.cool)) return;
       if (!this.hold) { this.hold = g; g.gx = x; g.gy = y; this.snd('grab', now, 60); }
-      const tx = (x - g.gx) * .85, ty = (y - g.gy) * .85;
+      const tx = (x - g.gx) * .85 * V(), ty = (y - g.gy) * .85 * V();
       if (Math.hypot(tx, ty) > s * .55) { g.tx = g.ty = 0; g.cool = now + 160; this.hold = null; this.home(g, now); return; }
       g.tx = tx; g.ty = ty;
     },
@@ -1525,8 +1554,8 @@ void main() {
       // pressed in, spread into its neighbours, until the key comes up and it springs back (the key plays both sounds)
       const g = this.under(x, y);
       if (!g) return;
-      if (k.code !== 'Cell') { g.sv += .05; g.key = k; return; }
-      g.sv += .025; if (g !== this.hold) this.snd('press', now, 50);
+      if (k.code !== 'Cell') { g.sv += .05 * V(); g.key = k; return; }
+      g.sv += .025 * V(); if (g !== this.hold) this.snd('press', now, 50);
     },
     // a jelly let go of bounces home with a wobble, louder the farther it has to go
     home(g, now) {
@@ -1752,7 +1781,7 @@ void main() {
       if (l > .5) this.dir = [dx / l, dy / l];
       this.cur = { x, y, t: now };
       // every jelly within reach of the path since the last move turns red, so a fast swipe leaves no gaps
-      const x0 = x - dx, y0 = y - dy, l2 = l * l, R = this.s * .55;
+      const x0 = x - dx, y0 = y - dy, l2 = l * l, R = this.s * .55 * V();
       for (const P of this.p) {
         const t = l2 ? clamp(((P.x - x0) * dx + (P.y - y0) * dy) / l2, 0, 1) : 1;
         if (Math.hypot(P.x - x0 - dx * t, P.y - y0 - dy * t) < R) this.paint(P, now);
@@ -1772,7 +1801,7 @@ void main() {
         if (d > R) continue;
         const own = d < s * .5, a = own ? Math.atan2(this.dir[1], this.dir[0]) : Math.atan2(dy, dx);
         if (own) this.paint(P, now);
-        this.q.push({ P, t: now + (own ? 0 : d * 1.6), a: own ? 1 : .5 * (1 - d / R), c: Math.cos(2 * a), s: Math.sin(2 * a) });
+        this.q.push({ P, t: now + (own ? 0 : d * 1.6), a: (own ? 1 : .5 * (1 - d / R)) * V(), c: Math.cos(2 * a), s: Math.sin(2 * a) });
       }
       if (this.q.length > 400) this.q.splice(0, this.q.length - 400);
     },
@@ -1918,7 +1947,7 @@ void main() {
     hit(x, y, k, now) {
       // the blade shaves a band from the last step to this one, so the steps join into one even path. Half the time a
       // fleck or a few fly off to one side and land in the soap past the heap
-      const c = this.c, w = c * rand(8, 10), p = this.last;
+      const c = this.c, w = c * rand(8, 10) * V(), p = this.last;
       const s = p && now - p.t < 400 && Math.hypot(x - p.x, y - p.y) < CELL * 3 ? { x0: p.x, y0: p.y } : { x0: x, y0: y };
       s.dx = x - s.x0; s.dy = y - s.y0; s.l2 = s.dx * s.dx + s.dy * s.dy; s.w = w; s.born = now; s.t0 = now + this.HOLD; s.fl = [];
       const l = Math.sqrt(s.l2), [ux, uy] = l ? [s.dx / l, s.dy / l] : this.dir;
@@ -1940,7 +1969,7 @@ void main() {
         if (f >= 1 || now < GONE[q] || TO[q] < .1) continue;
         const t = Math.min(TO[q], .62), a = c * Math.sqrt(2 * t);
         GONE[q] = s.t0 + this.CLOSE * (1 - f);
-        if (Math.random() < .25) this.beads.push({ x: i * c, y: j * c, a, r: a * clamp(.55 - .9 * t, .08, .5), t0: now + this.OPEN * (1 - Math.cbrt(1 - f)),
+        if (Math.random() < .25 * V()) this.beads.push({ x: i * c, y: j * c, a, r: a * clamp(.55 - .9 * t, .08, .5), t0: now + this.OPEN * (1 - Math.cbrt(1 - f)),
           an: 0, sp: (Math.random() < .5 ? -1 : 1) * rand(.002, .006), vx: ux * rand(.01, .05) + rand(-.02, .02), vy: uy * rand(.01, .05) - rand(0, .1) });
       }
       if (this.beads.length > 4000) this.beads.splice(0, this.beads.length - 4000);
@@ -2123,7 +2152,7 @@ void main() {
     move(x, y, dx, dy) {
       const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l];
       // the cursor trails a faint wake through the water
-      if (l < 200) this.drop(x, y, Math.min(.1, l * .005), 1.4);
+      if (l < 200) this.drop(x, y, Math.min(.1, l * .005) * V(), 1.4);
     },
     hit(x, y, k, now) {
       // a print every stride, feet taking turns either side of the path, each pointing the way the cursor walks: the
@@ -2132,9 +2161,9 @@ void main() {
       if (l && now - l.t < 2000 && Math.hypot(l.x - x, l.y - y) < P * 2.6) return;
       this.last = { x, y, t: now };
       const [ux, uy] = this.dir, f = this.foot = -this.foot, px = x - uy * P * .55 * f, py = y + ux * P * .55 * f;
-      this.stamp(this.W, px + ux * P * .5, py + uy * P * .5, P * .62, .95);
-      this.stamp(this.W, px - ux * P * .75, py - uy * P * .75, P * .46, .95);
-      this.drop(px, py, 1.1, 2);
+      this.stamp(this.W, px + ux * P * .5, py + uy * P * .5, P * .62, .95 * V());
+      this.stamp(this.W, px - ux * P * .75, py - uy * P * .75, P * .46, .95 * V());
+      this.drop(px, py, 1.1 * V(), 2);
     },
     // one step of the ripple: each cell is pulled by its neighbours and keeps its swing, losing a little every step
     step() {
@@ -2254,7 +2283,7 @@ void main() {
     // along both sides of each, so it piles up between them; a press without a drag sinks in three dimples, each with a
     // ring heaped round it
     carve(x0, y0, x1, y1) {
-      const G = this.G, gw = this.gw, gh = this.gh, H = this.H, wg = this.wg, sp = wg * 2.9, D = wg * .9, Rm = wg * .5;
+      const G = this.G, gw = this.gw, gh = this.gh, H = this.H, wg = this.wg, sp = wg * 2.9, D = wg * .9 * V(), Rm = wg * .5 * V();
       let ux = x1 - x0, uy = y1 - y0;
       const L = Math.hypot(ux, uy), drag = L > .5;
       if (drag) { ux /= L; uy /= L; } else [ux, uy] = this.dir;
@@ -2640,7 +2669,7 @@ function renderAll() {
 }
 function set(patch) {
   Object.assign(S, patch); save();
-  if ('volume' in patch || 'muted' in patch) { if (A.master) A.master.gain.setTargetAtTime(S.muted ? 0 : S.volume, A.ctx.currentTime, 0.02); }
+  if ('volume' in patch || 'muted' in patch) { if (A.master) A.master.gain.setTargetAtTime(S.muted ? 0 : S.volume * AG.grip, A.ctx.currentTime, 0.02); }
   if ('mode' in patch || 'sound' in patch) releaseAll('p');
   renderAll();
 }
@@ -2729,6 +2758,121 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   e.preventDefault();
   $(a.getAttribute('href').slice(1)).scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }));
+
+/* ---------- the agent: clack wakes when your agent starts working and lets go of you when it's done ----------
+   Where the signal comes from:
+   - served by clack-bridge on localhost (or opened with ?bridge=http://localhost:4545): Claude Code hooks tell the
+     bridge when you hand off a prompt (start) and when the agent stops or needs you (done), and it streams that here
+   - anywhere else, such as the hosted portfolio copy: a demo agent you start yourself, so a visitor can feel the release
+   Return time is measured from "done" to the moment you leave this tab or window (or send the agent a new prompt).
+   It's kept in this browser only, and only ever shown as your last return and your typical (median) one */
+(() => {
+  const RELEASE_MS = 5000, DEMO_MS = 12000, BACK_SHOW_MS = 10000, LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/;
+  const el = $('agent');
+  const q = new URLSearchParams(location.search);
+  const bridge = q.get('bridge') || (LOCAL.test(location.hostname) && location.port ? location.origin : null);
+  Object.assign(AG, { mode: bridge ? 'bridge' : 'demo', state: 'idle', linked: false, startAt: 0, doneAt: 0, reason: '',
+    backMs: null, backAt: 0, demoT: 0 });
+
+  let returns = [];
+  try { returns = JSON.parse(localStorage.getItem('clack-returns') || '[]').filter(n => typeof n === 'number'); } catch (e) {}
+  const keep = () => { try { localStorage.setItem('clack-returns', JSON.stringify(returns.slice(-50))); } catch (e) {} };
+  const median = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const secs = ms => { const s = Math.max(0, Math.round(ms / 1000)); return s < 60 ? s + 's' : Math.floor(s / 60) + 'm ' + String(s % 60).padStart(2, '0') + 's'; };
+  const clock = ms => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+
+  function setGrip(g) {
+    AG.grip = g; AG.vis = 0.25 + 0.75 * g;
+    document.body.style.setProperty('--grip-sat', (0.25 + 0.75 * g).toFixed(3));
+    document.body.style.setProperty('--grip-op', (0.3 + 0.7 * g).toFixed(3));
+    if (A.master && A.ctx) A.master.gain.setTargetAtTime(S.muted ? 0 : S.volume * g, A.ctx.currentTime, 0.12);
+  }
+  function hold() { setGrip(1); document.body.classList.remove('letting-go'); }
+
+  function start(auto) {
+    // a new prompt means you went back, even if this tab never lost focus; Claude waking itself up doesn't
+    if (AG.state === 'done' && !auto) back('prompt');
+    clearTimeout(AG.demoT);
+    Object.assign(AG, { state: 'wait', startAt: Date.now() });
+    hold(); render();
+    if (AG.mode === 'demo') AG.demoT = setTimeout(() => done('Stop'), DEMO_MS);
+  }
+  function done(reason) {
+    if (AG.state !== 'wait') return; // a "done" with no wait behind it (an idle reminder, say) changes nothing
+    Object.assign(AG, { state: 'done', doneAt: Date.now(), reason: reason || 'Stop' });
+    document.body.classList.add('letting-go');
+    render();
+  }
+  function back(how) {
+    if (AG.state !== 'done') return;
+    const ms = Date.now() - AG.doneAt;
+    returns.push(ms); keep();
+    Object.assign(AG, { state: 'idle', backMs: ms, backAt: 0 });
+    hold(); render();
+  }
+  function reset() { clearTimeout(AG.demoT); AG.state = 'idle'; hold(); render(); }
+
+  // leaving the tab or the window is going back to work
+  addEventListener('blur', () => back('blur'));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) back('hidden'); else onReturn(); });
+  addEventListener('focus', onReturn);
+  function onReturn() { if (AG.backMs != null && !AG.backAt) { AG.backAt = Date.now(); render(); } }
+
+  let lastHtml = null;
+  function render() {
+    const now = Date.now(), s = AG.state;
+    el.className = 'agent ' + s;
+    let html = '';
+    if (s === 'wait') {
+      html = `<i class="dot"></i><span>${AG.mode === 'demo' ? 'demo agent' : 'agent'} working · ${clock(now - AG.startAt)}</span>`;
+    } else if (s === 'done') {
+      const gone = AG.grip <= 0.02, need = AG.reason === 'Notification';
+      if (!gone) html = `<i class="dot"></i><span>${need ? 'agent needs you' : 'agent done'} · go back</span>`;
+      else if (now - AG.doneAt < RELEASE_MS + 9000) html = `<span>clack let go · ${AG.mode === 'demo' ? 'tab away to go back' : 'your agent is waiting'}</span>`;
+      else if (AG.mode === 'demo') html = `<span>still here?</span><button type="button" data-a="again">try again</button>`;
+      else html = `<span>clack let go · your agent is waiting</span>`;
+    } else if (AG.backMs != null && AG.backAt && now - AG.backAt < BACK_SHOW_MS) {
+      const typ = returns.length >= 3 ? ` · typical ${secs(median(returns))}` : '';
+      html = `<span>back in ${secs(AG.backMs)}${typ}</span>`;
+    } else if (AG.mode === 'demo') {
+      html = `<button type="button" data-a="try">try an agent wait</button>`;
+    } else {
+      html = AG.linked ? `<span>agent linked</span>` : `<span>bridge offline</span>`;
+      el.classList.add('dim');
+    }
+    if (lastHtml !== html) el.innerHTML = lastHtml = html;
+  }
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    initAudio();
+    if (b.dataset.a === 'try') start(); else reset();
+  });
+
+  // the release runs on a clock, not on your strokes, so it ends whether you keep playing or not
+  setInterval(() => {
+    if (AG.state === 'done') {
+      const p = Math.min(1, (Date.now() - AG.doneAt) / RELEASE_MS);
+      setGrip((1 - p) * (1 - p));
+    }
+    render();
+  }, 100);
+
+  if (AG.mode === 'bridge') {
+    const es = new EventSource(bridge.replace(/\/$/, '') + '/events');
+    es.onopen = () => { AG.linked = true; render(); };
+    es.onerror = () => { AG.linked = false; render(); };
+    es.onmessage = m => {
+      let e; try { e = JSON.parse(m.data); } catch (err) { return; }
+      AG.linked = true;
+      if (e.type === 'hello') { if (e.phase === 'wait' && AG.state === 'idle') { start(); AG.startAt = e.at || AG.startAt; } }
+      else if (e.type === 'start') start(e.auto);
+      else if (e.type === 'done') done(e.reason);
+      render();
+    };
+  }
+  render();
+  window.__clackAgent = { AG, start, done, back, reset, returns: () => returns.slice() };
+})();
 
 /* ---------- start ---------- */
 // there's no start screen: the picture plays from the first move, and as browsers keep a page quiet until it's clicked,
