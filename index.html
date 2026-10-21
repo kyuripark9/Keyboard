@@ -303,7 +303,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
       <h4>Three iterations</h4>
       <div class="st-iters">
         <div class="st-card"><em>06 Chewy Jellies</em><p class="chain">Tanghulu <i>&rarr;</i> Sugar Gummies <i>&rarr;</i> <b>Chewy Jellies</b></p><p>Rubbing the sugar off a gummy wasn't the feeling. Squeezing gummies together, feeling them stick and peeling them apart was. Later the fruit colors and sugar gave way to one flat pink under a fine grain, after a pink and white reference.</p></div>
-        <div class="st-card"><em>03 Cyanotype</em><p class="chain">Ringing twinkle <i>&rarr;</i> bubble blips <i>&rarr;</i> soft blips <i>&rarr;</i> <b>a breath of foam</b></p><p>Each try was softer, and each still sounded like shooting under a fast cursor. Filtered noise with slow attacks fixed it, and became the recipe for the calmer sounds that followed.</p></div>
+        <div class="st-card"><em>02 Cyanotype</em><p class="chain">Ringing twinkle <i>&rarr;</i> bubble blips <i>&rarr;</i> soft blips <i>&rarr;</i> <b>a breath of foam</b></p><p>Each try was softer, and each still sounded like shooting under a fast cursor. Filtered noise with slow attacks fixed it, and became the recipe for the calmer sounds that followed.</p></div>
         <div class="st-card"><em>04 Wax Ball</em><p class="chain">Cell foam <i>&rarr;</i> pebbles <i>&rarr;</i> line print <i>&rarr;</i> towers <i>&rarr;</i> halftone <i>&rarr;</i> <b>lime on lavender</b></p><p>Wax Ball went through eight looks and was cut once along the way. It came back as a black and white halftone of squares that the cursor presses into diamonds, then took the lime, lavender and fine grain of a second reference.</p></div>
       </div>
     </section>
@@ -335,11 +335,11 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
 const $ = id => document.getElementById(id);
 
 /* ---------- settings ---------- */
-const SOUND_IDS = ['bubble', 'slime', 'cyano', 'wax', 'thock', 'gummy', 'pudding', 'soap', 'snow', 'sugar'];
-const DEF = { mode: 'hover', sound: 'bubble', volume: 0.7, muted: false, count: 0 };
+const SOUND_IDS = ['slime', 'cyano', 'bubble', 'wax', 'thock', 'gummy', 'pudding', 'soap', 'snow', 'sugar'];
+const DEF = { mode: 'hover', sound: 'slime', volume: 0.7, muted: false, count: 0 };
 let S = { ...DEF };
 try { Object.assign(S, JSON.parse(localStorage.getItem('clack') || '{}')); } catch (e) {}
-S.sound = DEF.sound; // every visit opens on 01 Bubble Wrap; the other settings are remembered
+S.sound = DEF.sound; // every visit opens on 01 Crunchy Slime; the other settings are remembered
 S.mode = 'hover'; // Tap mode was removed: sounds always play as the cursor moves (touch screens still drag)
 S.muted = false; S.volume = DEF.volume; // the volume control was removed, so a mute or volume saved before can't stick
 let saveT = 0;
@@ -764,7 +764,149 @@ function roundPoly(p, P, r) {
 
 /* ---------- scenes: init() paints the static deco layer, hit() reacts to a step, draw() runs every frame ---------- */
 const SCENES = {
-  /* 01 Bubble Wrap: the sheet drawn as a contour map, after a print of one, on the pale lime of 05's hot holes: many
+  /* 01 Crunchy Slime: a sheet of + stitches that crumples like paper. Every step folds the sheet along a straight
+     crease with flat facets on each side, so the grid kinks at sharp angles instead of rippling. Stitches follow
+     the stretch and squeeze of the sheet, and the creases slowly flatten out. The sheet sits between the top row and
+     the tally, with the same gap above and below, so no stitch runs through the count. */
+  cloth: {
+    frame: 'full',
+    init() {
+      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 24), 18, 34), m = s2 * 1.4;
+      const zh = Math.min(ZB, document.querySelector('.tally').getBoundingClientRect().top - FY) - ZT;
+      const cols = this.cols = Math.floor((SW - m * 2) / s2) + 1, rows = this.rows = Math.floor((zh - m * 1.6) / s2) + 1;
+      const x0 = (SW - (cols - 1) * s2) / 2, y0 = ZT + (zh - (rows - 1) * s2) / 2, n = cols * rows;
+      this.hx = new Float32Array(n); this.hy = new Float32Array(n); this.px = new Float32Array(n); this.py = new Float32Array(n);
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { const q = j * cols + i; this.hx[q] = x0 + i * s2; this.hy[q] = y0 + j * s2; }
+      this.folds = []; this.dir = [1, 0];
+      paper(dc, '#e6e6e6', .05);
+    },
+    move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; },
+    hit(x, y, k, now) {
+      // crease runs across the direction of travel, give or take a random tilt, so a swipe pushes the sheet into folds
+      const a = Math.atan2(this.dir[1], this.dir[0]) + rand(-.6, .6), s2 = this.s;
+      this.folds.push({ x, y, nx: Math.cos(a), ny: Math.sin(a), A: s2 * rand(.45, .9), B: s2 * rand(-.7, .7), L: s2 * rand(1.2, 2.6), R: s2 * rand(4, 7), t0: now });
+      if (this.folds.length > 48) this.folds.shift();
+    },
+    draw(now) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const cols = this.cols, rows = this.rows, n = cols * rows, s2 = this.s, { hx, hy, px, py } = this;
+      this.folds = this.folds.filter(f => now - f.t0 < 7000);
+      const live = this.folds.map(f => {
+        const t = now - f.t0, e = t < 140 ? Math.sin(t / 140 * Math.PI / 2) * 1.1 : t < 1700 ? 1.1 - Math.min(.1, (t - 140) / 600) : 1 - (t - 1700) / 5300;
+        return { ...f, e: Math.max(0, e) };
+      });
+      for (let q = 0; q < n; q++) {
+        let dx = 0, dy = 0;
+        const x = hx[q], y = hy[q];
+        for (const f of live) {
+          const rx = x - f.x, ry = y - f.y, d = rx * f.nx + ry * f.ny, u = -rx * f.ny + ry * f.nx;
+          const w = 1 - Math.max(Math.abs(d) / (f.R * .7), Math.abs(u) / f.R);   // a flat, straight-edged patch of paper
+          if (w <= 0) continue;
+          const g = w * f.e, c = clamp(d / f.L, -1, 1), ridge = 1 - Math.min(1, Math.abs(d) / f.L);
+          dx += (-f.nx * f.A * c - f.ny * f.B * ridge) * g; dy += (-f.ny * f.A * c + f.nx * f.B * ridge) * g;
+        }
+        px[q] = x + dx; py[q] = y + dy;
+      }
+      // each stitch takes the stretch and twist of the sheet around it: squeezed stitches shrink, sheared ones tilt
+      const thick = new Path2D(), thin = new Path2D(), arm = s2 * .23;
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const q = j * cols + i, r = i < cols - 1 ? q + 1 : q - 1, dn = j < rows - 1 ? q + cols : q - cols, sg = i < cols - 1 ? 1 : -1, sd = j < rows - 1 ? 1 : -1;
+        const x = px[q], y = py[q], rx = (px[r] - x) * sg, ry = (py[r] - y) * sg, dx2 = (px[dn] - x) * sd, dy2 = (py[dn] - y) * sd;
+        const lr = Math.hypot(rx, ry) || 1, ld = Math.hypot(dx2, dy2) || 1, sq = Math.min(lr, ld) / s2;
+        const a1 = arm * clamp(lr / s2, .2, 1.3), a2 = arm * clamp(ld / s2, .2, 1.3), ux = rx / lr, uy = ry / lr, wx = dx2 / ld, wy = dy2 / ld;
+        const P = sq < .7 ? thin : thick;
+        if (sq < .45 && (i * 7 + j * 3) % 3 === 0) { P.moveTo(x - wx * a2 * .5, y - wy * a2 * .5); P.lineTo(x + wx * a2 * .5, y + wy * a2 * .5); continue; }
+        P.moveTo(x - ux * a1, y - uy * a1); P.lineTo(x + ux * a1, y + uy * a1);
+        P.moveTo(x - wx * a2, y - wy * a2); P.lineTo(x + wx * a2, y + wy * a2);
+      }
+      sc.strokeStyle = '#1a1a1a'; sc.lineCap = 'butt';
+      sc.lineWidth = Math.max(1.4, s2 * .075); sc.stroke(thick);
+      sc.lineWidth = Math.max(1, s2 * .05); sc.stroke(thin);
+    }
+  },
+
+  /* 02 Cyanotype: a cobalt print in camouflage patches, grainy solid blue next to a white halftone screen. Two slow
+     layers of value noise decide where the screen shows; the cursor exposes the paper as it passes, so dots bloom
+     open in noise-shaped patches along its path, swell into solid white where it passes again, and soon sink back into the blue; little glints
+     twinkle in its wake. */
+  cyano: {
+    frame: 'full',
+    init() {
+      const p = this.p = 12;
+      this.cols = Math.ceil(SW / p) + 2; this.rows = Math.ceil(SH / (p / 2)) + 2;
+      this.L = new Float32Array(this.cols * this.rows); this.jit = new Float32Array(this.cols * this.rows);
+      for (let i = 0; i < this.jit.length; i++) this.jit[i] = .85 + .3 * Math.random();
+      this.G = new Float32Array(64 * 64); for (let i = 0; i < this.G.length; i++) this.G[i] = Math.random();
+      // dot sprites, one per size step, so a full screen of dots is cheap to stamp
+      this.spr = [];
+      for (let l = 0; l <= 16; l++) {
+        const c = document.createElement('canvas'), d = Math.ceil(p * SDPR); c.width = c.height = d;
+        const g = c.getContext('2d'); g.fillStyle = '#eef2ff'; g.beginPath(); g.arc(d / 2, d / 2, d * .46 * l / 16, 0, 6.283); g.fill();
+        this.spr.push(c);
+      }
+      // blue speckle laid over everything, so the dots look printed rather than drawn
+      const n = document.createElement('canvas'); n.width = n.height = 200; const nc = n.getContext('2d'), id = nc.createImageData(200, 200);
+      for (let q = 0; q < id.data.length; q += 4) { id.data[q] = 46; id.data[q + 1] = 80; id.data[q + 2] = 170; id.data[q + 3] = Math.random() < .3 ? 255 * Math.random() * .6 : 0; }
+      nc.putImageData(id, 0, 0); this.grain = sc.createPattern(n, 'repeat');
+      paper(dc, '#3557b0', .16);
+      this.sp = [];
+    },
+    vn(x, y) { // smooth value noise on a wrapping 64x64 lattice
+      const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, G = this.G;
+      const a = xi & 63, b = (xi + 1) & 63, c = (yi & 63) * 64, d = ((yi + 1) & 63) * 64;
+      const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+      return lerp(lerp(G[c + a], G[c + b], sx), lerp(G[d + a], G[d + b], sx), sy);
+    },
+    expose(x, y, R, amt) {
+      const p = this.p, s2 = 2 * (R / 2) ** 2;
+      const j0 = Math.max(0, Math.floor((y - R) / (p / 2))), j1 = Math.min(this.rows - 1, Math.ceil((y + R) / (p / 2)) + 1);
+      const i0 = Math.max(0, Math.floor((x - R) / p)), i1 = Math.min(this.cols - 1, Math.ceil((x + R) / p) + 1);
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const dx = i * p + (j & 1) * p / 2 - p / 2 - x, dy = j * p / 2 - p / 2 - y, dd = dx * dx + dy * dy;
+        if (dd > R * R) continue;
+        const q = j * this.cols + i, px = x + dx, py = y + dy;
+        // noise-shaped falloff gives the exposed patch the same ragged camo edge as the rest of the print
+        this.L[q] = Math.min(1.1, this.L[q] + amt * Math.exp(-dd / s2) * (.3 + 1.4 * this.vn(px / 26, py / 26)));
+      }
+    },
+    sparkle(x, y, now) { this.sp.push({ x, y, t0: now, life: rand(350, 800), r: rand(3, 8) }); if (this.sp.length > 90) this.sp.shift(); },
+    move(x, y, dx, dy) {
+      // glints scatter in the cursor's wake, more where the print is already exposed
+      const now = performance.now(), q = this.L[clamp(Math.round((y + this.p / 2) / (this.p / 2)), 0, this.rows - 1) * this.cols + clamp(Math.round((x + this.p / 2) / this.p), 0, this.cols - 1)];
+      for (let i = 0, n = Math.random() < .5 + q ? 2 : 1; i < n; i++) this.sparkle(x + rand(-50, 50), y + rand(-50, 50), now);
+      this.expose(x, y, 64, clamp(Math.hypot(dx, dy) / 70, .04, .22)); },
+    hit(x, y, k, now) { this.expose(x + rand(-20, 20), y + rand(-20, 20), rand(80, 120), .45); for (let i = 0; i < 4; i++) this.sparkle(x + rand(-70, 70), y + rand(-70, 70), now); },
+    draw(now, dt) {
+      sc.drawImage(deco, 0, 0, SW, SH);
+      const p = this.p, h = p / 2, t = now * .000012, L = this.L, fade = Math.exp(-dt / 1300);
+      for (let j = 0; j < this.rows; j++) {
+        const y = j * h - h;
+        for (let i = 0; i < this.cols; i++) {
+          const q = j * this.cols + i, x = i * p + (j & 1) * h - h;
+          L[q] *= fade;
+          const v = .62 * this.vn(x / 170 + t, y / 170) + .38 * this.vn(x / 64, y / 64 - t * 1.6) + L[q] - .49;
+          if (v < -.02) continue;
+          // dots stay apart in a single pass; going over the same spot again swells them until they run together into solid white
+          const sz = clamp((v + .02) / .05, 0, 1) * (.4 + .6 * clamp(v / .28, 0, 1)) * (.7 + .3 * clamp((L[q] - .3) / .5, 0, 1)) * this.jit[q], l = Math.min(16, Math.round(sz * 16));
+          if (l) sc.drawImage(this.spr[l], x - h, y - h, p, p);
+        }
+      }
+      sc.fillStyle = this.grain; sc.fillRect(0, 0, SW, SH);
+      // glints: a soft white glow with a thin four-point flare that swells and fades
+      this.sp = this.sp.filter(g => now - g.t0 < g.life);
+      sc.save(); sc.globalCompositeOperation = 'lighter';
+      for (const g of this.sp) {
+        const a = Math.sin(Math.PI * (now - g.t0) / g.life), r = g.r * (.6 + .4 * a), f = sc.createRadialGradient(g.x, g.y, 0, g.x, g.y, r * 2.2);
+        f.addColorStop(0, `rgba(255,255,255,${.9 * a})`); f.addColorStop(.3, `rgba(220,232,255,${.35 * a})`); f.addColorStop(1, 'rgba(200,215,255,0)');
+        sc.fillStyle = f; sc.beginPath(); sc.arc(g.x, g.y, r * 2.2, 0, 6.283); sc.fill();
+        sc.strokeStyle = `rgba(255,255,255,${.7 * a})`; sc.lineWidth = 1;
+        sc.beginPath(); sc.moveTo(g.x - r * 2.4, g.y); sc.lineTo(g.x + r * 2.4, g.y); sc.moveTo(g.x, g.y - r * 2.4); sc.lineTo(g.x, g.y + r * 2.4); sc.stroke();
+      }
+      sc.restore();
+    }
+  },
+
+  /* 03 Bubble Wrap: the sheet drawn as a contour map, after a print of one, on the pale lime of 05's hot holes: many
      fine white lines, each scratched in short sideways dashes, thin where the ground is steep
      and spreading into hatched bands where it levels out, on hilltops and saddles. Every bubble is a hill: irregular
      droplets (beans, eggs, blobs) of mixed sizes packed close, each pushed well off its row and stretched and tilted
@@ -951,148 +1093,6 @@ void main() {
         this.oc.putImageData(this.img, 0, 0);
         sc.imageSmoothingEnabled = true; sc.drawImage(this.off, 0, 0, SW, SH);
       }
-    }
-  },
-
-  /* 02 Crunchy Slime: a sheet of + stitches that crumples like paper. Every step folds the sheet along a straight
-     crease with flat facets on each side, so the grid kinks at sharp angles instead of rippling. Stitches follow
-     the stretch and squeeze of the sheet, and the creases slowly flatten out. The sheet sits between the top row and
-     the tally, with the same gap above and below, so no stitch runs through the count. */
-  cloth: {
-    frame: 'full',
-    init() {
-      const s2 = this.s = clamp(Math.round(Math.min(SW, ZB - ZT) / 24), 18, 34), m = s2 * 1.4;
-      const zh = Math.min(ZB, document.querySelector('.tally').getBoundingClientRect().top - FY) - ZT;
-      const cols = this.cols = Math.floor((SW - m * 2) / s2) + 1, rows = this.rows = Math.floor((zh - m * 1.6) / s2) + 1;
-      const x0 = (SW - (cols - 1) * s2) / 2, y0 = ZT + (zh - (rows - 1) * s2) / 2, n = cols * rows;
-      this.hx = new Float32Array(n); this.hy = new Float32Array(n); this.px = new Float32Array(n); this.py = new Float32Array(n);
-      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { const q = j * cols + i; this.hx[q] = x0 + i * s2; this.hy[q] = y0 + j * s2; }
-      this.folds = []; this.dir = [1, 0];
-      paper(dc, '#e6e6e6', .05);
-    },
-    move(x, y, dx, dy) { const l = Math.hypot(dx, dy); if (l > .5) this.dir = [dx / l, dy / l]; },
-    hit(x, y, k, now) {
-      // crease runs across the direction of travel, give or take a random tilt, so a swipe pushes the sheet into folds
-      const a = Math.atan2(this.dir[1], this.dir[0]) + rand(-.6, .6), s2 = this.s;
-      this.folds.push({ x, y, nx: Math.cos(a), ny: Math.sin(a), A: s2 * rand(.45, .9), B: s2 * rand(-.7, .7), L: s2 * rand(1.2, 2.6), R: s2 * rand(4, 7), t0: now });
-      if (this.folds.length > 48) this.folds.shift();
-    },
-    draw(now) {
-      sc.drawImage(deco, 0, 0, SW, SH);
-      const cols = this.cols, rows = this.rows, n = cols * rows, s2 = this.s, { hx, hy, px, py } = this;
-      this.folds = this.folds.filter(f => now - f.t0 < 7000);
-      const live = this.folds.map(f => {
-        const t = now - f.t0, e = t < 140 ? Math.sin(t / 140 * Math.PI / 2) * 1.1 : t < 1700 ? 1.1 - Math.min(.1, (t - 140) / 600) : 1 - (t - 1700) / 5300;
-        return { ...f, e: Math.max(0, e) };
-      });
-      for (let q = 0; q < n; q++) {
-        let dx = 0, dy = 0;
-        const x = hx[q], y = hy[q];
-        for (const f of live) {
-          const rx = x - f.x, ry = y - f.y, d = rx * f.nx + ry * f.ny, u = -rx * f.ny + ry * f.nx;
-          const w = 1 - Math.max(Math.abs(d) / (f.R * .7), Math.abs(u) / f.R);   // a flat, straight-edged patch of paper
-          if (w <= 0) continue;
-          const g = w * f.e, c = clamp(d / f.L, -1, 1), ridge = 1 - Math.min(1, Math.abs(d) / f.L);
-          dx += (-f.nx * f.A * c - f.ny * f.B * ridge) * g; dy += (-f.ny * f.A * c + f.nx * f.B * ridge) * g;
-        }
-        px[q] = x + dx; py[q] = y + dy;
-      }
-      // each stitch takes the stretch and twist of the sheet around it: squeezed stitches shrink, sheared ones tilt
-      const thick = new Path2D(), thin = new Path2D(), arm = s2 * .23;
-      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-        const q = j * cols + i, r = i < cols - 1 ? q + 1 : q - 1, dn = j < rows - 1 ? q + cols : q - cols, sg = i < cols - 1 ? 1 : -1, sd = j < rows - 1 ? 1 : -1;
-        const x = px[q], y = py[q], rx = (px[r] - x) * sg, ry = (py[r] - y) * sg, dx2 = (px[dn] - x) * sd, dy2 = (py[dn] - y) * sd;
-        const lr = Math.hypot(rx, ry) || 1, ld = Math.hypot(dx2, dy2) || 1, sq = Math.min(lr, ld) / s2;
-        const a1 = arm * clamp(lr / s2, .2, 1.3), a2 = arm * clamp(ld / s2, .2, 1.3), ux = rx / lr, uy = ry / lr, wx = dx2 / ld, wy = dy2 / ld;
-        const P = sq < .7 ? thin : thick;
-        if (sq < .45 && (i * 7 + j * 3) % 3 === 0) { P.moveTo(x - wx * a2 * .5, y - wy * a2 * .5); P.lineTo(x + wx * a2 * .5, y + wy * a2 * .5); continue; }
-        P.moveTo(x - ux * a1, y - uy * a1); P.lineTo(x + ux * a1, y + uy * a1);
-        P.moveTo(x - wx * a2, y - wy * a2); P.lineTo(x + wx * a2, y + wy * a2);
-      }
-      sc.strokeStyle = '#1a1a1a'; sc.lineCap = 'butt';
-      sc.lineWidth = Math.max(1.4, s2 * .075); sc.stroke(thick);
-      sc.lineWidth = Math.max(1, s2 * .05); sc.stroke(thin);
-    }
-  },
-
-  /* 03 Cyanotype: a cobalt print in camouflage patches, grainy solid blue next to a white halftone screen. Two slow
-     layers of value noise decide where the screen shows; the cursor exposes the paper as it passes, so dots bloom
-     open in noise-shaped patches along its path, swell into solid white where it passes again, and soon sink back into the blue; little glints
-     twinkle in its wake. */
-  cyano: {
-    frame: 'full',
-    init() {
-      const p = this.p = 12;
-      this.cols = Math.ceil(SW / p) + 2; this.rows = Math.ceil(SH / (p / 2)) + 2;
-      this.L = new Float32Array(this.cols * this.rows); this.jit = new Float32Array(this.cols * this.rows);
-      for (let i = 0; i < this.jit.length; i++) this.jit[i] = .85 + .3 * Math.random();
-      this.G = new Float32Array(64 * 64); for (let i = 0; i < this.G.length; i++) this.G[i] = Math.random();
-      // dot sprites, one per size step, so a full screen of dots is cheap to stamp
-      this.spr = [];
-      for (let l = 0; l <= 16; l++) {
-        const c = document.createElement('canvas'), d = Math.ceil(p * SDPR); c.width = c.height = d;
-        const g = c.getContext('2d'); g.fillStyle = '#eef2ff'; g.beginPath(); g.arc(d / 2, d / 2, d * .46 * l / 16, 0, 6.283); g.fill();
-        this.spr.push(c);
-      }
-      // blue speckle laid over everything, so the dots look printed rather than drawn
-      const n = document.createElement('canvas'); n.width = n.height = 200; const nc = n.getContext('2d'), id = nc.createImageData(200, 200);
-      for (let q = 0; q < id.data.length; q += 4) { id.data[q] = 46; id.data[q + 1] = 80; id.data[q + 2] = 170; id.data[q + 3] = Math.random() < .3 ? 255 * Math.random() * .6 : 0; }
-      nc.putImageData(id, 0, 0); this.grain = sc.createPattern(n, 'repeat');
-      paper(dc, '#3557b0', .16);
-      this.sp = [];
-    },
-    vn(x, y) { // smooth value noise on a wrapping 64x64 lattice
-      const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, G = this.G;
-      const a = xi & 63, b = (xi + 1) & 63, c = (yi & 63) * 64, d = ((yi + 1) & 63) * 64;
-      const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-      return lerp(lerp(G[c + a], G[c + b], sx), lerp(G[d + a], G[d + b], sx), sy);
-    },
-    expose(x, y, R, amt) {
-      const p = this.p, s2 = 2 * (R / 2) ** 2;
-      const j0 = Math.max(0, Math.floor((y - R) / (p / 2))), j1 = Math.min(this.rows - 1, Math.ceil((y + R) / (p / 2)) + 1);
-      const i0 = Math.max(0, Math.floor((x - R) / p)), i1 = Math.min(this.cols - 1, Math.ceil((x + R) / p) + 1);
-      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-        const dx = i * p + (j & 1) * p / 2 - p / 2 - x, dy = j * p / 2 - p / 2 - y, dd = dx * dx + dy * dy;
-        if (dd > R * R) continue;
-        const q = j * this.cols + i, px = x + dx, py = y + dy;
-        // noise-shaped falloff gives the exposed patch the same ragged camo edge as the rest of the print
-        this.L[q] = Math.min(1.1, this.L[q] + amt * Math.exp(-dd / s2) * (.3 + 1.4 * this.vn(px / 26, py / 26)));
-      }
-    },
-    sparkle(x, y, now) { this.sp.push({ x, y, t0: now, life: rand(350, 800), r: rand(3, 8) }); if (this.sp.length > 90) this.sp.shift(); },
-    move(x, y, dx, dy) {
-      // glints scatter in the cursor's wake, more where the print is already exposed
-      const now = performance.now(), q = this.L[clamp(Math.round((y + this.p / 2) / (this.p / 2)), 0, this.rows - 1) * this.cols + clamp(Math.round((x + this.p / 2) / this.p), 0, this.cols - 1)];
-      for (let i = 0, n = Math.random() < .5 + q ? 2 : 1; i < n; i++) this.sparkle(x + rand(-50, 50), y + rand(-50, 50), now);
-      this.expose(x, y, 64, clamp(Math.hypot(dx, dy) / 70, .04, .22)); },
-    hit(x, y, k, now) { this.expose(x + rand(-20, 20), y + rand(-20, 20), rand(80, 120), .45); for (let i = 0; i < 4; i++) this.sparkle(x + rand(-70, 70), y + rand(-70, 70), now); },
-    draw(now, dt) {
-      sc.drawImage(deco, 0, 0, SW, SH);
-      const p = this.p, h = p / 2, t = now * .000012, L = this.L, fade = Math.exp(-dt / 1300);
-      for (let j = 0; j < this.rows; j++) {
-        const y = j * h - h;
-        for (let i = 0; i < this.cols; i++) {
-          const q = j * this.cols + i, x = i * p + (j & 1) * h - h;
-          L[q] *= fade;
-          const v = .62 * this.vn(x / 170 + t, y / 170) + .38 * this.vn(x / 64, y / 64 - t * 1.6) + L[q] - .49;
-          if (v < -.02) continue;
-          // dots stay apart in a single pass; going over the same spot again swells them until they run together into solid white
-          const sz = clamp((v + .02) / .05, 0, 1) * (.4 + .6 * clamp(v / .28, 0, 1)) * (.7 + .3 * clamp((L[q] - .3) / .5, 0, 1)) * this.jit[q], l = Math.min(16, Math.round(sz * 16));
-          if (l) sc.drawImage(this.spr[l], x - h, y - h, p, p);
-        }
-      }
-      sc.fillStyle = this.grain; sc.fillRect(0, 0, SW, SH);
-      // glints: a soft white glow with a thin four-point flare that swells and fades
-      this.sp = this.sp.filter(g => now - g.t0 < g.life);
-      sc.save(); sc.globalCompositeOperation = 'lighter';
-      for (const g of this.sp) {
-        const a = Math.sin(Math.PI * (now - g.t0) / g.life), r = g.r * (.6 + .4 * a), f = sc.createRadialGradient(g.x, g.y, 0, g.x, g.y, r * 2.2);
-        f.addColorStop(0, `rgba(255,255,255,${.9 * a})`); f.addColorStop(.3, `rgba(220,232,255,${.35 * a})`); f.addColorStop(1, 'rgba(200,215,255,0)');
-        sc.fillStyle = f; sc.beginPath(); sc.arc(g.x, g.y, r * 2.2, 0, 6.283); sc.fill();
-        sc.strokeStyle = `rgba(255,255,255,${.7 * a})`; sc.lineWidth = 1;
-        sc.beginPath(); sc.moveTo(g.x - r * 2.4, g.y); sc.lineTo(g.x + r * 2.4, g.y); sc.moveTo(g.x, g.y - r * 2.4); sc.lineTo(g.x, g.y + r * 2.4); sc.stroke();
-      }
-      sc.restore();
     }
   },
 
