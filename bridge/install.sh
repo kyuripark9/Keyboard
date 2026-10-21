@@ -1,0 +1,70 @@
+#!/bin/bash
+# clack installer for macOS
+#
+#   curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n/bridge/install.sh | bash
+#
+# Puts clack in ~/Library/Application Support/clack, runs it in the background from login on, offers to connect it
+# to Claude Code, and opens it. Running it again updates clack to the latest version. Nothing leaves your Mac:
+# clack and its bridge only listen on localhost.
+set -euo pipefail
+
+SOURCE="${CLACK_SOURCE:-https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n}"
+PORT="${CLACK_PORT:-4545}"
+DIR="$HOME/Library/Application Support/clack"
+FILES="bridge/clack-bridge.py bridge/icon-192.png bridge/icon-512.png bridge/apple-touch-icon.png bridge/favicon-32.png index.html"
+
+say() { printf '  %s\n' "$*"; }
+fail() { printf '\n  clack: %s\n\n' "$*" >&2; exit 1; }
+
+[ "$(uname -s)" = Darwin ] || fail "this installer is for macOS. Elsewhere, download bridge/clack-bridge.py and index.html and run: python3 clack-bridge.py"
+
+# macOS ships python3 with the Command Line Tools; without them, /usr/bin/python3 only offers to install them
+if ! python3 -c 'import sys; sys.exit(sys.version_info < (3, 8))' >/dev/null 2>&1; then
+  xcode-select --install >/dev/null 2>&1 || true
+  fail "clack needs Python 3, which comes with Apple's Command Line Tools. Install them from the window that just opened, then run this again."
+fi
+PY="$(python3 -c 'import sys; print(sys.executable)')"
+
+printf '\n  clack\n\n'
+
+# an earlier install keeps running until it is replaced
+if [ -f "$DIR/clack-bridge.py" ]; then
+  say "Updating your clack…"
+  "$PY" "$DIR/clack-bridge.py" --no-autostart --port "$PORT" >/dev/null 2>&1 || true
+else
+  say "Installing clack…"
+fi
+
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+for f in $FILES; do
+  curl -fsSL "$SOURCE/$f" -o "$TMP/$(basename "$f")" || fail "could not download $f. Check your connection and run this again."
+done
+mkdir -p "$DIR"
+mv "$TMP"/* "$DIR"/
+
+"$PY" "$DIR/clack-bridge.py" --autostart --port "$PORT" | sed 's/^/  /' || fail "the background bridge did not start. See ~/Library/Logs/clack-bridge.log"
+
+# Claude Code: only with the user's yes, read from the keyboard even though this script came in through a pipe
+if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
+  # with nobody at the keyboard to say yes, Claude Code's settings are left alone
+  answer="n"
+  if { exec 3</dev/tty; } 2>/dev/null; then
+    printf '\n  Connect clack to Claude Code, so it knows when your agent starts and finishes?\n'
+    printf '  This adds three small hooks to ~/.claude/settings.json and backs it up first. [Y/n] '
+    read -r answer <&3 || answer="n"
+    exec 3<&-
+  fi
+  case "$answer" in
+    n|N|no|No) say "Skipped. Connect it later with: python3 \"$DIR/clack-bridge.py\" --install" ;;
+    *) "$PY" "$DIR/clack-bridge.py" --install --port "$PORT" | sed 's/^/  /'
+       say "Claude Code sessions you start from now on will tell clack when they finish." ;;
+  esac
+fi
+
+printf '\n  clack is ready at http://localhost:%s\n' "$PORT"
+say "Keep it as an app: in Chrome, click the install icon in the address bar; in Safari, choose File > Add to Dock."
+say "In the Claude app, open the side panel's browser (Cmd+Shift+B) and go to localhost:$PORT."
+say "Remove it any time: curl -fsSL $SOURCE/bridge/uninstall.sh | bash"
+printf '\n'
+open "http://localhost:$PORT" >/dev/null 2>&1 || true

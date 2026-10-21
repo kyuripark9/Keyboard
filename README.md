@@ -2,6 +2,16 @@
 
 A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, and each sound draws its own picture to play with.
 
+## Get it on your Mac
+
+clack can sit beside your coding agent: it wakes when you hand Claude Code a task and lets go of you the moment it's done. Paste this into Terminal:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n/bridge/install.sh | bash
+```
+
+It runs clack in the background, offers to connect it to Claude Code, and opens it at http://localhost:4545, where Chrome or Safari can keep it as an app in your Dock. Everything stays on your Mac. See [bridge/README.md](bridge/README.md) for what it does, updating and removing it.
+
 ## The 10 sounds
 
 | # | Sound | Picture |
