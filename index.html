@@ -601,7 +601,7 @@ const SOUNDS = {
       hiss(t, { f: 1300 * j, f2: 700, ft: 0.02, q: 1.2, a: 0.001, d: 0.035, g: 0.36 * g });
       hiss(t, { type: 'lowpass', f: 900 * j, q: 0.8, a: 0.0015, d: 0.045, g: 0.26 * g });
     } },
-  pudding: { name: 'Pudding', desc: 'Tap soft jellies till they jiggle', scene: 'jelly',
+  pudding: { name: 'Pudding', desc: 'Tap soft jellies till they jiggle', scene: 'jelly', noTrail: true,
     // a spoon tapping custard: a soft wet slap and a low wobble that shivers as the pudding jiggles
     down(k, t, j) {
       const f0 = (150 + k.seed * 70) * j, rate = rand(8, 11);
@@ -625,7 +625,7 @@ const SOUNDS = {
       crinkle(at + 0.015, 16 + Math.floor(Math.random() * 6), 0.18, { lo: 900, hi: 3200, g: 0.1, q: 1.2, a: 0.0025, d: 0.01 });
       hiss(at + 0.01, { type: 'highpass', f: 5500, q: 0.5, a: 0.04, d: 0.09, g: 0.03 });
     } },
-  sugar: { name: 'Sugar Slime', desc: 'Rake furrows through the sugar down to the blue', scene: 'grit',
+  sugar: { name: 'Sugar Slime', desc: 'Rake furrows through the sugar down to the blue', scene: 'grit', noTrail: true,
     // 사각사각: slime packed with sugar, stroked slowly close to the ear. A soft sandy brush as the fingers sweep through,
     // a fine trickle of sugar grains rolling past each other and a muted squish of the slime underneath
     down(k, t, j) {
