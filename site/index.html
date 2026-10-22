@@ -74,7 +74,7 @@ img { display: block; }
 .fine a:hover { color: var(--ink); }
 section { padding-block: var(--sec); }
 
-/* ---------- header: stays at the top, with where you are in the page and the time like the menu bar ---------- */
+/* ---------- header: stays at the top, with where you are in the page ---------- */
 .bar { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.86); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px);
   border-bottom: 1px solid transparent; transition: border-color .2s; }
 .bar.scrolled { border-bottom-color: var(--line); }
@@ -85,7 +85,6 @@ section { padding-block: var(--sec); }
 .nav a { font: 500 13px/1 var(--font-mono); text-transform: uppercase; text-decoration: none; color: var(--ink-3); transition: color .15s; }
 .nav a:hover, .nav a[aria-current="true"] { color: var(--ink); }
 .nav a[aria-current="true"]::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 8px 2px 0; background: var(--accent); vertical-align: middle; }
-.clock { font: 400 13px/1 var(--font-mono); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
 .nav a.dup { display: none; }
 .bar .btn { min-height: 36px; padding: 0 16px; font-size: 14px; }
 .menu { display: none; }
@@ -230,7 +229,6 @@ footer .mono { color: var(--ink-3); }
 /* ---------- smaller screens ---------- */
 @media (max-width: 1120px) {
   .mats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .nav .clock { display: none; }
 }
 @media (max-width: 900px) {
   :root { --sec: 96px; }
@@ -294,7 +292,6 @@ footer .mono { color: var(--ink-3); }
       <a href="#materials">Materials</a>
       <a href="#how">How it works</a>
       <a class="dup" href="#get">Get clack</a>
-      <span class="clock" id="clock" aria-hidden="true">Thu 10:42</span>
     </nav>
     <button class="menu" id="menu" type="button" aria-expanded="false" aria-controls="nav"><i></i>Menu</button>
     <a class="btn" href="#get">Get clack</a>
@@ -571,13 +568,6 @@ const spy = new IntersectionObserver(entries => {
     for (const a of links) a.setAttribute('aria-current', String(a.getAttribute('href') === '#' + en.target.id));
 }, { rootMargin: '-45% 0px -50% 0px' });
 for (const id of ['materials', 'how', 'get', 'privacy']) spy.observe($(id));
-
-// the clock tells the real time, like the menu bar's
-const tick = () => {
-  const t = new Date().toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(',', '');
-  $('clock').textContent = t;
-};
-tick(); setInterval(tick, 15000);
 </script>
 </body>
 </html>
