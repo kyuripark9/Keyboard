@@ -2,7 +2,7 @@
 # removes clack: quits its menu bar app, stops the background bridge, takes its hooks out of Claude Code's settings and
 # deletes its files
 #
-#   curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n/bridge/uninstall.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash
 set -uo pipefail
 
 DIR="$HOME/Library/Application Support/clack"

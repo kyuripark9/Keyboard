@@ -1,14 +1,14 @@
 #!/bin/bash
 # clack installer for macOS
 #
-#   curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n/bridge/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash
 #
 # Puts clack in ~/Library/Application Support/clack, runs it in the background from login on, puts its ring in the menu
 # bar, offers to connect it to Claude Code, and opens it. Running it again updates clack to the latest version. Nothing
 # leaves your Mac: clack and its bridge only listen on localhost.
 set -euo pipefail
 
-SOURCE="${CLACK_SOURCE:-https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n}"
+SOURCE="${CLACK_SOURCE:-https://raw.githubusercontent.com/kyuripark9/Keyboard/main}"
 PORT="${CLACK_PORT:-4545}"
 DIR="$HOME/Library/Application Support/clack"
 FILES="bridge/clack-bridge.py bridge/icon-192.png bridge/icon-512.png bridge/apple-touch-icon.png bridge/favicon-32.png index.html menubar/clack-menubar.swift menubar/build.sh"

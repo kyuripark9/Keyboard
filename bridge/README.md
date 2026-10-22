@@ -8,7 +8,7 @@ of you the moment it's done. This folder is what runs it on your own computer.
 Open Terminal and paste:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n/bridge/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash
 ```
 
 It takes a few seconds and:
@@ -50,7 +50,7 @@ which no hook reports. It stores neither, and never sees your code. Nothing leav
 ## Remove
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/claude/keyboard-toy-6bkf2n/bridge/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash
 ```
 
 This quits the menu bar app, stops the bridge, takes the hooks back out of Claude Code's settings and deletes clack's

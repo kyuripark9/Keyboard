@@ -87,6 +87,24 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
   background: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; cursor: pointer; }
 .agent button:hover { border-color: var(--ink); }
 body.custom-cursor .agent button { cursor: none !important; }
+/* Getting clack: off localhost the agent line offers the one-line install for a Mac, in a card over the tally that
+   sits above the trail canvas so the line stays readable and selectable */
+.get { position: fixed; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 72px); transform: translateX(-50%);
+  z-index: 6; width: min(460px, calc(100vw - 32px)); padding: 16px 16px 12px; border-radius: 14px; pointer-events: auto;
+  background: var(--bg); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(10,20,60,.2);
+  text-align: left; animation: getIn .18s ease-out; }
+@keyframes getIn { from { opacity: 0; transform: translate(-50%, 6px); } }
+.get b { display: block; margin-bottom: 6px; font: 600 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.get p { margin: 0 0 12px; font: 400 13px/1.45 var(--font-ui); color: var(--ink-soft); }
+.get code { display: block; padding: 10px 12px; border-radius: 8px; font: 500 12px/1.5 var(--font-mono); word-break: break-all;
+  background: color-mix(in srgb, var(--ink) 8%, var(--bg)); -webkit-user-select: all; user-select: all; }
+.get .row { display: flex; align-items: center; gap: 14px; margin-top: 10px; font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.get button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--bg); background: var(--ink);
+  border: 0; border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.get a { color: var(--ink-soft); text-decoration: none; }
+.get a:hover { color: var(--ink); }
+body.custom-cursor .get, body.custom-cursor .get * { cursor: none !important; }
+@media (prefers-reduced-motion: reduce) { .get { animation: none; } }
 /* letting go: once the agent is done, the picture loses its colour and the cursor fades with the sound */
 #scene { transition: filter .3s linear; }
 body.letting-go #scene { filter: saturate(var(--grip-sat, 1)); }
@@ -252,6 +270,12 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
   </div>
 </div>
 
+<div class="get" id="get" role="dialog" aria-labelledby="getTitle" hidden>
+  <b id="getTitle">clack on your Mac</b>
+  <p>Its ring sits in your menu bar and opens clack from any app. Connected to Claude Code, it holds you while your agent works and lets go the moment it's done. Paste this into Terminal:</p>
+  <code id="getCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash</code>
+  <div class="row"><button type="button" id="getCopy">copy</button><a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md" target="_blank" rel="noopener">what it installs ↗</a></div>
+</div>
 <canvas id="fx" aria-hidden="true"></canvas>
 <div class="cursor" id="cursor" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg></div>
 
@@ -709,7 +733,7 @@ const lastPt = new Map();
 const pressed = new Set();
 function keyAt(x, y) {
   const el = document.elementFromPoint(x, y);
-  return el && el.closest('.edge, .top, .story, .agent button') ? null : cellAt(x, y);
+  return el && el.closest('.edge, .top, .story, .agent button, .get') ? null : cellAt(x, y);
 }
 function enter(id, k) {
   const cur = active.get(id);
@@ -727,7 +751,7 @@ function travel(id, x1, y1) {
   for (let i = 1; i <= n; i++) enter(id, keyAt(p[0] + dx * i / n, p[1] + dy * i / n));
 }
 const glides = e => e.pointerType !== 'mouse' && e.pointerType !== 'pen' ? pressed.has(e.pointerId) : (S.mode === 'hover' || pressed.has(e.pointerId));
-const inUI = t => t && t.closest && t.closest('.edge, .story');
+const inUI = t => t && t.closest && t.closest('.edge, .story, .get');
 
 addEventListener('pointerdown', e => {
   moveCursor(e);
@@ -2978,13 +3002,13 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
       const gone = AG.grip <= 0.02, word = { Notification: 'agent needs you', StopFailure: 'agent stopped' }[AG.reason] || 'agent done';
       if (!gone) html = `<i class="dot"></i><span>${word} · go back</span>`;
       else if (now - AG.doneAt < RELEASE_MS + 9000) html = `<span>clack let go · ${AG.mode === 'demo' ? 'tab away to go back' : 'your agent is waiting'}</span>`;
-      else if (AG.mode === 'demo') html = `<span>still here?</span><button type="button" data-a="again">try again</button>`;
+      else if (AG.mode === 'demo') html = `<span>still here?</span><button type="button" data-a="again">try again</button><button type="button" data-a="get">get it on your mac</button>`;
       else html = `<span>clack let go · your agent is waiting</span>`;
     } else if (backNew) {
       const typ = returns.length >= 3 ? ` · typical ${secs(median(returns))}` : '';
       html = `<span>back in ${secs(AG.backMs)}${typ}</span>`;
     } else if (AG.mode === 'demo') {
-      html = `<button type="button" data-a="try">try an agent wait</button>`;
+      html = `<button type="button" data-a="try">try an agent wait</button><button type="button" data-a="get">get it on your mac</button>`;
     } else if (AG.offline) {
       // with the bridge up and nothing to wait for, the line says nothing and the count stands alone
       html = `<span>bridge offline</span>`;
@@ -2994,9 +3018,23 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   }
   el.addEventListener('click', e => {
     const b = e.target.closest('button[data-a]'); if (!b) return;
+    if (b.dataset.a === 'get') return showGet(getEl.hidden);
     initAudio();
     if (b.dataset.a === 'try') start(); else reset();
   });
+
+  // the install card: opened from the agent line, closed by it again, by Esc or by playing anywhere else
+  const getEl = $('get'), cmdEl = $('getCmd'), copyEl = $('getCopy');
+  function showGet(on) { getEl.hidden = !on; if (!on) copyEl.textContent = 'copy'; }
+  copyEl.addEventListener('click', () => {
+    const said = t => { copyEl.textContent = t; };
+    // a page without clipboard access (some embeds) selects the line instead, for ⌘C
+    const pick = () => { const r = document.createRange(); r.selectNodeContents(cmdEl); getSelection().removeAllRanges(); getSelection().addRange(r); said('press ⌘C'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cmdEl.textContent).then(() => said('copied'), pick);
+    else pick();
+  });
+  addEventListener('pointerdown', e => { if (!getEl.hidden && e.target.closest && !e.target.closest('.get, .agent button[data-a="get"]')) showGet(false); });
+  addEventListener('keydown', e => { if (e.code === 'Escape' && !getEl.hidden) showGet(false); });
 
   // the release runs on a clock, not on your strokes, so it ends whether you keep playing or not
   setInterval(() => {
