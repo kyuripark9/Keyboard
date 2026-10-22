@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 /* Layout: a full-screen canvas scene with only a few marks on it, set right on the picture in its own ink: the logo
-   with the page number at the top centre, an arrow at each end of that top row to turn the page, and the tally at the
-   bottom centre.
+   with the page number at the top centre, and along the bottom the tally in the middle with an arrow at each end to
+   turn the page. In the menu bar the top row's right end holds the button that makes clack bigger and smaller.
    Every sound has its own scene and its own palette, most drawn from one moodboard:
    cobalt, periwinkle, grey paper, warm paper and ink. */
 :root {
@@ -56,9 +56,9 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 }
 .top, .edge { pointer-events: auto; }
 
-/* Header: the previous arrow, the logo and the next arrow in one row */
+/* Header: the logo at the centre of the top row; in the menu bar the size button sits at its right end */
 .top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; padding-block: 16px 6px; }
-.brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.brand { grid-column: 2; display: flex; align-items: baseline; gap: 12px; min-width: 0; }
 .brand h1 { position: relative; margin: 0; font: 800 28px/1 var(--font-ui); letter-spacing: -.04em; color: var(--ink); }
 /* the page number hangs off the word, so the word itself sits at the centre and stays put from page 1 to 10 */
 .brand h1 sup { position: absolute; left: 100%; top: 0; font: 500 10px/1 var(--font-mono); letter-spacing: 0; margin-left: 2px; color: var(--ink-soft); }
@@ -122,16 +122,22 @@ body.letting-go .cursor.on { opacity: var(--grip-op, 1); }
 .cursor svg { width: 100%; height: 100%; display: block; transition: transform 90ms ease-out; }
 .cursor.press svg { transform: scale(.78); transition-duration: 30ms; }
 
-/* Arrows: the previous and the next material, at the two ends of the top row in the picture's own ink. Each tip
-   sits on the page margin; the button reaches past it to the screen's edge and above and below the row */
+/* Arrows: the previous and the next material, at the two ends of the bottom row level with the count, in the
+   picture's own ink, far enough from it not to read as buttons for the number. Each tip sits on the page margin; the
+   button reaches past it to the screen's edge, and it stands a little above the tally's foot so its middle meets the
+   count's, over the CLACKS line. A button in the top row reaches above and below it instead */
+.pager {
+  position: fixed; left: 0; right: 0; bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 5px);
+  padding-left: max(0px, env(safe-area-inset-left, 0px) - 16px); padding-right: max(0px, env(safe-area-inset-right, 0px) - 16px);
+  display: flex; justify-content: space-between;
+}
 .edge {
-  width: 44px; height: 44px; margin-block: -8px; padding: 0;
+  width: 44px; height: 44px; padding: 0;
   display: grid; place-items: center; border: 0; background: none; color: var(--ink); cursor: pointer;
   transition: transform .15s;
 }
+.top .edge { margin-block: -8px; }
 .edge svg { width: 32px; height: 32px; }
-.edge.prev { justify-self: start; margin-left: -16px; }
-.edge.next { justify-self: end; margin-right: -16px; }
 .edge.prev:hover { transform: translateX(-3px); }
 .edge.next:hover { transform: translateX(3px); }
 button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
@@ -149,6 +155,7 @@ button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 @media (max-height: 520px) {
   .top { padding-block: 8px 2px; }
   .tally { bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+  .pager { bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 5px); }
   .brand p { display: none; }
 }
 /* The story: what clack is for and how it came to be. Nothing on the page opens it for now. It keeps one palette of its own,
@@ -254,11 +261,9 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
 <canvas id="scene" aria-label="Interactive graphic. Move your cursor to play"></canvas>
 <div class="app" id="app">
   <header class="top">
-    <button class="edge prev" id="prev" type="button" aria-label="Previous material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
     <div class="brand">
       <h1>clack<sup id="page">1</sup></h1>
     </div>
-    <button class="edge next" id="next" type="button" aria-label="Next material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
   </header>
 
   <main class="stage" id="stage"></main>
@@ -268,6 +273,11 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
     <b id="count">0</b>
     <span>CLACKS</span>
   </div>
+
+  <nav class="pager" aria-label="Materials">
+    <button class="edge prev" id="prev" type="button" aria-label="Previous material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+    <button class="edge next" id="next" type="button" aria-label="Next material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+  </nav>
 </div>
 
 <div class="get" id="get" role="dialog" aria-labelledby="getTitle" hidden>
@@ -361,7 +371,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
         <div><b>A cursor that belongs</b><p>The ring takes each picture's own color, so it reads as part of the material rather than laid over it.</p></div>
         <div><b>No audio files</b><p>Every sound is synthesized live with the Web Audio API, with a little randomness, so no two steps sound exactly alike.</p></div>
         <div><b>Your keys play too</b><p>Letters, digits, space and enter play the current material, and the arrow keys switch between materials.</p></div>
-        <div><b>Made for touch</b><p>On phones and tablets, drag a finger across the screen, and tap the arrows on either side of the logo to switch materials.</p></div>
+        <div><b>Made for touch</b><p>On phones and tablets, drag a finger across the screen, and tap the arrows in the bottom corners to switch materials.</p></div>
         <div><b>One moodboard</b><p>Cobalt, periwinkle, grey and warm paper, and ink. Eight materials borrow their colors from their own reference images instead.</p></div>
         <div><b>One file</b><p>The whole toy is a single HTML page: no build step, no install, nothing to load but fonts.</p></div>
       </div>
@@ -945,7 +955,7 @@ const SCENES = {
       this.L = new Float32Array(this.cols * this.rows); this.jit = new Float32Array(this.cols * this.rows);
       for (let i = 0; i < this.jit.length; i++) this.jit[i] = .85 + .3 * Math.random();
       this.G = new Float32Array(64 * 64); for (let i = 0; i < this.G.length; i++) this.G[i] = Math.random();
-      // how far each dot is from the logo, the arrows (every .edge button, so the menu bar's corner button too) and the
+      // how far each dot is from the logo, the arrows (every .edge button, so the menu bar's size button too) and the
       // tally (wide enough for its longest agent line): 1 next to them, easing to 0 over a ragged band, so the patches
       // drift around them instead of over them
       const box = e => e.getBoundingClientRect(), lg = box(document.querySelector('.brand h1')), pg = box(document.getElementById('page')), ty = box(document.querySelector('.tally'));
