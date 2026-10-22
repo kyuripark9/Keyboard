@@ -74,13 +74,13 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 .tally b { font-size: var(--count-size); font-weight: 600; font-variant-numeric: tabular-nums; }
 .tally span { font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
 .tally .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-/* 08 Soap Cutting's halftone goes softly out of focus along the bottom, so the count and the agent line sit on a
-   smooth tint instead of dots. It is blurred fully up to the agent line and eases back into the sharp print over
-   about 48px above it. The other pictures stay sharp */
+/* 08 Soap Cutting's halftone goes slightly out of focus along the bottom: the dots still show through behind the count
+   and the agent line, only soft, so they no longer break up the letters. It is blurred fully up to the agent line and
+   eases back into the sharp print over about 48px above it. The other pictures stay sharp */
 .haze {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; display: none;
   height: calc(max(16px, env(safe-area-inset-bottom, 0px)) + var(--count-size) * 1.1 + 16px + 48px);
-  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
   -webkit-mask-image: linear-gradient(to top, #000 calc(100% - 48px), rgba(0,0,0,.55) calc(100% - 26px), rgba(0,0,0,.15) calc(100% - 10px), transparent);
   mask-image: linear-gradient(to top, #000 calc(100% - 48px), rgba(0,0,0,.55) calc(100% - 26px), rgba(0,0,0,.15) calc(100% - 10px), transparent);
 }
