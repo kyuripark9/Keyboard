@@ -8,375 +8,497 @@
 <meta property="og:title" content="clack">
 <meta property="og:description" content="Something to press while your agent works. Ten materials that click, pop and squish, and let go of you the moment your agent is done.">
 <meta property="og:image" content="https://kyuripark9.github.io/Keyboard/img/soap.jpg">
-<meta name="theme-color" content="#f3eee6">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500&family=Xanh+Mono&display=swap">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap">
 <style>
-/* The clack website: one page with clack itself to play in a menu bar popover, how it lets go of you, the three ways to
-   have it (the browser, the Mac's menu bar, a browser extension) and the ten materials. Colours come from clack's own
-   moodboard: warm paper, cobalt, periwinkle and ink, under a fine grain like the prints the materials are drawn after */
+/* The clack website: one page with clack itself to play in a menu bar popover, the ten materials, how it lets go of
+   you, the three ways to have it (the browser, the Mac's menu bar, a browser extension) and what it keeps. The design
+   system is quiet so the materials carry the colour: white paper, black type, grey for everything secondary, one
+   cobalt accent, hairlines between rows, mono capitals for labels and a monospaced serif for the big words */
 :root {
-  --paper: #f3eee6; --paper-2: #ebe4d7; --card: #faf7f1;
-  --ink: #1b2a6b; --ink-soft: #56638c; --line: rgba(27,42,107,.14); --line-2: rgba(27,42,107,.26);
-  --cobalt: #2c62fb; --peri: #becdf9; --lime: #cbe3bc;
-  --font-ui: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --wrap: 1160px; --gut: max(20px, env(safe-area-inset-left, 0px));
+  /* colour */
+  --bg: #ffffff; --bg-2: #f2f2f2; --bg-3: #e8ebe8; --inv: #0a0a0a;
+  --ink: #0a0a0a; --ink-2: #525252; --ink-3: #8a8a8a;
+  --line: #e3e3e3; --line-2: #cfcfcf;
+  --accent: #2c62fb;
+  /* type */
+  --font-ui: "Switzer", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Chivo Mono", ui-monospace, "SF Mono", monospace;
+  --font-display: "Xanh Mono", "Courier New", serif;
+  /* space */
+  --wrap: 1248px; --gut: max(24px, env(safe-area-inset-left, 0px)); --sec: 112px; --bar-h: 68px;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { scroll-behavior: smooth; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-body {
-  margin: 0; color: var(--ink); font: 400 16px/1.55 var(--font-ui); -webkit-font-smoothing: antialiased;
-  background-color: var(--paper);
-  /* a static paper grain, the same idea as the grain over clack's flat prints */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .14 0 0 0 0 .35 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E");
-}
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--bar-h) + 8px); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--font-ui); -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
-.wrap { max-width: var(--wrap); margin: 0 auto; padding-inline: var(--gut); }
-.mono { font-family: var(--font-mono); }
-.eyebrow { margin: 0 0 18px; font: 500 12px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+img { display: block; }
+.wrap { max-width: calc(var(--wrap) + 2 * var(--gut)); margin: 0 auto; padding-inline: var(--gut); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-/* buttons: a solid cobalt pill for the main way in, an outlined one beside it */
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 20px; border-radius: 999px; border: 1.5px solid var(--ink);
-  font: 600 15px/1 var(--font-ui); text-decoration: none; color: var(--ink); background: transparent; cursor: pointer;
-  transition: background-color .15s, color .15s, transform .15s; }
-.btn:hover { background: var(--ink); color: var(--paper); }
-.btn.solid { background: var(--cobalt); border-color: var(--cobalt); color: #fff; }
-.btn.solid:hover { background: var(--ink); border-color: var(--ink); }
+/* ---------- the parts every section uses ---------- */
+/* mono capitals: nav, labels, tags and the small print of numbers */
+.mono, .lbl, .tags li, .sh { font: 500 13px/1.2 var(--font-mono); letter-spacing: 0; text-transform: uppercase; }
+/* a section starts with its name after a cobalt square, its number at the far right and a hairline under both */
+.sh { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 16px; margin: 0 0 56px; border-bottom: 1px solid var(--line); }
+.sh span:first-child { display: inline-flex; align-items: center; gap: 12px; }
+.sh span:first-child::before { content: ""; width: 8px; height: 8px; background: var(--accent); }
+.sh .idx { color: var(--ink-3); font-weight: 400; }
+/* under it, a big line on the left and what it means on the right */
+.intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 64px; align-items: end; margin-bottom: 72px; }
+.intro h2, .h2 { margin: 0; font: 500 clamp(36px, 4.4vw, 60px)/1.02 var(--font-ui); letter-spacing: -.045em; text-wrap: balance; }
+.intro p { margin: 0; max-width: 31em; font-size: 18px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+/* pale pills */
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.tags li { padding: 6px 10px 5px; border-radius: 999px; background: var(--bg-3); font-size: 11.5px; color: var(--ink-2); white-space: nowrap; }
+.tags li.hi { background: var(--accent); color: #fff; }
+/* buttons: a black pill for the way in, an outlined one beside it; both turn cobalt under the pointer */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 22px; border-radius: 999px;
+  border: 1px solid var(--ink); background: var(--ink); color: #fff; font: 500 15px/1 var(--font-ui); letter-spacing: -.01em;
+  text-decoration: none; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s; }
+.btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line-2); }
+.btn.ghost:hover { border-color: var(--ink); background: transparent; color: var(--ink); }
 .btn svg { width: 16px; height: 16px; flex: none; }
-.link { font: 500 12px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); text-decoration: none; }
-.link:hover { color: var(--ink); }
+.fine { margin: 16px 0 0; font-size: 14px; line-height: 1.55; color: var(--ink-3); text-wrap: pretty; }
+.fine a { color: var(--ink-2); }
+.fine a:hover { color: var(--ink); }
+section { padding-block: var(--sec); }
 
-/* ---------- header ---------- */
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 22px; }
-.logo { display: inline-flex; align-items: center; gap: 10px; font: 800 26px/1 var(--font-ui); letter-spacing: -.04em; text-decoration: none; }
-.logo svg { width: 22px; height: 22px; color: var(--cobalt); }
-.bar nav { display: flex; gap: 28px; }
-.bar nav a { font: 500 12px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; color: var(--ink-soft); }
-.bar nav a:hover { color: var(--ink); }
+/* ---------- header: stays at the top, with where you are in the page and the time like the menu bar ---------- */
+.bar { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.86); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: 1px solid transparent; transition: border-color .2s; }
+.bar.scrolled { border-bottom-color: var(--line); }
+.bar .wrap { display: flex; align-items: center; gap: 24px; height: var(--bar-h); }
+.logo { display: inline-flex; align-items: center; gap: 9px; font: 500 15px/1 var(--font-mono); text-transform: uppercase; text-decoration: none; }
+.logo svg { width: 18px; height: 18px; color: var(--accent); }
+.nav { display: flex; align-items: center; gap: 28px; margin-left: auto; }
+.nav a { font: 500 13px/1 var(--font-mono); text-transform: uppercase; text-decoration: none; color: var(--ink-3); transition: color .15s; }
+.nav a:hover, .nav a[aria-current="true"] { color: var(--ink); }
+.nav a[aria-current="true"]::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 8px 2px 0; background: var(--accent); vertical-align: middle; }
+.clock { font: 400 13px/1 var(--font-mono); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.nav a.dup { display: none; }
+.bar .btn { min-height: 36px; padding: 0 16px; font-size: 14px; }
+.menu { display: none; }
 
-/* ---------- hero: the pitch on the left, clack itself on the right, hanging from a menu bar like the Mac app ---------- */
-.hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(32px, 6vw, 88px); align-items: center; padding-block: 8px 96px; }
-.hero h1 { margin: 0; max-width: 9.5em; font: 800 clamp(46px, 6.4vw, 82px)/.96 var(--font-ui); letter-spacing: -.045em; text-wrap: balance; }
-.hero h1 em { font-style: normal; color: var(--cobalt); }
-.lede { max-width: 31em; margin: 28px 0 0; font-size: clamp(17px, 1.6vw, 19px); line-height: 1.55; color: var(--ink-soft); text-wrap: pretty; }
-.lede b { color: var(--ink); font-weight: 600; }
-.ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; margin-top: 36px; }
-.ctas .link { margin-left: 6px; }
+/* ---------- hero: the name across the page, a rule down, and what clack is ---------- */
+.hero { padding-block: clamp(40px, 7vw, 104px) 0; text-align: center; }
+.word { margin: 0; font: 400 clamp(104px, 21vw, 272px)/.78 var(--font-display); letter-spacing: .06em; text-indent: .06em; }
+.rule { width: 1px; height: clamp(40px, 5vw, 72px); margin: clamp(28px, 3vw, 40px) auto; background: var(--ink); }
+.lede { max-width: 25em; margin: 0 auto; font: 500 clamp(21px, 2vw, 27px)/1.28 var(--font-ui); letter-spacing: -.025em; text-wrap: balance; }
+.meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 24px 0 0; color: var(--ink-3); }
+.meta i { font-style: normal; color: var(--line-2); }
+.ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 32px; }
+/* the ten materials edge to edge, each a way into it */
+.band { display: flex; height: clamp(88px, 9vw, 128px); margin: clamp(56px, 6vw, 80px) 0 0; padding: 0; list-style: none; }
+.band li { flex: 1 1 0; min-width: 0; transition: flex-grow .35s cubic-bezier(.2,.8,.2,1); }
+.band li:hover, .band li:focus-within { flex-grow: 1.7; }
+.band button { all: unset; position: relative; display: block; width: 100%; height: 100%; overflow: hidden; cursor: pointer; background: var(--bgc, var(--bg-2)); }
+.band img { width: 100%; height: 100%; object-fit: cover; }
+.band span { position: absolute; left: 8px; bottom: 8px; padding: 5px 8px 4px; border-radius: 999px; background: rgba(255,255,255,.94); font: 500 11px/1 var(--font-mono); text-transform: uppercase; white-space: nowrap; }
+.band span b { font-weight: 500; display: none; margin-left: 6px; }
+.band li:hover span b, .band button:focus-visible span b { display: inline; }
+.band button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-/* the desk: a corner of a Mac screen in periwinkle, its menu bar along the top and clack open under its ring */
-.desk { position: relative; width: 444px; padding: 0 0 20px; border-radius: 18px; background: var(--peri);
-  box-shadow: inset 0 0 0 1px rgba(27,42,107,.08); }
-.menubar { display: flex; align-items: center; gap: 16px; height: 30px; padding: 0 14px; border-radius: 18px 18px 0 0;
-  background: rgba(250,247,241,.62); font: 500 12px/1 var(--font-ui); color: var(--ink); white-space: nowrap; overflow: hidden; }
+/* ---------- [01] play: clack under a menu bar on the left, the ten materials to pick from on the right ---------- */
+.playgrid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px 56px; align-items: stretch; }
+/* the stage: a corner of a Mac screen, its menu bar along the top and clack open under its ring */
+.stage { position: relative; display: flex; flex-direction: column; min-width: 0; background: var(--bg-2); }
+.menubar { display: flex; align-items: center; gap: 18px; height: 30px; padding: 0 16px; background: rgba(255,255,255,.72);
+  font: 500 12.5px/1 -apple-system, "SF Pro Text", var(--font-ui); color: var(--ink); white-space: nowrap; overflow: hidden; }
 .menubar .app { font-weight: 700; }
-.menubar .dim { color: var(--ink-soft); }
+.menubar .dim { color: var(--ink-2); }
 .menubar .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
-.menubar .ring { display: grid; place-items: center; width: 26px; height: 22px; border-radius: 6px; background: rgba(27,42,107,.14); }
-.menubar .ring svg { width: 16px; height: 16px; }
-.pop { position: relative; margin: 8px 20px 0 auto; width: 400px; height: 600px; border-radius: 14px; overflow: hidden;
-  background: #e6e6e6; box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 24px 60px rgba(20,30,90,.28), 0 2px 8px rgba(20,30,90,.14); }
+.menubar .ring { display: grid; place-items: center; width: 26px; height: 22px; border-radius: 6px; background: rgba(0,0,0,.09); }
+.menubar .ring svg { width: 15px; height: 15px; }
+.desk { flex: 1; display: flex; justify-content: flex-end; padding: 8px clamp(16px, 4vw, 48px) 48px; }
+.pop { position: relative; width: 400px; height: 600px; border-radius: 12px; overflow: hidden; background: #e6e6e6;
+  box-shadow: 0 0 0 .5px rgba(0,0,0,.12), 0 24px 56px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08); }
 .pop iframe { display: block; width: 100%; height: 100%; border: 0; }
-/* under the desk: which material is up, what to try on it, and a chip for each of the ten */
-.now { width: 444px; margin-top: 16px; }
-.chips { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
-.chips button { padding: 8px 0; border-radius: 999px; border: 1.5px solid var(--line-2); background: transparent;
-  font: 500 12px/1 var(--font-mono); color: var(--ink-soft); cursor: pointer; transition: border-color .15s, background-color .15s, color .15s; }
-.chips button:hover { border-color: var(--ink); color: var(--ink); }
-.chips button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.caption { min-height: 4.6em; margin: 12px 2px 0; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
-.caption b { display: block; margin-bottom: 2px; font: 700 15px/1.3 var(--font-ui); color: var(--ink); }
-.caption .row { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; }
+/* the picker: a row per material, the one that's up marked in cobalt; what to try and hear on it underneath */
+.picker { display: flex; flex-direction: column; min-width: 0; }
+.picker .lbl { margin: 0 0 12px; color: var(--ink-3); }
+.mlist { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.mlist button { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 30px 28px minmax(0, 1fr) 16px; align-items: center; gap: 14px;
+  width: 100%; padding: 8px 10px 8px 4px; border-bottom: 1px solid var(--line); cursor: pointer; color: var(--ink-2); transition: background-color .15s, color .15s; }
+.mlist button:hover { color: var(--ink); background: #fafafa; }
+.mlist button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.mlist .no { font: 400 12px/1 var(--font-mono); color: var(--ink-3); }
+.mlist img { width: 28px; height: 28px; object-fit: cover; background: var(--bgc, var(--bg-2)); }
+.mlist .nm { font: 500 16px/1.2 var(--font-ui); letter-spacing: -.015em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mlist .on { width: 8px; height: 8px; justify-self: end; background: var(--accent); opacity: 0; transition: opacity .15s; }
+.mlist button[aria-pressed="true"] { color: var(--ink); background: var(--bg-2); }
+.mlist button[aria-pressed="true"] .on { opacity: 1; }
+.cap { margin-top: 28px; }
+.cap dl { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px 16px; margin: 0; }
+.cap dt { padding-top: 3px; font: 500 12px/1.2 var(--font-mono); text-transform: uppercase; color: var(--ink-3); }
+.cap dd { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+.cap dd b { color: var(--ink); font-weight: 500; }
+.picker .fine { margin-top: auto; padding-top: 24px; }
+.picker .fine b { color: var(--ink-2); font-weight: 500; }
 
-/* ---------- sections ---------- */
-section { padding-block: 96px; border-top: 1px solid var(--line); }
-.head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px 64px; align-items: end; margin-bottom: 56px; }
-.head h2 { margin: 0; font: 800 clamp(34px, 4.4vw, 56px)/1.02 var(--font-ui); letter-spacing: -.04em; text-wrap: balance; }
-.head p { margin: 0; max-width: 32em; font-size: 17px; color: var(--ink-soft); text-wrap: pretty; }
-
-/* how it lets go: three moments, each with clack's ring as the menu bar shows it then */
-.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin: 0; padding: 0; list-style: none; }
-.step { position: relative; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: var(--card);
-  box-shadow: inset 0 0 0 1px var(--line); }
-.step figure { position: relative; margin: 0; aspect-ratio: 4 / 3; overflow: hidden; background: var(--paper-2); }
-.step figure img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.step.done figure img { filter: saturate(.08) brightness(1.04); }
-.step .tag { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 12px; border-radius: 999px; background: rgba(250,247,241,.92); font: 500 11px/1 var(--font-mono); letter-spacing: .08em;
-  text-transform: uppercase; white-space: nowrap; box-shadow: 0 4px 14px rgba(20,30,90,.12); }
-.step .tag i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.step.work .tag i { animation: pulse 1.6s ease-in-out infinite; }
-@keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
-.step .body { padding: 22px 22px 26px; }
-.step .n { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; font: 500 12px/1 var(--font-mono); letter-spacing: .1em; color: var(--ink-soft); }
-.step .n svg { width: 22px; height: 22px; color: var(--ink); }
-.step.work .n svg { animation: breathe 3.2s ease-in-out infinite; }
-@keyframes breathe { 50% { opacity: .35; } }
-.step h3 { margin: 0 0 8px; font: 700 22px/1.2 var(--font-ui); letter-spacing: -.02em; }
-.step p { margin: 0; font-size: 15px; color: var(--ink-soft); text-wrap: pretty; }
-.aside { max-width: 44em; margin: 28px 0 0; font-size: 15px; color: var(--ink-soft); }
-
-/* get it: three cards, from nothing to install to the full Mac app */
-.ways { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-.way { display: flex; flex-direction: column; padding: 26px 24px 24px; border-radius: 18px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); scroll-margin-top: 24px; }
-.way.mac { background: var(--ink); color: var(--paper); box-shadow: none; }
-.way.mac p, .way.mac li, .way.mac .fine { color: rgba(243,238,230,.74); }
-.way .pic { height: 132px; margin: -6px -4px 22px; border-radius: 12px; display: grid; place-items: center; background: var(--paper-2); }
-.way.web .pic { background: var(--lime); }
-.way.mac .pic { background: #2a3a85; }
-.way.ext .pic { background: var(--peri); }
-.way .pic svg { width: 196px; height: 108px; }
-.way .kind { margin: 0 0 8px; font: 500 11px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
-.way h3 { margin: 0 0 10px; font: 800 28px/1.05 var(--font-ui); letter-spacing: -.035em; }
-.way p { margin: 0 0 18px; font-size: 15px; color: var(--ink-soft); text-wrap: pretty; }
-.way .go { margin-top: auto; }
-.way ol { margin: 0 0 20px; padding: 0; list-style: none; counter-reset: s; }
-.way li { position: relative; padding-left: 30px; margin-bottom: 10px; font-size: 14px; line-height: 1.5; color: var(--ink-soft); counter-increment: s; }
-.way li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
-  font: 600 11px/1 var(--font-mono); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-2); }
-.way li b { color: var(--ink); font-weight: 600; }
-.fine { margin: 14px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
-.fine a { color: inherit; }
-/* a line of Terminal or an address to copy: selectable whole, with a copy button at its end */
-.cmd { display: flex; align-items: stretch; gap: 0; margin: 0 0 6px; border-radius: 10px; overflow: hidden; background: rgba(243,238,230,.1); box-shadow: inset 0 0 0 1px rgba(243,238,230,.2); }
-.cmd code { flex: 1; min-width: 0; padding: 12px 14px; font: 500 12px/1.55 var(--font-mono); word-break: break-all; -webkit-user-select: all; user-select: all; }
-.cmd button { flex: none; padding: 0 16px; border: 0; background: var(--cobalt); color: #fff; font: 600 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
-.cmd button:hover { background: #4a78ff; }
-.cmd.small { display: inline-flex; margin: 0 2px; vertical-align: middle; background: var(--paper-2); box-shadow: inset 0 0 0 1px var(--line); border-radius: 7px; }
-.cmd.small code { padding: 3px 8px; font-size: 12px; line-height: 1.4; word-break: normal; white-space: nowrap; }
-.cmd.small button { padding: 0 9px; font-size: 10px; background: var(--ink); }
-.way.mac details { margin-top: 14px; font-size: 13px; color: rgba(243,238,230,.74); }
-.way.mac summary { cursor: pointer; font: 500 11px/1.4 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
-.way.mac details .cmd { margin-top: 10px; }
-.way.mac .btn { border-color: var(--paper); color: var(--paper); }
-.way.mac .btn:hover { background: var(--paper); color: var(--ink); }
-
-/* the ten materials */
-.mats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px 18px; margin: 0; padding: 0; list-style: none; }
+/* ---------- [02] the ten materials, in their own pictures ---------- */
+.mats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 48px 20px; margin: 0; padding: 0; list-style: none; }
 .mat button { all: unset; display: block; width: 100%; cursor: pointer; }
-.mat .ph { position: relative; display: block; aspect-ratio: 2 / 3; border-radius: 14px; overflow: hidden; background: var(--bgc, var(--paper-2));
-  box-shadow: inset 0 0 0 1px rgba(27,42,107,.06); transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s; }
-.mat .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.mat .ph span { position: absolute; left: 10px; top: 10px; padding: 5px 8px; border-radius: 999px; background: rgba(250,247,241,.92);
-  font: 500 11px/1 var(--font-mono); letter-spacing: .06em; color: var(--ink); }
-.mat .ph em { position: absolute; left: 50%; bottom: 12px; transform: translate(-50%, 6px); opacity: 0; padding: 7px 12px; border-radius: 999px;
-  background: rgba(250,247,241,.94); font: 500 11px/1 var(--font-mono); font-style: normal; letter-spacing: .08em; text-transform: uppercase;
-  white-space: nowrap; transition: opacity .2s, transform .2s; }
-.mat button:hover .ph, .mat button:focus-visible .ph { transform: translateY(-4px); box-shadow: 0 18px 36px rgba(20,30,90,.18); }
-.mat button:hover .ph em, .mat button:focus-visible .ph em { opacity: 1; transform: translate(-50%, 0); }
-.mat button:focus-visible .ph { outline: 2px solid var(--cobalt); outline-offset: 3px; }
-.mat h3 { margin: 14px 0 4px; font: 700 17px/1.2 var(--font-ui); letter-spacing: -.015em; }
-.mat p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); text-wrap: pretty; }
+.mat .ph { position: relative; display: block; aspect-ratio: 2 / 3; overflow: hidden; background: var(--bgc, var(--bg-2)); }
+.mat .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
+.mat .ph em { position: absolute; left: 12px; bottom: 12px; padding: 7px 11px 6px; border-radius: 999px; background: rgba(255,255,255,.94);
+  font: 500 11.5px/1 var(--font-mono); font-style: normal; text-transform: uppercase; opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s; }
+.mat button:hover .ph img, .mat button:focus-visible .ph img { transform: scale(1.04); }
+.mat button:hover .ph em, .mat button:focus-visible .ph em { opacity: 1; transform: none; }
+.mat button:focus-visible .ph { outline: 2px solid var(--accent); outline-offset: 3px; }
+.mat h3 { display: flex; align-items: flex-start; gap: 8px; margin: 18px 0 8px; font: 500 20px/1.15 var(--font-ui); letter-spacing: -.03em; }
+.mat h3 sup { font: 400 11px/1 var(--font-mono); letter-spacing: 0; color: var(--ink-3); margin-top: 1px; }
+.mat p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+.mat p.hear { margin-top: 10px; font-size: 13.5px; color: var(--ink-3); }
 
-/* stays on your computer, and the footer */
-.privacy { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; max-width: 860px; }
-.privacy svg { width: 44px; height: 44px; color: var(--cobalt); }
-.privacy h2 { margin: 0 0 10px; font: 800 30px/1.1 var(--font-ui); letter-spacing: -.03em; }
-.privacy p { margin: 0; color: var(--ink-soft); text-wrap: pretty; }
-footer { padding-block: 40px 56px; border-top: 1px solid var(--line); }
-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+/* ---------- rows: a heading on the left and what it means on the right, between hairlines ---------- */
+.rows { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px 64px; padding: 40px 0; border-bottom: 1px solid var(--line); scroll-margin-top: calc(var(--bar-h) + 8px); }
+.row .k { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.row .no { font: 400 13px/1 var(--font-mono); color: var(--ink-3); }
+.row h3 { margin: 0; font: 500 clamp(30px, 3.4vw, 46px)/1.02 var(--font-ui); letter-spacing: -.045em; }
+.row .v > p { margin: 0 0 18px; max-width: 34em; font-size: 17px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+.row .v > p b { color: var(--ink); font-weight: 500; }
+.row .v > p.fine { margin: 16px 0 0; font-size: 14px; color: var(--ink-3); }
+
+/* [03] how it lets go: the three moments, each with a small picture of clack then */
+.how .row { grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr); }
+.how figure { position: relative; margin: 0; aspect-ratio: 4 / 3; overflow: hidden; background: var(--bg-2); }
+.how figure img { width: 100%; height: 100%; object-fit: cover; }
+.how .done figure img { filter: saturate(.06) brightness(1.04); }
+.how figure span { position: absolute; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px 5px; border-radius: 999px;
+  background: rgba(255,255,255,.94); font: 500 11px/1 var(--font-mono); text-transform: uppercase; white-space: nowrap; }
+.how figure span i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.how .work figure span i { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
+.aside { max-width: 46em; margin: 32px 0 0; font-size: 15px; color: var(--ink-3); }
+.aside b { color: var(--ink-2); font-weight: 500; }
+
+/* [04] get it: one row per way, from nothing to install to the full Mac app */
+.way .ico { width: 28px; height: 28px; color: var(--ink); }
+.way .go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+/* a line of Terminal or an address to copy: selectable whole, with a copy button at its end */
+.cmd { display: flex; align-items: center; gap: 12px; margin: 0; padding: 8px 8px 8px 18px; background: var(--bg-2); border: 1px solid var(--line); }
+.cmd code { flex: 1; min-width: 0; font: 400 13px/1.55 var(--font-mono); word-break: break-all; -webkit-user-select: all; user-select: all; }
+.cmd button { flex: none; min-width: 72px; height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--ink); color: #fff;
+  font: 500 12px/1 var(--font-mono); text-transform: uppercase; cursor: pointer; transition: background-color .15s; }
+.cmd button:hover { background: var(--accent); }
+.cmd.small { display: inline-flex; gap: 6px; padding: 2px 2px 2px 8px; margin: 0 2px; vertical-align: middle; }
+.cmd.small code { font-size: 12.5px; word-break: normal; white-space: nowrap; }
+.cmd.small button { min-width: 0; height: 24px; padding: 0 9px; font-size: 10.5px; }
+.way details { margin-top: 18px; border-top: 1px solid var(--line); }
+.way summary { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; cursor: pointer; list-style: none;
+  font: 500 12.5px/1 var(--font-mono); text-transform: uppercase; color: var(--ink-2); }
+.way summary::-webkit-details-marker { display: none; }
+.way summary::after { content: "+"; font-size: 16px; color: var(--ink-3); }
+.way details[open] summary::after { content: "−"; }
+.way details p { margin: 12px 0 0; font-size: 14px; color: var(--ink-3); }
+/* numbered steps, a hairline between each */
+.steps { margin: 0 0 24px; padding: 0; list-style: none; counter-reset: s; border-top: 1px solid var(--line); }
+.steps li { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line);
+  font-size: 15px; line-height: 1.55; color: var(--ink-2); counter-increment: s; }
+.steps li::before { content: counter(s, decimal-leading-zero); font: 400 12px/1 var(--font-mono); color: var(--ink-3); }
+.steps li b { color: var(--ink); font-weight: 500; }
+
+/* ---------- [05] what it keeps: the one dark section ---------- */
+.dark { background: var(--inv); color: #fff; }
+.dark .sh { border-bottom-color: rgba(255,255,255,.16); }
+.dark .sh .idx { color: rgba(255,255,255,.5); }
+.keeps { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px 64px; }
+.keeps p { max-width: 30em; margin: 24px 0 0; font-size: 17px; color: rgba(255,255,255,.66); text-wrap: pretty; }
+.keeps h3 { margin: 0 0 12px; font: 500 20px/1.2 var(--font-ui); letter-spacing: -.02em; }
+.keeps ul { margin: 0 0 40px; padding: 0; list-style: none; }
+.keeps ul:last-child { margin-bottom: 0; }
+.keeps li { padding: 13px 0; border-top: 1px solid rgba(255,255,255,.16); font: 500 13px/1.3 var(--font-mono); text-transform: uppercase; }
+
+/* ---------- the end: clack in big letters to go and play, and the ways on from here ---------- */
+.big { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: clamp(20px, 3vw, 36px) clamp(20px, 3vw, 40px); background: var(--bg-2);
+  font: 400 clamp(52px, 10.6vw, 152px)/.9 var(--font-display); text-decoration: none; transition: background-color .2s; }
+.big span { font: 400 .5em/1 var(--font-ui); transition: transform .2s; }
+.big:hover { background: var(--bg-3); }
+.big:hover span { transform: translate(4px, -4px); }
+.after { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 24px 64px; margin-top: 28px; }
+.after > p { margin: 0; max-width: 20em; font-size: 16px; color: var(--ink-2); }
+.links { margin: 0; padding: 0; list-style: none; }
+.links a { display: flex; justify-content: space-between; padding: 14px 0; border-top: 1px solid var(--line); font: 500 13px/1.3 var(--font-mono); text-transform: uppercase; text-decoration: none; }
+.links li:last-child a { border-bottom: 1px solid var(--line); }
+.links a span { color: var(--ink-3); transition: transform .15s, color .15s; }
+.links a:hover span { color: var(--ink); transform: translateX(3px); }
+footer { padding-block: 0 48px; }
+footer .wrap > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; padding-top: 32px; border-top: 1px solid var(--line); }
+footer ul { margin: 0; padding: 0; list-style: none; }
+footer li { margin-bottom: 10px; }
+footer a, footer .mono { font: 500 13px/1.3 var(--font-mono); text-transform: uppercase; text-decoration: none; }
+footer a:hover { color: var(--accent); }
+footer .mono { color: var(--ink-3); }
 
 /* ---------- smaller screens ---------- */
-@media (max-width: 1080px) {
-  .hero { grid-template-columns: minmax(0, 1fr); }
-  .hero .player { justify-self: center; }
+@media (max-width: 1120px) {
+  .playgrid { grid-template-columns: minmax(0, 1fr); }
+  .desk { justify-content: center; }
+  .mlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; border-top: 0; }
+  .mlist li:nth-child(-n+2) button { border-top: 1px solid var(--line); }
   .mats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .nav .clock { display: none; }
 }
-@media (max-width: 920px) {
-  .ways, .steps { grid-template-columns: minmax(0, 1fr); max-width: 560px; }
-  .head { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 900px) {
+  :root { --sec: 96px; }
+  .intro, .row, .how .row, .keeps, .after { grid-template-columns: minmax(0, 1fr); }
+  .intro { margin-bottom: 48px; }
+  .how figure { max-width: 360px; }
   .mats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  footer .wrap > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  footer .wrap > div > :first-child { grid-column: 1 / -1; }
 }
-@media (max-width: 560px) {
-  .bar nav { gap: 18px; }
-  .bar nav a.opt { display: none; }
-  .hero { padding-block: 8px 72px; }
-  .player { width: 100%; }
-  /* on a phone clack is the whole frame: no desk or menu bar, and short enough to scroll past */
-  .desk { width: 100%; padding: 0; background: none; box-shadow: none; }
+/* on a phone the nav folds into a menu, and clack is the whole stage: no desk or menu bar, short enough to scroll past */
+@media (max-width: 760px) {
+  :root { --bar-h: 60px; --gut: max(16px, env(safe-area-inset-left, 0px)); --sec: 80px; }
+  .nav { position: absolute; top: var(--bar-h); left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0; margin: 0; padding: 4px var(--gut) 20px;
+    background: #fff; border-bottom: 1px solid var(--line); box-shadow: 0 18px 30px rgba(0,0,0,.06); }
+  .bar:not(.open) .nav { display: none; }
+  .nav a, .nav a.dup { display: block; padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--ink); }
+  .nav a[aria-current="true"]::before { margin-right: 10px; }
+  .menu { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; padding: 10px 0; border: 0; background: none; color: var(--ink);
+    font: 500 13px/1 var(--font-mono); text-transform: uppercase; cursor: pointer; }
+  .menu i { position: relative; width: 16px; height: 1.5px; background: currentColor; transition: background-color .15s; }
+  .menu i::before, .menu i::after { content: ""; position: absolute; left: 0; width: 16px; height: 1.5px; background: currentColor; transition: transform .2s; }
+  .menu i::before { top: -5px; } .menu i::after { top: 5px; }
+  .bar.open .menu i { background: transparent; }
+  .bar.open .menu i::before { transform: translateY(5px) rotate(45deg); }
+  .bar.open .menu i::after { transform: translateY(-5px) rotate(-45deg); }
+  .bar > .wrap > .btn { order: 3; }
+  .stage { background: none; }
   .menubar { display: none; }
-  .pop { width: 100%; height: min(600px, 72svh); margin: 0; }
-  .now { width: 100%; }
-  .chips { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  section { padding-block: 72px; }
-  .mats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .privacy { grid-template-columns: minmax(0, 1fr); }
+  .desk { padding: 0; }
+  .pop { width: 100%; height: min(600px, 74svh); }
+  .mlist { grid-template-columns: minmax(0, 1fr); }
+  .mlist li:nth-child(2) button { border-top: 0; }
+  .mats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px 14px; }
+  .mat h3 { font-size: 17px; }
+  .mat p.hear { display: none; }
+  .band { overflow-x: auto; scrollbar-width: none; }
+  .band li { flex: 0 0 22%; }
+  .band li:hover, .band li:focus-within { flex-grow: 0; }
+  .sh { margin-bottom: 40px; }
+  .row { padding: 32px 0; }
+  .cmd { flex-direction: column; align-items: stretch; padding: 14px; }
+  .cmd button { align-self: flex-start; }
+  .cmd.small { flex-direction: row; align-items: center; padding: 2px 2px 2px 8px; }
+  .big span { display: none; }
+}
+@media (max-width: 420px) {
+  .bar > .wrap > .btn { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .step.work .tag i, .step.work .n svg { animation: none; }
-  .mat .ph, .mat .ph em, .btn { transition: none; }
+  html { scroll-behavior: auto; }
+  .how .work figure span i { animation: none; }
+  .band li:hover, .band li:focus-within { flex-grow: 1; }
+  *, *::before, *::after { transition: none !important; }
 }
 </style>
 </head>
 <body>
 
-<header class="wrap bar">
-  <a class="logo" href="./" aria-label="clack home"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>clack</a>
-  <nav aria-label="Sections">
-    <a class="opt" href="#how">How it works</a>
-    <a class="opt" href="#materials">Materials</a>
-    <a href="#get">Get clack</a>
-    <a href="https://github.com/kyuripark9/Keyboard" target="_blank" rel="noopener">GitHub ↗</a>
-  </nav>
+<header class="bar" id="bar">
+  <div class="wrap">
+    <a class="logo" href="./" aria-label="clack home"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>clack</a>
+    <nav class="nav" id="nav" aria-label="Sections">
+      <a href="#play">Play</a>
+      <a href="#materials">Materials</a>
+      <a href="#how">How it works</a>
+      <a class="dup" href="#get">Get clack</a>
+      <span class="clock" id="clock" aria-hidden="true">Thu 10:42</span>
+    </nav>
+    <button class="menu" id="menu" type="button" aria-expanded="false" aria-controls="nav"><i></i>Menu</button>
+    <a class="btn" href="#get">Get clack</a>
+  </div>
 </header>
 
 <main>
   <div class="wrap hero">
-    <div>
-      <p class="eyebrow">A sound toy for agent waits</p>
-      <h1>Something to <em>press</em> while your agent works.</h1>
-      <p class="lede">clack puts ten satisfying materials under your cursor. Every step clicks, pops or squishes and leaves its own mark. <b>Hand Claude Code a task and clack wakes up. The moment it's done, the colour drains away and clack lets go of you.</b></p>
-      <div class="ctas">
-        <a class="btn solid" href="#mac"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>Get it on your Mac</a>
-        <a class="btn" href="#extension">Add to your browser</a>
-        <a class="link" href="play/">Play full screen ↗</a>
-      </div>
-    </div>
-
-    <div class="player" id="try">
-      <div class="desk">
-        <div class="menubar" aria-hidden="true">
-          <span class="app">Terminal</span><span class="dim">Shell</span><span class="dim">Edit</span><span class="dim">View</span>
-          <span class="right"><span class="ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg></span><span id="clock">Thu 10:42</span></span>
-        </div>
-        <div class="pop"><iframe id="player" src="play/" title="clack: play it here" allow="autoplay; clipboard-write"></iframe></div>
-      </div>
-      <div class="now">
-        <div class="chips" id="chips" role="group" aria-label="Materials"></div>
-        <p class="caption" id="caption" aria-live="polite"></p>
-      </div>
+    <h1 class="word" aria-label="clack"><span aria-hidden="true">C</span><span aria-hidden="true">L</span><span aria-hidden="true">A</span><span aria-hidden="true">C</span><span aria-hidden="true">K</span></h1>
+    <div class="rule" aria-hidden="true"></div>
+    <p class="lede">Something to press while your agent works. Ten materials that click, pop and squish under your cursor, and let go of you the moment your agent is done.</p>
+    <p class="meta mono"><span>Mac menu bar</span><i>·</i><span>Any browser</span><i>·</i><span>Side panel</span></p>
+    <div class="ctas">
+      <a class="btn" href="#play">Play it here ↓</a>
+      <a class="btn ghost" href="#get">Get clack</a>
     </div>
   </div>
+  <ul class="band" id="band" aria-label="The ten materials"></ul>
 
-  <section id="how">
+  <section id="play">
     <div class="wrap">
-      <div class="head">
-        <h2>It lets go the moment your agent is done.</h2>
-        <p>Waiting on an agent is a strange few minutes: too short to start anything, long enough to drift into a feed. clack gives your hands something to do, then hands you back.</p>
-      </div>
-      <ol class="steps">
-        <li class="step work">
-          <figure><img src="img/cyano.jpg" alt="02 Cyanotype: white halftone dots exposed on cobalt blue" loading="lazy"><span class="tag"><i></i>agent working · 0:42</span></figure>
-          <div class="body">
-            <div class="n">01<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg></div>
-            <h3>Hand off a task</h3>
-            <p>Send Claude Code a prompt and clack wakes up, in full colour and full sound. Its ring in the menu bar breathes while the agent works.</p>
+      <div class="sh"><span>Play</span><span class="idx">[01]</span></div>
+      <h2 class="sr">Play clack</h2>
+      <div class="playgrid">
+        <div class="stage" id="try">
+          <div class="menubar" aria-hidden="true">
+            <span class="app">Terminal</span><span class="dim">Shell</span><span class="dim">Edit</span><span class="dim">View</span>
+            <span class="right"><span class="ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg></span><span id="mclock">Thu 10:42</span></span>
           </div>
-        </li>
-        <li class="step">
-          <figure><img src="img/soap.jpg" alt="08 Soap Cutting: a path shaved through magenta halftone soap" loading="lazy"><span class="tag">nothing to win</span></figure>
-          <div class="body">
-            <div class="n">02<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg></div>
-            <h3>Press something</h3>
-            <p>Crumple, pop, shave, rake. There is no score to beat and no streak to keep, so there is nothing to stay for.</p>
-          </div>
-        </li>
-        <li class="step done">
-          <figure><img src="img/soap.jpg" alt="The same soap with its colour drained away" loading="lazy"><span class="tag"><i></i>agent done · go back</span></figure>
-          <div class="body">
-            <div class="n">03<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="4.6" fill="currentColor"/></svg></div>
-            <h3>Let go</h3>
-            <p>When the agent finishes or needs your permission, the picture fades to grey over five seconds and the sound goes with it. The ring's dot fills in. That's your cue.</p>
-          </div>
-        </li>
-      </ol>
-      <p class="aside">With several sessions at once, the first to finish lets go of you; once you've gone back, clack holds you again while the others work. In the browser a demo agent stands in for yours: press <b>try an agent wait</b> under the tally to feel the release.</p>
-    </div>
-  </section>
-
-  <section id="get">
-    <div class="wrap">
-      <div class="head">
-        <h2>Three ways to have it.</h2>
-        <p>Play it here with nothing to install, keep it one click away in your Mac's menu bar, or open it in your browser's side panel next to Claude or ChatGPT.</p>
-      </div>
-      <div class="ways">
-
-        <article class="way web" id="web">
-          <div class="pic" aria-hidden="true"><svg viewBox="0 0 196 108" fill="none" stroke="#1b2a6b" stroke-width="1.6" stroke-linejoin="round">
-            <rect x="18" y="8" width="160" height="94" rx="8" fill="#faf7f1"/><path d="M18 26h160"/><circle cx="31" cy="17" r="2.6" fill="#1b2a6b"/><circle cx="41" cy="17" r="2.6" fill="#1b2a6b"/><circle cx="51" cy="17" r="2.6" fill="#1b2a6b"/>
-            <rect x="64" y="12" width="96" height="10" rx="5" fill="#ebe4d7" stroke="none"/>
-            <rect x="26" y="33" width="144" height="62" rx="4" fill="#3557b0" stroke="none"/>
-            <g fill="#f2f5ff" stroke="none"><circle cx="70" cy="52" r="2"/><circle cx="80" cy="56" r="2.6"/><circle cx="90" cy="60" r="3"/><circle cx="100" cy="62" r="3.2"/><circle cx="110" cy="62" r="3"/><circle cx="120" cy="60" r="2.6"/><circle cx="130" cy="56" r="2"/><circle cx="84" cy="68" r="1.6"/><circle cx="104" cy="72" r="2"/><circle cx="118" cy="70" r="1.6"/></g>
-            <circle cx="132" cy="54" r="7" stroke="#f2f5ff" stroke-width="2"/><circle cx="132" cy="54" r="1.6" fill="#f2f5ff" stroke="none"/>
-          </svg></div>
-          <p class="kind">Any browser · nothing to install</p>
-          <h3>Play on the web</h3>
-          <p>All ten materials, right in the page, on a laptop or a phone. A demo agent stands in for yours, so you can feel clack let go.</p>
-          <p class="fine">To keep it as an app with its own window: in Chrome or Edge, click the install icon in the address bar; in Safari, choose File › Add to Dock.</p>
-          <div class="go"><a class="btn" href="play/">Open clack ↗</a></div>
-        </article>
-
-        <article class="way mac" id="mac">
-          <div class="pic" aria-hidden="true"><svg viewBox="0 0 196 108" fill="none" stroke-linejoin="round">
-            <rect x="0" y="6" width="196" height="16" fill="rgba(243,238,230,.16)"/>
-            <g fill="rgba(243,238,230,.7)"><rect x="10" y="12" width="22" height="4" rx="2"/><rect x="38" y="12" width="14" height="4" rx="2"/><rect x="58" y="12" width="14" height="4" rx="2"/><rect x="164" y="12" width="22" height="4" rx="2"/></g>
-            <rect x="139" y="8" width="18" height="12" rx="3" fill="rgba(243,238,230,.28)"/><circle cx="148" cy="14" r="4" stroke="#f3eee6" stroke-width="1.6"/><circle cx="148" cy="14" r="1" fill="#f3eee6"/>
-            <rect x="104" y="27" width="66" height="76" rx="7" fill="#acdc98"/>
-            <g stroke="#183c94" stroke-width="2.2" stroke-linecap="round"><path d="M114 82c10-8 18-26 30-34s14-6 18-10"/><path d="M118 90c10-8 18-26 30-34s14-6 18-10" opacity=".45"/></g>
-            <path d="M120 33h34" stroke="#183c94" stroke-width="2.4" stroke-linecap="round"/>
-          </svg></div>
-          <p class="kind">macOS · beside Claude Code</p>
-          <h3>Keep it in your menu bar</h3>
-          <p>Its ring sits at the top right of the screen and opens clack from any app. Connected to Claude Code, it holds you while your agent works and lets go the moment it's done. Paste this into Terminal:</p>
-          <div class="cmd"><code id="installCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash</code><button type="button" data-copy="installCmd">Copy</button></div>
-          <p class="fine">It builds clack on your Mac in a few seconds and asks before connecting it to Claude Code. It needs Apple's Command Line Tools, and offers to install them if they're missing. Run the same line again to update. <a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md" target="_blank" rel="noopener">What it installs ↗</a></p>
-          <details>
-            <summary>Remove it</summary>
-            <div class="cmd"><code id="removeCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash</code><button type="button" data-copy="removeCmd">Copy</button></div>
-            This quits the menu bar app, stops clack, takes its hooks back out of Claude Code and deletes its files.
-          </details>
-        </article>
-
-        <article class="way ext" id="extension">
-          <div class="pic" aria-hidden="true"><svg viewBox="0 0 196 108" fill="none" stroke="#1b2a6b" stroke-width="1.6" stroke-linejoin="round">
-            <rect x="10" y="8" width="176" height="94" rx="8" fill="#faf7f1"/><path d="M10 26h176"/><circle cx="23" cy="17" r="2.6" fill="#1b2a6b"/><circle cx="33" cy="17" r="2.6" fill="#1b2a6b"/><circle cx="43" cy="17" r="2.6" fill="#1b2a6b"/>
-            <rect x="56" y="12" width="90" height="10" rx="5" fill="#ebe4d7" stroke="none"/>
-            <circle cx="170" cy="17" r="4.4" stroke-width="1.6"/><circle cx="170" cy="17" r="1" fill="#1b2a6b" stroke="none"/>
-            <g fill="#ebe4d7" stroke="none"><rect x="20" y="36" width="72" height="6" rx="3"/><rect x="20" y="48" width="86" height="6" rx="3"/><rect x="20" y="60" width="62" height="6" rx="3"/><rect x="20" y="78" width="96" height="14" rx="7"/></g>
-            <rect x="124" y="26" width="62" height="76" fill="#fc94bc" stroke="none"/><path d="M124 26v76"/>
-            <g fill="#e8ecea" stroke="none"><path d="M143 45l3 3-3 3-3-3z"/><path d="M163 45l3 3-3 3-3-3z"/><path d="M143 65l3 3-3 3-3-3z"/><path d="M163 65l3 3-3 3-3-3z"/><path d="M143 85l3 3-3 3-3-3z"/><path d="M163 85l3 3-3 3-3-3z"/></g>
-            <path d="M186 94a8 8 0 0 1-8 8h-54" stroke="none"/>
-          </svg></div>
-          <p class="kind">Chrome · Edge · Brave · any OS</p>
-          <h3>Open it in the side panel</h3>
-          <p>A browser extension that opens clack in the side panel, right next to claude.ai, ChatGPT or whatever you're waiting on.</p>
-          <ol>
-            <li><b>Download</b> the extension and unzip it.</li>
-            <li>Open <span class="cmd small"><code id="extUrl">chrome://extensions</code><button type="button" data-copy="extUrl" aria-label="Copy chrome://extensions">Copy</button></span> and turn on <b>Developer mode</b>.</li>
-            <li>Click <b>Load unpacked</b> and choose the <b>clack-extension</b> folder.</li>
-            <li>Pin clack and click its ring: clack opens in the side panel.</li>
-          </ol>
-          <div class="go"><a class="btn solid" href="clack-extension.zip" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>Download extension</a></div>
-          <p class="fine">If clack is also on your Mac, the panel opens that one and follows your agent; otherwise the demo agent stands in.</p>
-        </article>
-
+          <div class="desk"><div class="pop"><iframe id="player" src="play/" title="clack: play it here" allow="autoplay; clipboard-write"></iframe></div></div>
+        </div>
+        <div class="picker">
+          <p class="lbl">Pick a material</p>
+          <ol class="mlist" id="chips" aria-label="Materials"></ol>
+          <div class="cap" id="caption" aria-live="polite"></div>
+          <p class="fine">Sound on, then move, press and drag inside clack. A demo agent stands in for yours here: press <b>try an agent wait</b> under the tally to feel it let go. <a href="play/">Play full screen ↗</a></p>
+        </div>
       </div>
     </div>
   </section>
 
   <section id="materials">
     <div class="wrap">
-      <div class="head">
+      <div class="sh"><span>Materials</span><span class="idx">[02]</span></div>
+      <div class="intro">
         <h2>Ten materials, each with its own sound.</h2>
-        <p>Each one is drawn after a print or a photo and synthesized live in the browser: no audio files, just soft attacks, rounded filters and small crisp details. Pick one to play it above.</p>
+        <p>Each one is drawn after a print or a photo and synthesized live in the browser: no audio files, just soft attacks, rounded filters and small crisp details. Pick one to play it.</p>
       </div>
       <ul class="mats" id="mats"></ul>
     </div>
   </section>
 
-  <section>
-    <div class="wrap privacy">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor"/></svg>
-      <div>
-        <h2>It stays on your computer.</h2>
-        <p>Claude Code's hooks only tell clack that you sent a prompt, that the agent stopped or needs you, and that a session closed. clack listens on localhost alone, stores none of it and never sees your code. How quickly you went back is kept in your browser, and only ever shown as your last and typical return.</p>
+  <section id="how" class="how">
+    <div class="wrap">
+      <div class="sh"><span>How it works</span><span class="idx">[03]</span></div>
+      <div class="intro">
+        <h2>It lets go the moment your agent is done.</h2>
+        <p>Waiting on an agent is a strange few minutes: too short to start anything, long enough to drift into a feed. clack gives your hands something to do, then hands you back.</p>
+      </div>
+      <ol class="rows">
+        <li class="row work">
+          <div class="k"><span class="no">01</span><h3>Hand off a task</h3></div>
+          <div class="v">
+            <p>Send Claude Code a prompt and clack wakes up, in full colour and full sound. Its ring in the menu bar breathes while the agent works.</p>
+            <ul class="tags"><li>Full colour</li><li>Full sound</li><li>Ring breathes</li></ul>
+          </div>
+          <figure><img src="img/cyano.jpg" alt="02 Cyanotype: white halftone dots exposed on cobalt blue" loading="lazy"><span><i></i>agent working · 0:42</span></figure>
+        </li>
+        <li class="row">
+          <div class="k"><span class="no">02</span><h3>Press something</h3></div>
+          <div class="v">
+            <p>Crumple, pop, shave, rake. There is no score to beat and no streak to keep, so there is nothing to stay for.</p>
+            <ul class="tags"><li>No score</li><li>No streak</li></ul>
+          </div>
+          <figure><img src="img/soap.jpg" alt="08 Soap Cutting: a path shaved through magenta halftone soap" loading="lazy"><span>nothing to win</span></figure>
+        </li>
+        <li class="row done">
+          <div class="k"><span class="no">03</span><h3>Let go</h3></div>
+          <div class="v">
+            <p>When the agent finishes or needs your permission, the picture fades to grey over five seconds and the sound goes with it. The ring's dot fills in. <b>That's your cue.</b></p>
+            <ul class="tags"><li>Fades to grey</li><li>Five seconds</li><li>Ring fills in</li></ul>
+          </div>
+          <figure><img src="img/soap.jpg" alt="The same soap with its colour drained away" loading="lazy"><span><i></i>agent done · go back</span></figure>
+        </li>
+      </ol>
+      <p class="aside">With several sessions at once, the first to finish lets go of you; once you've gone back, clack holds you again while the others work.</p>
+    </div>
+  </section>
+
+  <section id="get">
+    <div class="wrap">
+      <div class="sh"><span>Get clack</span><span class="idx">[04]</span></div>
+      <div class="intro">
+        <h2>Three ways to have it.</h2>
+        <p>Keep it one click away in your Mac's menu bar, open it in your browser's side panel next to Claude or ChatGPT, or play it with nothing to install.</p>
+      </div>
+      <div class="rows ways">
+
+        <article class="row way" id="mac">
+          <div class="k">
+            <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="4.5" width="23" height="17" rx="2"/><path d="M2.5 8.5h23M10 25h8M14 21.5V25"/><circle cx="20.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/></svg>
+            <h3>Keep it in your menu bar</h3>
+            <ul class="tags"><li class="hi">Follows Claude Code</li><li>macOS</li></ul>
+          </div>
+          <div class="v">
+            <p>Its ring sits at the top right of the screen and opens clack from any app. Connected to Claude Code, it holds you while your agent works and lets go the moment it's done. Paste this into Terminal:</p>
+            <div class="cmd"><code id="installCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash</code><button type="button" data-copy="installCmd">Copy</button></div>
+            <p class="fine">It builds clack on your Mac in a few seconds and asks before connecting it to Claude Code. It needs Apple's Command Line Tools, and offers to install them if they're missing. Run the same line again to update. <a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md" target="_blank" rel="noopener">What it installs ↗</a></p>
+            <details>
+              <summary>Remove it</summary>
+              <div class="cmd"><code id="removeCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash</code><button type="button" data-copy="removeCmd">Copy</button></div>
+              <p>This quits the menu bar app, stops clack, takes its hooks back out of Claude Code and deletes its files.</p>
+            </details>
+          </div>
+        </article>
+
+        <article class="row way" id="extension">
+          <div class="k">
+            <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="4.5" width="23" height="19" rx="2"/><path d="M2.5 9h23M17.5 9v14.5"/><path d="M20 13.5h3M20 16.5h3" stroke-linecap="round"/></svg>
+            <h3>Open it in the side panel</h3>
+            <ul class="tags"><li>Chrome · Edge · Brave</li><li>Any OS</li></ul>
+          </div>
+          <div class="v">
+            <p>A browser extension that opens clack in the side panel, right next to claude.ai, ChatGPT or whatever you're waiting on.</p>
+            <ol class="steps">
+              <li><span><b>Download</b> the extension and unzip it.</span></li>
+              <li><span>Open <span class="cmd small"><code id="extUrl">chrome://extensions</code><button type="button" data-copy="extUrl" aria-label="Copy chrome://extensions">Copy</button></span> and turn on <b>Developer mode</b>.</span></li>
+              <li><span>Click <b>Load unpacked</b> and choose the <b>clack-extension</b> folder.</span></li>
+              <li><span>Pin clack and click its ring: clack opens in the side panel.</span></li>
+            </ol>
+            <div class="go"><a class="btn" href="clack-extension.zip" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>Download extension</a></div>
+            <p class="fine">If clack is also on your Mac, the panel opens that one and follows your agent; otherwise the demo agent stands in.</p>
+          </div>
+        </article>
+
+        <article class="row way" id="web">
+          <div class="k">
+            <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="14" cy="14" r="11"/><path d="M3 14h22M14 3c3 3.2 4.5 6.8 4.5 11S17 21.8 14 25M14 3c-3 3.2-4.5 6.8-4.5 11S11 21.8 14 25"/></svg>
+            <h3>Play on the web</h3>
+            <ul class="tags"><li>Nothing to install</li><li>Any browser</li></ul>
+          </div>
+          <div class="v">
+            <p>All ten materials, right in the page, on a laptop or a phone. A demo agent stands in for yours, so you can feel clack let go.</p>
+            <div class="go"><a class="btn" href="play/">Open clack ↗</a></div>
+            <p class="fine">To keep it as an app with its own window: in Chrome or Edge, click the install icon in the address bar; in Safari, choose File › Add to Dock.</p>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="dark" id="privacy">
+    <div class="wrap">
+      <div class="sh"><span>Privacy</span><span class="idx">[05]</span></div>
+      <div class="keeps">
+        <div>
+          <h2 class="h2">It stays on your computer.</h2>
+          <p>Claude Code's hooks only tell clack the four things on this list, nothing else. clack listens on localhost alone, stores none of it and never sees your code. How quickly you went back is kept in your browser, and only ever shown as your last and typical return.</p>
+        </div>
+        <div>
+          <h3>What clack hears</h3>
+          <ul><li>You sent a prompt</li><li>The agent stopped</li><li>The agent needs you</li><li>A session closed</li></ul>
+          <h3>What it never does</h3>
+          <ul><li>Listen beyond localhost</li><li>Store what it hears</li><li>See your code</li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="end">
+    <div class="wrap">
+      <a class="big" href="play/" aria-label="Play clack full screen">PLAY CLACK<span aria-hidden="true">↗</span></a>
+      <div class="after">
+        <p>Nothing to sign up for. Press something while you wait.</p>
+        <ul class="links">
+          <li><a href="play/">Play full screen <span>↗</span></a></li>
+          <li><a href="#mac">Get it on your Mac <span>→</span></a></li>
+          <li><a href="#extension">Add it to your browser <span>→</span></a></li>
+          <li><a href="https://github.com/kyuripark9/Keyboard" target="_blank" rel="noopener">Source on GitHub <span>↗</span></a></li>
+        </ul>
       </div>
     </div>
   </section>
@@ -384,14 +506,17 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
 
 <footer>
   <div class="wrap">
-    <span class="link">clack · a sound toy</span>
-    <span><a class="link" href="play/">Play</a> &nbsp;·&nbsp; <a class="link" href="https://github.com/kyuripark9/Keyboard" target="_blank" rel="noopener">Source on GitHub ↗</a></span>
+    <div>
+      <span class="mono">clack · a sound toy</span>
+      <ul><li><a href="#play">Play</a></li><li><a href="#materials">Materials</a></li><li><a href="#how">How it works</a></li><li><a href="#get">Get clack</a></li></ul>
+      <ul><li><a href="play/">Full screen ↗</a></li><li><a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md" target="_blank" rel="noopener">What it installs ↗</a></li><li><a href="https://github.com/kyuripark9/Keyboard" target="_blank" rel="noopener">GitHub ↗</a></li></ul>
+    </div>
   </div>
 </footer>
 
 <script>
-// the ten materials in clack's own order (SOUND_IDS in play/), with what to try on each and the colour its tile shows
-// when its image hasn't loaded yet
+// the ten materials in clack's own order (SOUND_IDS in play/), with what to try on each, what it sounds like and the
+// colour its picture shows when the image hasn't loaded yet
 const MATS = [
   { id: 'slime', name: 'Crunchy Slime', bg: '#e6e6e6', try: 'Every step folds the sheet of stitches along a sharp crease, like crumpled paper.', hear: 'A wet press and a fizz of tiny crackles.' },
   { id: 'cyano', name: 'Cyanotype', bg: '#3557b0', try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', hear: 'A soft breath of foam with a faint sizzle.' },
@@ -408,10 +533,14 @@ const $ = id => document.getElementById(id);
 const nn = i => String(i + 1).padStart(2, '0');
 const frame = $('player');
 
-$('chips').innerHTML = MATS.map((m, i) => `<button type="button" data-id="${m.id}" aria-pressed="false" title="${m.name}">${nn(i)}</button>`).join('');
+$('chips').innerHTML = MATS.map((m, i) => `<li><button type="button" data-id="${m.id}" aria-pressed="false">` +
+  `<span class="no">${nn(i)}</span><img src="img/${m.id}.jpg" alt="" style="--bgc:${m.bg}" onerror="this.style.visibility='hidden'">` +
+  `<span class="nm">${m.name}</span><span class="on" aria-hidden="true"></span></button></li>`).join('');
+$('band').innerHTML = MATS.map((m, i) => `<li><button type="button" data-id="${m.id}" aria-label="Play ${nn(i)} ${m.name}" style="--bgc:${m.bg}">` +
+  `<img src="img/${m.id}.jpg" alt="" onerror="this.remove()"><span>${nn(i)}<b>${m.name}</b></span></button></li>`).join('');
 $('mats').innerHTML = MATS.map((m, i) => `<li class="mat"><button type="button" data-id="${m.id}" aria-label="Play ${nn(i)} ${m.name}">` +
-  `<span class="ph" style="--bgc:${m.bg}"><img src="img/${m.id}.jpg" alt="" loading="lazy" onerror="this.remove()"><span>${nn(i)}</span><em>Play it ↑</em></span>` +
-  `<h3>${m.name}</h3><p>${m.try}</p></button></li>`).join('');
+  `<span class="ph" style="--bgc:${m.bg}"><img src="img/${m.id}.jpg" alt="" loading="lazy" onerror="this.remove()"><em>Play it ↑</em></span>` +
+  `<h3>${m.name}<sup>[${nn(i)}]</sup></h3><p>${m.try}</p><p class="hear">${m.hear}</p></button></li>`).join('');
 
 // the player is clack itself (play/, same origin), so the page can read which material is up and switch it
 const clack = () => { try { return frame.contentWindow.__clack || null; } catch (e) { return null; } };
@@ -419,8 +548,8 @@ function show(id) {
   const i = MATS.findIndex(m => m.id === id);
   if (i < 0) return;
   const m = MATS[i];
-  for (const b of $('chips').children) b.setAttribute('aria-pressed', String(b.dataset.id === id));
-  $('caption').innerHTML = `<b>${nn(i)} ${m.name}</b>${m.try} <span class="row"><span>${m.hear}</span></span>`;
+  for (const b of $('chips').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.id === id));
+  $('caption').innerHTML = `<dl><dt>Try</dt><dd><b>${m.name}.</b> ${m.try}</dd><dt>Hear</dt><dd>${m.hear}</dd></dl>`;
 }
 function pick(id) {
   const c = clack();
@@ -436,13 +565,15 @@ frame.addEventListener('load', () => {
 });
 show('slime');
 $('chips').addEventListener('click', e => { const b = e.target.closest('button'); if (b) pick(b.dataset.id); });
-$('mats').addEventListener('click', e => {
+const playIt = e => {
   const b = e.target.closest('button');
   if (!b) return;
   pick(b.dataset.id);
   $('try').scrollIntoView({ block: 'center' });
   frame.focus();
-});
+};
+$('mats').addEventListener('click', playIt);
+$('band').addEventListener('click', playIt);
 
 // copy buttons: the clipboard where the page may use it, otherwise the line is selected for ⌘C
 document.addEventListener('click', async e => {
@@ -454,8 +585,25 @@ document.addEventListener('click', async e => {
   setTimeout(() => { b.textContent = was; }, 1600);
 });
 
-// the menu bar's clock tells the real time
-const tick = () => { $('clock').textContent = new Date().toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(',', ''); };
+// the header: a hairline once the page moves, the menu on a phone, and the section you're in marked in the nav
+const bar = $('bar'), menu = $('menu'), links = [...$('nav').querySelectorAll('a')];
+const onScroll = () => bar.classList.toggle('scrolled', scrollY > 8);
+addEventListener('scroll', onScroll, { passive: true }); onScroll();
+const setMenu = open => { bar.classList.toggle('open', open); menu.setAttribute('aria-expanded', String(open)); };
+menu.addEventListener('click', () => setMenu(!bar.classList.contains('open')));
+$('nav').addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
+addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
+const spy = new IntersectionObserver(entries => {
+  for (const en of entries) if (en.isIntersecting)
+    for (const a of links) a.setAttribute('aria-current', String(a.getAttribute('href') === '#' + en.target.id));
+}, { rootMargin: '-45% 0px -50% 0px' });
+for (const id of ['play', 'materials', 'how', 'get', 'privacy']) spy.observe($(id));
+
+// the clocks tell the real time, like the menu bar's
+const tick = () => {
+  const t = new Date().toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(',', '');
+  $('clock').textContent = $('mclock').textContent = t;
+};
 tick(); setInterval(tick, 15000);
 </script>
 </body>
