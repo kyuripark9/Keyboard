@@ -74,6 +74,17 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 .tally b { font-size: var(--count-size); font-weight: 600; font-variant-numeric: tabular-nums; }
 .tally span { font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
 .tally .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+/* 08 Soap Cutting's halftone goes softly out of focus along the bottom, so the count and the agent line sit on a
+   smooth tint instead of dots. It is blurred fully up to the agent line and eases back into the sharp print over
+   about 48px above it. The other pictures stay sharp */
+.haze {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; display: none;
+  height: calc(max(16px, env(safe-area-inset-bottom, 0px)) + var(--count-size) * 1.1 + 16px + 48px);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  -webkit-mask-image: linear-gradient(to top, #000 calc(100% - 48px), rgba(0,0,0,.55) calc(100% - 26px), rgba(0,0,0,.15) calc(100% - 10px), transparent);
+  mask-image: linear-gradient(to top, #000 calc(100% - 48px), rgba(0,0,0,.55) calc(100% - 26px), rgba(0,0,0,.15) calc(100% - 10px), transparent);
+}
+body[data-scene="soap"] .haze { display: block; }
 .stage { min-height: 0; min-width: 0; }
 
 /* The agent line: one quiet line over the tally that knows when your agent is working, when it's done and how fast you
@@ -263,6 +274,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
 </head>
 <body>
 <canvas id="scene" aria-label="Interactive graphic. Move your cursor to play"></canvas>
+<div class="haze" aria-hidden="true"></div>
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
