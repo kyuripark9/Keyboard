@@ -45,7 +45,9 @@ for something, and that a session closed. clack uses that to know when you're wa
 sessions working at once, the first to finish lets go of you; once you've gone back, clack holds you again while the
 others work, and the next to finish lets go again. The bridge looks at a prompt only to tell yours apart from Claude
 waking itself up, and at the last lines of a working session's transcript only to see whether you stopped it with Esc,
-which no hook reports. It stores neither, and never sees your code. Nothing leaves your Mac: the bridge only listens on `localhost`. How quickly you went back is kept in your browser, and only shown as your last and typical return.
+which no hook reports. For the Claude app's Code tab, where Claude Code passes a permission prompt on only 6 seconds
+late, it also reads the app's log (`~/Library/Logs/Claude/main.log`) for the line the app writes the moment it shows
+you one. It stores none of this, and never sees your code. Nothing leaves your Mac: the bridge only listens on `localhost`. How quickly you went back is kept in your browser, and only shown as your last and typical return.
 
 ## Remove
 

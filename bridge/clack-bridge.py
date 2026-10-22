@@ -10,6 +10,9 @@ Claude Code hooks POST to this server:
   Notification     -> /done    (the agent needs you, e.g. a permission prompt)
   SessionEnd       -> /end     (the session closed: its wait is over, with nothing to go back to)
 
+In the Claude app's Code tab, Claude Code reports a permission prompt 6 s late, so the bridge also reads the app's log
+for the moment it shows one.
+
 Several sessions can work at once: any one finishing calls you back, and the wait goes on while the others work.
 
 Usage:
@@ -21,7 +24,7 @@ Usage:
   python3 clack-bridge.py --no-autostart  macOS: undo --autostart
   python3 clack-bridge.py --uninstall-hooks  take the hooks back out of ~/.claude/settings.json
 """
-import json, os, queue, sys, threading, time
+import json, os, queue, re, sys, threading, time
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -208,16 +211,20 @@ def tagged(event):
     return {**event, 'working': state['working'], 'since': state['since']}
 
 
-def interrupted(w):
-    """Esc stops the agent without a Stop hook; its transcript then ends on the interruption, after your last prompt."""
+def tail(w):
+    """the last lines of a session's transcript"""
     try:
         with open(w['transcript'], 'rb') as f:
             f.seek(0, 2)
             f.seek(max(0, f.tell() - 65536))
-            lines = f.read().decode('utf-8', 'replace').splitlines()
+            return f.read().decode('utf-8', 'replace').splitlines()
     except (OSError, TypeError, KeyError):
-        return False
-    for line in reversed(lines):
+        return []
+
+
+def interrupted(w):
+    """Esc stops the agent without a Stop hook; its transcript then ends on the interruption, after your last prompt."""
+    for line in reversed(tail(w)):
         try:
             e = json.loads(line)
         except ValueError:
@@ -251,6 +258,86 @@ def watch():
             event = tagged({'type': 'tally', 'at': now, 'session': gone[0], 'reason': 'interrupt'})
             broadcast(event)
             log(event, len(clients))
+
+# the Claude app's Code tab runs Claude Code too, but tells it about a permission prompt 6 s late, as the app answers some
+# asks for its own tools itself. The app logs each prompt it does show, the moment it shows it
+APP_LOG = os.path.expanduser('~/Library/Logs/Claude/main.log')
+APP_ASK = re.compile(r'Emitted tool permission request \S+ for (\S+) in session ')
+
+
+def entries(w):
+    for line in tail(w):
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(e, dict):
+            yield e
+
+
+def from_app(w):
+    # Claude Code writes where it was started from into every transcript line
+    if 'app' not in w:
+        point = next((e['entrypoint'] for e in entries(w) if e.get('entrypoint')), None)
+        if point:
+            w['app'] = str(point).startswith('claude-desktop')
+    return w.get('app', False)
+
+
+def waiting_on(w):
+    """the tools the session called that have no result yet"""
+    calls = {}
+    for e in entries(w):
+        if e.get('isSidechain'):
+            continue
+        for c in (e.get('message') or {}).get('content') or []:
+            if isinstance(c, dict) and c.get('type') == 'tool_use':
+                calls[c.get('id')] = c.get('name')
+            elif isinstance(c, dict) and c.get('type') == 'tool_result':
+                calls.pop(c.get('tool_use_id'), None)
+    return set(calls.values())
+
+
+def asked(tool):
+    with lock:
+        apps = [s for s, w in working.items() if from_app(w)]
+        # with several sessions working in the app, the one waiting on that tool is the one asking
+        if len(apps) > 1:
+            apps = [s for s in apps if tool in waiting_on(working[s])]
+        # still unsure which: Claude Code's own notice comes 6 s later and tells
+        if len(apps) != 1:
+            return
+        now = int(time.time() * 1000)
+        del working[apps[0]]
+        settle(now, 'done')
+        event = tagged({'type': 'done', 'at': now, 'session': apps[0], 'reason': 'Notification', 'auto': False})
+        broadcast(event)
+        log(event, len(clients))
+
+
+def watch_app():
+    f, ino, rest = None, None, b''
+    while True:
+        time.sleep(0.25)
+        try:
+            st = os.stat(APP_LOG)
+            # the app starts a new log when one fills up; the first time round only what comes next counts
+            if f is None or st.st_ino != ino or st.st_size < f.tell():
+                first = ino is None
+                if f:
+                    f.close()
+                f, ino, rest = open(APP_LOG, 'rb'), st.st_ino, b''
+                if first:
+                    f.seek(0, 2)
+            chunk = f.read()
+        except (OSError, ValueError):
+            continue
+        lines = (rest + chunk).split(b'\n')
+        rest = lines.pop()
+        for line in lines:
+            m = APP_ASK.search(line.decode('utf-8', 'replace'))
+            if m:
+                asked(m.group(1))
 
 CORS = {
     'Access-Control-Allow-Origin': '*',
@@ -451,6 +538,7 @@ print(f'Hooks not set up yet? Run: python3 {os.path.basename(__file__)} --hooks'
 if DEBUG:
     print(f'debug: recording every hook to {DEBUG_FILE}', flush=True)
 threading.Thread(target=watch, daemon=True).start()
+threading.Thread(target=watch_app, daemon=True).start()
 try:
     srv.serve_forever()
 except KeyboardInterrupt:

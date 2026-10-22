@@ -9,6 +9,9 @@
     Notification     -> /done    (the agent needs you, e.g. a permission prompt)
     SessionEnd       -> /end     (the session closed: its wait is over, with nothing to go back to)
 
+  In the Claude app's Code tab, Claude Code reports a permission prompt 6 s late, so the bridge also reads the app's log
+  for the moment it shows one.
+
   Several sessions can work at once: any one finishing calls you back, and the wait goes on while the others work.
 
   The server serves clack itself at http://localhost:4545 and pushes those
@@ -23,6 +26,7 @@
 'use strict';
 const http = require('http');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const args = process.argv.slice(2);
@@ -80,17 +84,21 @@ function settle(at, type) {
 // every event says how many sessions are still working, and since when the longest of them has been
 const tagged = event => ({ ...event, working: state.working, since: state.since });
 
-// Esc stops the agent without a Stop hook; its transcript then ends on the interruption, after your last prompt
-function interrupted(w) {
-  let lines;
+// the last lines of a session's transcript
+function tail(w) {
   try {
     const fd = fs.openSync(w.transcript, 'r');
     try {
       const size = fs.fstatSync(fd).size, n = Math.min(size, 65536), buf = Buffer.alloc(n);
       fs.readSync(fd, buf, 0, n, size - n);
-      lines = buf.toString('utf8').split('\n');
+      return buf.toString('utf8').split('\n');
     } finally { fs.closeSync(fd); }
-  } catch (e) { return false; }
+  } catch (e) { return []; }
+}
+
+// Esc stops the agent without a Stop hook; its transcript then ends on the interruption, after your last prompt
+function interrupted(w) {
+  const lines = tail(w);
   for (let i = lines.length - 1; i >= 0; i--) {
     let e; try { e = JSON.parse(lines[i]); } catch (err) { continue; }
     if ((e.type !== 'user' && e.type !== 'assistant') || e.isSidechain) continue;
@@ -112,6 +120,74 @@ setInterval(() => {
   broadcast(event);
   log(event);
 }, 5000).unref();
+
+// the Claude app's Code tab runs Claude Code too, but tells it about a permission prompt 6 s late, as the app answers some
+// asks for its own tools itself. The app logs each prompt it does show, the moment it shows it
+const APP_LOG = path.join(os.homedir(), 'Library', 'Logs', 'Claude', 'main.log');
+const APP_ASK = /Emitted tool permission request \S+ for (\S+) in session /;
+
+function entries(w) {
+  return tail(w).map(line => { try { return JSON.parse(line); } catch (e) { return null; } }).filter(e => e && typeof e === 'object');
+}
+
+// Claude Code writes where it was started from into every transcript line
+function fromApp(w) {
+  if (!('app' in w)) {
+    const e = entries(w).find(e => e.entrypoint);
+    if (e) w.app = String(e.entrypoint).startsWith('claude-desktop');
+  }
+  return w.app === true;
+}
+
+// the tools the session called that have no result yet
+function waitingOn(w) {
+  const calls = new Map();
+  for (const e of entries(w)) {
+    if (e.isSidechain) continue;
+    const c = (e.message || {}).content;
+    for (const x of Array.isArray(c) ? c : []) {
+      if (x && x.type === 'tool_use') calls.set(x.id, x.name);
+      else if (x && x.type === 'tool_result') calls.delete(x.tool_use_id);
+    }
+  }
+  return new Set(calls.values());
+}
+
+function asked(tool) {
+  let apps = [...working].filter(([, w]) => fromApp(w)).map(([s]) => s);
+  // with several sessions working in the app, the one waiting on that tool is the one asking
+  if (apps.length > 1) apps = apps.filter(s => waitingOn(working.get(s)).has(tool));
+  // still unsure which: Claude Code's own notice comes 6 s later and tells
+  if (apps.length !== 1) return;
+  const now = Date.now();
+  working.delete(apps[0]);
+  settle(now, 'done');
+  const event = tagged({ type: 'done', at: now, session: apps[0], reason: 'Notification', auto: false });
+  broadcast(event);
+  log(event);
+}
+
+let appLog = null;
+setInterval(() => {
+  try {
+    const st = fs.statSync(APP_LOG);
+    // the app starts a new log when one fills up; the first time round only what comes next counts
+    if (!appLog || st.ino !== appLog.ino || st.size < appLog.at) {
+      appLog = { ino: st.ino, at: appLog ? 0 : st.size, rest: '' };
+    }
+    if (st.size <= appLog.at) return;
+    const fd = fs.openSync(APP_LOG, 'r');
+    const buf = Buffer.alloc(st.size - appLog.at);
+    try { fs.readSync(fd, buf, 0, buf.length, appLog.at); } finally { fs.closeSync(fd); }
+    appLog.at = st.size;
+    const lines = (appLog.rest + buf.toString('utf8')).split('\n');
+    appLog.rest = lines.pop();
+    for (const line of lines) {
+      const m = APP_ASK.exec(line);
+      if (m) asked(m[1]);
+    }
+  } catch (e) {}
+}, 250).unref();
 
 function readBody(req) {
   return new Promise(resolve => {
