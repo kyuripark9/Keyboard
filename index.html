@@ -1992,7 +1992,7 @@ void main() {
         for (let k = Math.floor(rand(1, 5)); k--;) this.fleck(F0, x + rand(-2, 2) * c, y + rand(-2, 2) * c, c * rand(.5, 1), 1);
       }
       for (let o = 0; o < N; o++) base[o] *= 1 - F0[o];
-      this.base0 = base.slice(); this.J = Float32Array.from({ length: N }, () => rand(-.25, .25)); this.pale();
+      this.base0 = base.slice(); this.pale();
       this.DP = new Float32Array(N); this.CV = new Float32Array(N); this.HP = new Float32Array(N); this.FL = new Float32Array(N);
       // TO: each cell's tone as last drawn, and GONE: until when its dot has fallen out of a path
       this.TO = new Float32Array(N); this.GONE = new Float64Array(N);
@@ -2021,15 +2021,16 @@ void main() {
       this.cuts = []; this.beads = []; this.dir = [1, 0]; this.last = null; this.dirty = true;
       this.field(0);
     },
-    // by the logo, the arrows and the tally the soap is printed paler, in small dots that leave the ink room to read. Its
-    // edge wobbles in the same bays and points as a cut's and frays into single dots, so it shows like the print's own
-    // lighter mottle; it is only the untouched soap, so a path still cuts and heaps across them. The tally is measured
-    // as wide as its line is now, and again whenever that line changes
+    // by the logo, the arrows and the tally the soap is printed paler, in small dots that leave the ink room to read. It
+    // eases back into the checkerboard over about ten dots, keeping its mottle, and how far it reaches wobbles in the
+    // same bays and points as a cut's, so it shows like the print's own lighter mottle with no edge to it; it is only the
+    // untouched soap, so a path still cuts and heaps across them. The tally is measured as wide as its line is now, and
+    // again whenever that line changes
     pale() {
-      const { c, nx, ny, E, J, base, base0 } = this, M = inkMarks(0);
+      const { c, nx, ny, E, base, base0 } = this, M = inkMarks(0);
       for (let j = 0, o = 0; j < ny; j++) for (let i = 0; i < nx; i++, o++) {
-        const K = clamp(1 - (markDist(M, i * c, j * c) - c * (1.5 + 2.5 * (1 + E[o]))) / (c * 4) + J[o], 0, 1);
-        base[o] = base0[o] + (.25 - base0[o]) * K * K * (3 - 2 * K);
+        const d = Math.max(0, markDist(M, i * c, j * c) - c * 1.5 * (1 + E[o])) / (c * 10);
+        base[o] = base0[o] * (1 - .5 * Math.exp(-d * d));
       }
       const ty = document.querySelector('.tally').getBoundingClientRect();
       this.ty = ty.width + 'x' + ty.height;
