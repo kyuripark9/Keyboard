@@ -31,7 +31,7 @@ body[data-scene="wax"]    { --bg: #c3c6db; --ink: #2d345d; --ink-soft: #60678b; 
 body[data-scene="laser"]  { --bg: #d9d8de; --ink: #2a5fa8; --ink-soft: #747990; --line: rgba(42,95,168,.16); --acc: #f2803e; --cursor: #2a5fa8; color-scheme: light; }
 body[data-scene="gummy"]  { --bg: #e8ecea; --ink: #8c1f4f; --ink-soft: #a5486f; --line: rgba(140,31,79,.15); --acc: #8c1f4f; --cursor: #8c1f4f; color-scheme: light; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
-body[data-scene="soap"]   { --bg: #ebead6; --ink: #4f1534; --ink-soft: #66284a; --line: rgba(79,21,52,.32); --acc: #bd4885; --cursor: #4f1534; color-scheme: light; }
+body[data-scene="soap"]   { --bg: #ebead6; --ink: #4f1534; --ink-soft: #571d3d; --line: rgba(79,21,52,.32); --acc: #bd4885; --cursor: #4f1534; color-scheme: light; }
 body[data-scene="snow"]   { --bg: #9ca6e2; --ink: #252a5e; --ink-soft: #4a5088; --line: rgba(37,42,94,.18); --acc: #e8dcb2; --cursor: #252a5e; color-scheme: light; }
 body[data-scene="grit"]   { --bg: #acdc98; --ink: #183c94; --ink-soft: #2d5aac; --line: rgba(24,60,148,.18); --acc: #183c94; --cursor: #183c94; color-scheme: light; }
 
@@ -1943,7 +1943,7 @@ void main() {
   /* 08 Soap Cutting: a bar of soap printed as a magenta halftone on cream paper, after a halftone print: a 45° screen of
      dots that comes out as a checkerboard at the soap's middle tone, mottled a little darker and lighter, with a few
      cream flecks in it. Along the top and the bottom, where the logo, the arrows and the tally sit, it fades paler into
-     small dots, so the ink on it stays easy to read. Every step shaves a path along the way the cursor travels, down to the cream paper with a
+     fine dots, so the ink on it stays easy to read. Every step shaves a path along the way the cursor travels, down to the cream paper with a
      ragged edge like a coastline: the shaved soap heaps up along it in solid magenta that opens into cream holes as it
      fades back into the checkerboard, the paper keeps a few dots close to the edge, and now and then a fleck of cream
      flies off into the soap. About one in four of the dots the path cuts away comes loose just as the cut reaches it,
@@ -2015,17 +2015,18 @@ void main() {
       this.cuts = []; this.beads = []; this.dir = [1, 0]; this.last = null; this.dirty = true;
       this.field(0);
     },
-    // along the top and the bottom of the screen the soap is printed paler, in small dots that leave the logo, the arrows
-    // and the tally room to read. Under the top row and from the tally's top down it is palest, and it eases back into
-    // the checkerboard over about 12 dots, keeping its mottle, how far it reaches wobbling in the same bays and points
-    // as a cut's. It is only the untouched soap, so a path still cuts and heaps across them. The tally is measured again
-    // whenever its top moves
+    // along the top and the bottom of the screen the soap is printed paler, in fine dots that leave the logo, the arrows
+    // and the tally room to read. Under the top row and from the tally's top down it is palest, at about a sixth of its
+    // tone, so the dots there are specks much finer than the letters' strokes, and it eases back into the checkerboard
+    // over about 14 dots, keeping its mottle, how far it reaches wobbling in the same bays and points as a cut's. It is
+    // only the untouched soap, so a path still cuts and heaps across them. The tally is measured again whenever its top
+    // moves
     pale() {
       const { c, nx, ny, E, base, base0 } = this, hb = document.querySelector('.top').getBoundingClientRect().bottom;
       const tt = this.tt = document.querySelector('.tally').getBoundingClientRect().top;
       for (let j = 0, o = 0; j < ny; j++) for (let i = 0; i < nx; i++, o++) {
-        const d = Math.max(0, Math.min(j * c - hb, tt - j * c) - c * 1.5 * (1 + E[o])) / (c * 12);
-        base[o] = base0[o] * (1 - .5 * Math.exp(-d * d));
+        const d = Math.max(0, Math.min(j * c - hb, tt - j * c) - c * 1.5 * (1 + E[o])) / (c * 14);
+        base[o] = base0[o] * (1 - .84 * Math.exp(-d * d));
       }
     },
     // the heap of shaved soap in cell q, dd px past a path's edge: solid for about R1, then fading back into the soap
