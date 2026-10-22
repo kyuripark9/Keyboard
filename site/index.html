@@ -128,22 +128,27 @@ section { padding-block: var(--sec); }
 /* ---------- a material opens clack itself in a window over the page, as big as the screen allows ---------- */
 .dlg { width: min(1200px, calc(100vw - 2 * var(--gut))); height: min(840px, calc(100svh - 48px)); max-width: none; max-height: none;
   margin: auto; padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: var(--bg); color: var(--ink);
-  box-shadow: 0 0 0 .5px rgba(0,0,0,.12), 0 32px 80px rgba(0,0,0,.28); }
+  box-shadow: 0 0 0 .5px rgba(0,0,0,.12), 0 32px 80px rgba(0,0,0,.28); container-type: size; }
 .dlg[open] { display: flex; flex-direction: column; animation: rise .3s cubic-bezier(.2,.8,.2,1); }
 .dlg::backdrop { background: rgba(10,10,10,.42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .dlg[open]::backdrop { animation: fade .3s ease-out; }
 @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.985); } }
 @keyframes fade { from { opacity: 0; } }
 html:has(.dlg[open]) { overflow: hidden; }
-/* along its top: the material that's up after a cobalt square, with its number, how to start and the way out */
-.dlg .top { display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 8px 0 20px; border-bottom: 1px solid var(--line); }
-.dlg .now { display: inline-flex; align-items: center; gap: 12px; margin-right: auto; min-width: 0; white-space: nowrap; }
-.dlg .now::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--accent); }
-.dlg .now .idx, .dlg .hint { color: var(--ink-3); font-weight: 400; }
-.dlg .x { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: none;
-  color: var(--ink); cursor: pointer; transition: background-color .15s; }
-.dlg .x:hover { background: var(--bg-2); }
+/* clack fills it to the edges. In its two top corners, level with clack's logo, sit the sound, which shows whether
+   clack is heard and mutes or unmutes it, and the way out, on white chips that read over every picture */
+.dlg .ctl { --at: 12px; position: absolute; top: var(--at); z-index: 1; display: grid; place-items: center; width: 36px; height: 36px; padding: 0;
+  border: 0; border-radius: 50%; color: var(--ink); background: rgba(255,255,255,.9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  box-shadow: 0 0 0 .5px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.12); cursor: pointer; transition: background-color .15s, transform .15s; }
+.dlg .ctl:hover { background: #fff; transform: scale(1.06); }
+.dlg .snd { left: var(--at); }
+.dlg .snd svg { width: 16px; height: 16px; }
+.dlg .snd .off, .dlg .snd.muted .on { display: none; }
+.dlg .snd.muted .off { display: inline; }
+.dlg .x { right: var(--at); }
 .dlg .x svg { width: 12px; height: 12px; }
+/* on a short screen clack's top row tightens up, and the chips move up with its logo */
+@container (max-height: 520px) { .dlg .ctl { --at: 6px; width: 32px; height: 32px; } }
 /* the screen shows the material's own colour until clack has loaded on it */
 .screen { position: relative; flex: 1; background: var(--bgc, var(--bg-2)); }
 .screen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity .3s; }
@@ -263,8 +268,6 @@ footer .mono { color: var(--ink-3); }
   .mats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 14px; }
   .mat h3 { font-size: 17px; margin-top: 14px; }
   .dlg { width: 100%; height: 100%; border-radius: 0; }
-  .dlg .top { padding-left: var(--gut); }
-  .dlg .hint { display: none; }
   .band { overflow-x: auto; scrollbar-width: none; }
   .band li { flex: 0 0 22%; }
   .band li:hover, .band li:focus-within { flex-grow: 0; }
@@ -467,11 +470,9 @@ footer .mono { color: var(--ink-3); }
 </footer>
 
 <dialog class="dlg" id="dlg" aria-labelledby="now">
-  <div class="top">
-    <p class="now mono" id="now"><span id="nowName">Crunchy Slime</span><span class="idx" id="nowNo">[01]</span></p>
-    <span class="hint mono">Sound on · move, press and drag</span>
-    <button class="x mono" id="close" type="button">Close<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9m0-9l-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-  </div>
+  <p class="sr" id="now"><span id="nowName">Crunchy Slime</span> <span id="nowNo">[01]</span></p>
+  <button class="ctl snd" id="snd" type="button" aria-label="Mute" title="Mute"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h3.5L11 5v14l-4.5-4H3z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path class="on" d="M15 9a4.2 4.2 0 0 1 0 6m2.8-8.8a8.2 8.2 0 0 1 0 11.6"/><path class="off" d="M15.5 9.5l5 5m0-5l-5 5"/></g></svg></button>
+  <button class="ctl x" id="close" type="button" aria-label="Close" title="Close (Esc)" autofocus><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9m0-9l-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
   <div class="screen" id="screen"></div>
 </dialog>
 
@@ -502,6 +503,7 @@ $('mats').innerHTML = MATS.map((m, i) => `<li class="mat"><button type="button" 
 // picking a material opens clack itself (play/, same origin) on it in a window over the page; closing the window takes
 // clack away again, so nothing keeps playing or drawing behind the page
 const dlg = $('dlg'), view = $('screen');
+let clack = null, muted = false;
 function show(id) {
   const i = MATS.findIndex(m => m.id === id);
   if (i < 0) return;
@@ -511,6 +513,7 @@ function show(id) {
 }
 function play(id) {
   show(id);
+  clack = null;
   const frame = document.createElement('iframe');
   frame.src = 'play/'; frame.title = 'clack'; frame.allow = 'autoplay; clipboard-write';
   frame.addEventListener('load', () => {
@@ -518,7 +521,8 @@ function play(id) {
     try { c = frame.contentWindow.__clack || null; } catch (e) {}
     if (c) {
       const doc = frame.contentDocument;
-      c.set({ sound: id });
+      clack = c;
+      c.set({ sound: id, muted });
       c.initAudio(); // the click that opened it lets the sound start at once, where the browser allows
       // the arrows and keys inside clack switch it too
       new MutationObserver(() => show(c.S.sound)).observe(doc.body, { attributes: true, attributeFilter: ['data-scene'] });
@@ -534,13 +538,20 @@ function play(id) {
   view.replaceChildren(frame);
   dlg.showModal();
 }
-function shut() { dlg.close(); view.replaceChildren(); }
-dlg.addEventListener('close', () => view.replaceChildren()); // Esc outside clack closes it natively
+function shut() { dlg.close(); view.replaceChildren(); clack = null; }
+dlg.addEventListener('close', () => { view.replaceChildren(); clack = null; }); // Esc outside clack closes it natively
 // a click on the dimmed page around it closes it, as long as it started there
 let outside = false;
 dlg.addEventListener('pointerdown', e => { outside = e.target === dlg; });
 dlg.addEventListener('click', e => { if (outside && e.target === dlg) shut(); });
 $('close').addEventListener('click', shut);
+// the sound chip mutes and unmutes clack, and the next material you open stays the way you left it
+$('snd').addEventListener('click', () => {
+  muted = !muted;
+  const b = $('snd'), label = muted ? 'Unmute' : 'Mute';
+  b.classList.toggle('muted', muted); b.setAttribute('aria-label', label); b.title = label;
+  if (clack) clack.set({ muted });
+});
 const playIt = e => { const b = e.target.closest('button'); if (b) play(b.dataset.id); };
 $('mats').addEventListener('click', playIt);
 $('band').addEventListener('click', playIt);
