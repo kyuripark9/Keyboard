@@ -945,11 +945,12 @@ const SCENES = {
       this.L = new Float32Array(this.cols * this.rows); this.jit = new Float32Array(this.cols * this.rows);
       for (let i = 0; i < this.jit.length; i++) this.jit[i] = .85 + .3 * Math.random();
       this.G = new Float32Array(64 * 64); for (let i = 0; i < this.G.length; i++) this.G[i] = Math.random();
-      // how far each dot is from the logo, the arrows and the tally (wide enough for its longest agent line): 1 next to
-      // them, easing to 0 over a ragged band, so the patches drift around them instead of over them
+      // how far each dot is from the logo, the arrows (every .edge button, so the menu bar's corner button too) and the
+      // tally (wide enough for its longest agent line): 1 next to them, easing to 0 over a ragged band, so the patches
+      // drift around them instead of over them
       const box = e => e.getBoundingClientRect(), lg = box(document.querySelector('.brand h1')), pg = box(document.getElementById('page')), ty = box(document.querySelector('.tally'));
       const tw = Math.max(ty.width / 2, 150), keep = [[lg.left, Math.min(lg.top, pg.top), Math.max(lg.right, pg.right), lg.bottom],
-        box(document.getElementById('prev')), box(document.getElementById('next')), [ty.left + ty.width / 2 - tw, ty.top, ty.left + ty.width / 2 + tw, ty.bottom]]
+        ...[...document.querySelectorAll('.edge')].map(box), [ty.left + ty.width / 2 - tw, ty.top, ty.left + ty.width / 2 + tw, ty.bottom]]
         .map(r => Array.isArray(r) ? r : [r.left, r.top, r.right, r.bottom]);
       this.K = new Float32Array(this.cols * this.rows);
       for (let j = 0; j < this.rows; j++) for (let i = 0; i < this.cols; i++) {

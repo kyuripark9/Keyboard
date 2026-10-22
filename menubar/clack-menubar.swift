@@ -7,7 +7,8 @@
 //
 // Click it to open clack (http://localhost:4545 in a popover), which stays over your other apps while you work in them
 // until you click the ring again or press Esc in it; right-click or Control-click for the menu. Drag its left, right or
-// bottom edge to make it bigger or smaller, or pick a size in the menu. The state comes from the bridge's /events stream, the same one the page listens to.
+// bottom edge to make it bigger or smaller, pick a size in the menu, or click the arrows in its bottom right corner to
+// expand it to Full Height and back. The state comes from the bridge's /events stream, the same one the page listens to.
 // Build it with build.sh next to this file.
 import AppKit
 import WebKit
@@ -164,16 +165,22 @@ final class Web: WKWebView {
 }
 
 // clack itself, kept loaded between openings so it opens at once and keeps its place
-final class Page: NSViewController, WKNavigationDelegate, WKUIDelegate {
+final class Page: NSViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
   let web: Web
   private(set) var failed = false
+  // the corner button asks for Full Height and back; full is whether clack is at Full Height now, which it shows
+  var onSize: () -> Void = {}
+  var full = false { didSet { showFull() } }
 
   init() {
     let config = WKWebViewConfiguration()
     config.mediaTypesRequiringUserActionForPlayback = []
-    config.userContentController.addUserScript(WKUserScript(source: Edges.script, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+    for s in [Edges.script, Page.corner] {
+      config.userContentController.addUserScript(WKUserScript(source: s, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+    }
     web = Web(frame: NSRect(origin: .zero, size: App.unit), configuration: config)
     super.init(nibName: nil, bundle: nil)
+    config.userContentController.add(self, name: "clack")
     web.navigationDelegate = self
     web.uiDelegate = self
     if #available(macOS 13.3, *) { web.isInspectable = true }
@@ -187,6 +194,37 @@ final class Page: NSViewController, WKNavigationDelegate, WKUIDelegate {
   func webView(_ w: WKWebView, didCommit nav: WKNavigation!) {
     if w.url?.host == base.host { failed = false }
   }
+
+  func webView(_ w: WKWebView, didFinish nav: WKNavigation!) { showFull() }
+
+  func userContentController(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
+    if m.body as? String == "size" { onSize() }
+  }
+
+  private func showFull() { web.evaluateJavaScript("window.clackFull?.(\(full))") }
+
+  // the corner button, at the bottom right in the picture's own ink like the arrows: it expands clack to Full Height
+  // and shrinks it back again. It's one of the page's .edge buttons, so the ring cursor stays over it and it never plays
+  static let corner = """
+  (() => {
+    if (!document.getElementById('app')) return; // clack itself, not the offline note
+    const out = '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>', into = '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>';
+    const st = document.createElement('style');
+    st.textContent = `.edge.size { position: fixed; right: 2px; bottom: 2px; margin: 0; z-index: 2; }
+      .edge.size svg { width: 22px; height: 22px; transition: transform .15s; }
+      .edge.size:hover svg { transform: scale(1.12); }
+      @media (prefers-reduced-motion: reduce) { .edge.size svg { transition: none; } }`;
+    const b = document.createElement('button');
+    b.className = 'edge size'; b.type = 'button';
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></svg>';
+    window.clackFull = full => { b.firstChild.innerHTML = full ? into : out; b.setAttribute('aria-label', full ? 'Shrink clack' : 'Expand clack'); };
+    clackFull(false);
+    b.addEventListener('click', () => webkit.messageHandlers.clack.postMessage('size'));
+    document.head.append(st); document.body.append(b);
+    // the pictures that keep clear of the arrows measured them before this was here
+    dispatchEvent(new Event('resize'));
+  })();
+  """
 
   func webView(_ w: WKWebView, didFailProvisionalNavigation nav: WKNavigation!, withError error: Error) {
     // a load cut short by the next one isn't the bridge being down
@@ -261,11 +299,12 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     popover.contentViewController = page
-    popover.contentSize = wanted()
+    sized()
     // closed only from the ring: clicks in other apps and switching apps leave it open, so clack stays beside your agent
     popover.behavior = .applicationDefined
     popover.animates = true
     page.web.onEdges = { [weak self] edges, e in self?.drag(edges, e) }
+    page.onSize = { [weak self] in self?.toggleFull() }
 
     statusLine.isEnabled = false
     menu.delegate = self
@@ -432,7 +471,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     guard let b = item.button else { return }
     if page.failed { page.load() }
     // its size again for the screen the ring is on now
-    popover.contentSize = wanted()
+    sized()
     // the popover takes the keyboard, so clack's keys play; the app you were in gets it back when it closes
     NSApp.activate(ignoringOtherApps: true)
     popover.show(relativeTo: b.bounds, of: b, preferredEdge: .minY)
@@ -487,9 +526,28 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     return fit(NSSize(width: App.unit.width * k, height: App.unit.height * k))
   }
 
+  // the size it should have on the screen the ring is on now, and the corner button showing which way it goes
+  private func sized() {
+    popover.contentSize = wanted()
+    page.full = defaults.string(forKey: "size") == "full"
+  }
+
+  // going to Full Height remembers the size it came from (unfull), for the corner button to go back to
+  private func setSize(_ key: String) {
+    let was = defaults.string(forKey: "size") ?? "small"
+    if key == "full" && was != "full" { defaults.set(was, forKey: "unfull") }
+    defaults.set(key, forKey: "size")
+    sized()
+  }
+
   @objc private func pickSize(_ it: NSMenuItem) {
-    defaults.set(it.representedObject as? String, forKey: "size")
+    setSize(it.representedObject as? String ?? "small")
     open()
+  }
+
+  // the corner button: as big as it goes, and back to the size you had
+  private func toggleFull() {
+    setSize(defaults.string(forKey: "size") == "full" ? defaults.string(forKey: "unfull") ?? "small" : "full")
   }
 
   // the edge you hold follows the cursor. The popover hangs centred under the ring, so a side moves half of what the
@@ -514,9 +572,9 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     default:
       popover.animates = true
       if let g = grab, size != g.size {
-        defaults.set("custom", forKey: "size")
         defaults.set(Double(size.width), forKey: "width")
         defaults.set(Double(size.height), forKey: "height")
+        setSize("custom")
       }
       grab = nil
     }

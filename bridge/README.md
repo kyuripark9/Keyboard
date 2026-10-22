@@ -29,10 +29,11 @@ bar app). If they are missing, the installer opens Apple's window to install the
 - **In the menu bar**: clack's ring sits at the top right of the screen whatever app you're in (Claude, ChatGPT, a
   terminal). Click it and clack opens under it, and stays there over your other apps while you click and type in them
   until you click the ring again or press Esc in it. Drag clack's left, right or bottom edge to make it bigger or
-  smaller. The ring shows your agent without opening anything: it breathes while the agent works, holds still with its
-  dot filled in when it's done, and dims when the bridge is offline. Right-click it to pick a size (Small, Medium,
-  Large, or Full Height down to the Dock), open clack in your browser, reload it, choose whether it opens at login (it
-  does unless you turn that off) or quit it.
+  smaller, or click the arrows in its bottom right corner to expand it to Full Height and shrink it back. The ring
+  shows your agent without opening anything: it breathes while the agent works, holds still with its dot filled in
+  when it's done, and dims when the bridge is offline. Right-click it to pick a size (Small, Medium, Large, or Full
+  Height down to the Dock), open clack in your browser, reload it, choose whether it opens at login (it does unless
+  you turn that off) or quit it.
 - **As its own app**: open http://localhost:4545 in Chrome or Edge and click the install icon in the address bar, or in
   Safari choose *File > Add to Dock*. clack then opens from the Dock in its own window, which you can keep next to the
   Claude or ChatGPT app, a terminal or your editor.
