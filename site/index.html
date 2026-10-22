@@ -17,8 +17,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500&family=Xanh+Mono&display=swap">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap">
 <style>
-/* The clack website: one page with clack itself to play in a menu bar popover, the ten materials, how it lets go of
-   you, the three ways to have it (the browser, the Mac's menu bar, a browser extension) and what it keeps. The design
+/* The clack website: one page with the ten materials, each opening clack itself to play in a window over the page, how
+   it lets go of you, the three ways to have it (the browser, the Mac's menu bar, a browser extension) and what it keeps. The design
    system is quiet so the materials carry the colour: white paper, black type, grey for everything secondary, one
    cobalt accent, hairlines between rows, mono capitals for labels and a monospaced serif for the big words */
 :root {
@@ -47,7 +47,7 @@ img { display: block; }
 
 /* ---------- the parts every section uses ---------- */
 /* mono capitals: nav, labels, tags and the small print of numbers */
-.mono, .lbl, .tags li, .sh { font: 500 13px/1.2 var(--font-mono); letter-spacing: 0; text-transform: uppercase; }
+.mono, .tags li, .sh { font: 500 13px/1.2 var(--font-mono); letter-spacing: 0; text-transform: uppercase; }
 /* a section starts with its name after a cobalt square, its number at the far right and a hairline under both */
 .sh { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 16px; margin: 0 0 56px; border-bottom: 1px solid var(--line); }
 .sh span:first-child { display: inline-flex; align-items: center; gap: 12px; }
@@ -109,45 +109,8 @@ section { padding-block: var(--sec); }
 .band li:hover span b, .band button:focus-visible span b { display: inline; }
 .band button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-/* ---------- [01] play: clack under a menu bar on the left, the ten materials to pick from on the right ---------- */
-.playgrid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px 56px; align-items: stretch; }
-/* the stage: a corner of a Mac screen, its menu bar along the top and clack open under its ring */
-.stage { position: relative; display: flex; flex-direction: column; min-width: 0; background: var(--bg-2); }
-.menubar { display: flex; align-items: center; gap: 18px; height: 30px; padding: 0 16px; background: rgba(255,255,255,.72);
-  font: 500 12.5px/1 -apple-system, "SF Pro Text", var(--font-ui); color: var(--ink); white-space: nowrap; overflow: hidden; }
-.menubar .app { font-weight: 700; }
-.menubar .dim { color: var(--ink-2); }
-.menubar .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
-.menubar .ring { display: grid; place-items: center; width: 26px; height: 22px; border-radius: 6px; background: rgba(0,0,0,.09); }
-.menubar .ring svg { width: 15px; height: 15px; }
-.desk { flex: 1; display: flex; justify-content: flex-end; padding: 8px clamp(16px, 4vw, 48px) 48px; }
-.pop { position: relative; width: 400px; height: 600px; border-radius: 12px; overflow: hidden; background: #e6e6e6;
-  box-shadow: 0 0 0 .5px rgba(0,0,0,.12), 0 24px 56px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08); }
-.pop iframe { display: block; width: 100%; height: 100%; border: 0; }
-/* the picker: a row per material, the one that's up marked in cobalt; what to try and hear on it underneath */
-.picker { display: flex; flex-direction: column; min-width: 0; }
-.picker .lbl { margin: 0 0 12px; color: var(--ink-3); }
-.mlist { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
-.mlist button { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 30px 28px minmax(0, 1fr) 16px; align-items: center; gap: 14px;
-  width: 100%; padding: 8px 10px 8px 4px; border-bottom: 1px solid var(--line); cursor: pointer; color: var(--ink-2); transition: background-color .15s, color .15s; }
-.mlist button:hover { color: var(--ink); background: #fafafa; }
-.mlist button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.mlist .no { font: 400 12px/1 var(--font-mono); color: var(--ink-3); }
-.mlist img { width: 28px; height: 28px; object-fit: cover; background: var(--bgc, var(--bg-2)); }
-.mlist .nm { font: 500 16px/1.2 var(--font-ui); letter-spacing: -.015em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mlist .on { width: 8px; height: 8px; justify-self: end; background: var(--accent); opacity: 0; transition: opacity .15s; }
-.mlist button[aria-pressed="true"] { color: var(--ink); background: var(--bg-2); }
-.mlist button[aria-pressed="true"] .on { opacity: 1; }
-.cap { margin-top: 28px; }
-.cap dl { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px 16px; margin: 0; }
-.cap dt { padding-top: 3px; font: 500 12px/1.2 var(--font-mono); text-transform: uppercase; color: var(--ink-3); }
-.cap dd { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
-.cap dd b { color: var(--ink); font-weight: 500; }
-.picker .fine { margin-top: auto; padding-top: 24px; }
-.picker .fine b { color: var(--ink-2); font-weight: 500; }
-
-/* ---------- [02] the ten materials, in their own pictures ---------- */
-.mats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 48px 20px; margin: 0; padding: 0; list-style: none; }
+/* ---------- [01] the ten materials, in their own pictures, each a way into clack ---------- */
+.mats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 40px 20px; margin: 0; padding: 0; list-style: none; }
 .mat button { all: unset; display: block; width: 100%; cursor: pointer; }
 .mat .ph { position: relative; display: block; aspect-ratio: 2 / 3; overflow: hidden; background: var(--bgc, var(--bg-2)); }
 .mat .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
@@ -156,10 +119,32 @@ section { padding-block: var(--sec); }
 .mat button:hover .ph img, .mat button:focus-visible .ph img { transform: scale(1.04); }
 .mat button:hover .ph em, .mat button:focus-visible .ph em { opacity: 1; transform: none; }
 .mat button:focus-visible .ph { outline: 2px solid var(--accent); outline-offset: 3px; }
-.mat h3 { display: flex; align-items: flex-start; gap: 8px; margin: 18px 0 8px; font: 500 20px/1.15 var(--font-ui); letter-spacing: -.03em; }
+.mat h3 { display: flex; align-items: flex-start; gap: 8px; margin: 18px 0 0; font: 500 20px/1.15 var(--font-ui); letter-spacing: -.03em; }
 .mat h3 sup { font: 400 11px/1 var(--font-mono); letter-spacing: 0; color: var(--ink-3); margin-top: 1px; }
-.mat p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
-.mat p.hear { margin-top: 10px; font-size: 13.5px; color: var(--ink-3); }
+
+/* ---------- a material opens clack itself in a window over the page, as big as the screen allows ---------- */
+.dlg { width: min(1200px, calc(100vw - 2 * var(--gut))); height: min(840px, calc(100svh - 48px)); max-width: none; max-height: none;
+  margin: auto; padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: var(--bg); color: var(--ink);
+  box-shadow: 0 0 0 .5px rgba(0,0,0,.12), 0 32px 80px rgba(0,0,0,.28); }
+.dlg[open] { display: flex; flex-direction: column; animation: rise .3s cubic-bezier(.2,.8,.2,1); }
+.dlg::backdrop { background: rgba(10,10,10,.42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.dlg[open]::backdrop { animation: fade .3s ease-out; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.985); } }
+@keyframes fade { from { opacity: 0; } }
+html:has(.dlg[open]) { overflow: hidden; }
+/* along its top: the material that's up after a cobalt square, with its number, how to start and the way out */
+.dlg .top { display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 8px 0 20px; border-bottom: 1px solid var(--line); }
+.dlg .now { display: inline-flex; align-items: center; gap: 12px; margin-right: auto; min-width: 0; white-space: nowrap; }
+.dlg .now::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--accent); }
+.dlg .now .idx, .dlg .hint { color: var(--ink-3); font-weight: 400; }
+.dlg .x { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: none;
+  color: var(--ink); cursor: pointer; transition: background-color .15s; }
+.dlg .x:hover { background: var(--bg-2); }
+.dlg .x svg { width: 12px; height: 12px; }
+/* the screen shows the material's own colour until clack has loaded on it */
+.screen { position: relative; flex: 1; background: var(--bgc, var(--bg-2)); }
+.screen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity .3s; }
+.screen iframe.ready { opacity: 1; }
 
 /* ---------- rows: a heading on the left and what it means on the right, between hairlines ---------- */
 .rows { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
@@ -171,7 +156,7 @@ section { padding-block: var(--sec); }
 .row .v > p b { color: var(--ink); font-weight: 500; }
 .row .v > p.fine { margin: 16px 0 0; font-size: 14px; color: var(--ink-3); }
 
-/* [03] how it lets go: the three moments, each with a small picture of clack then */
+/* [02] how it lets go: the three moments, each with a small picture of clack then */
 .how .row { grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr); }
 .how figure { position: relative; margin: 0; aspect-ratio: 4 / 3; overflow: hidden; background: var(--bg-2); }
 .how figure img { width: 100%; height: 100%; object-fit: cover; }
@@ -184,7 +169,7 @@ section { padding-block: var(--sec); }
 .aside { max-width: 46em; margin: 32px 0 0; font-size: 15px; color: var(--ink-3); }
 .aside b { color: var(--ink-2); font-weight: 500; }
 
-/* [04] get it: one row per way, from nothing to install to the full Mac app */
+/* [03] get it: one row per way, from nothing to install to the full Mac app */
 .way .ico { width: 28px; height: 28px; color: var(--ink); }
 .way .go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 /* a line of Terminal or an address to copy: selectable whole, with a copy button at its end */
@@ -210,7 +195,7 @@ section { padding-block: var(--sec); }
 .steps li::before { content: counter(s, decimal-leading-zero); font: 400 12px/1 var(--font-mono); color: var(--ink-3); }
 .steps li b { color: var(--ink); font-weight: 500; }
 
-/* ---------- [05] what it keeps: the one dark section ---------- */
+/* ---------- [04] what it keeps: the one dark section ---------- */
 .dark { background: var(--inv); color: #fff; }
 .dark .sh { border-bottom-color: rgba(255,255,255,.16); }
 .dark .sh .idx { color: rgba(255,255,255,.5); }
@@ -244,10 +229,6 @@ footer .mono { color: var(--ink-3); }
 
 /* ---------- smaller screens ---------- */
 @media (max-width: 1120px) {
-  .playgrid { grid-template-columns: minmax(0, 1fr); }
-  .desk { justify-content: center; }
-  .mlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; border-top: 0; }
-  .mlist li:nth-child(-n+2) button { border-top: 1px solid var(--line); }
   .mats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .nav .clock { display: none; }
 }
@@ -260,7 +241,7 @@ footer .mono { color: var(--ink-3); }
   footer .wrap > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   footer .wrap > div > :first-child { grid-column: 1 / -1; }
 }
-/* on a phone the nav folds into a menu, and clack is the whole stage: no desk or menu bar, short enough to scroll past */
+/* on a phone the nav folds into a menu, and clack opens over the whole screen */
 @media (max-width: 760px) {
   :root { --bar-h: 60px; --gut: max(16px, env(safe-area-inset-left, 0px)); --sec: 80px; }
   .nav { position: absolute; top: var(--bar-h); left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0; margin: 0; padding: 4px var(--gut) 20px;
@@ -277,15 +258,11 @@ footer .mono { color: var(--ink-3); }
   .bar.open .menu i::before { transform: translateY(5px) rotate(45deg); }
   .bar.open .menu i::after { transform: translateY(-5px) rotate(-45deg); }
   .bar > .wrap > .btn { order: 3; }
-  .stage { background: none; }
-  .menubar { display: none; }
-  .desk { padding: 0; }
-  .pop { width: 100%; height: min(600px, 74svh); }
-  .mlist { grid-template-columns: minmax(0, 1fr); }
-  .mlist li:nth-child(2) button { border-top: 0; }
-  .mats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px 14px; }
-  .mat h3 { font-size: 17px; }
-  .mat p.hear { display: none; }
+  .mats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 14px; }
+  .mat h3 { font-size: 17px; margin-top: 14px; }
+  .dlg { width: 100%; height: 100%; border-radius: 0; }
+  .dlg .top { padding-left: var(--gut); }
+  .dlg .hint { display: none; }
   .band { overflow-x: auto; scrollbar-width: none; }
   .band li { flex: 0 0 22%; }
   .band li:hover, .band li:focus-within { flex-grow: 0; }
@@ -303,6 +280,7 @@ footer .mono { color: var(--ink-3); }
   html { scroll-behavior: auto; }
   .how .work figure span i { animation: none; }
   .band li:hover, .band li:focus-within { flex-grow: 1; }
+  .dlg[open], .dlg[open]::backdrop { animation: none; }
   *, *::before, *::after { transition: none !important; }
 }
 </style>
@@ -313,7 +291,6 @@ footer .mono { color: var(--ink-3); }
   <div class="wrap">
     <a class="logo" href="./" aria-label="clack home"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>clack</a>
     <nav class="nav" id="nav" aria-label="Sections">
-      <a href="#play">Play</a>
       <a href="#materials">Materials</a>
       <a href="#how">How it works</a>
       <a class="dup" href="#get">Get clack</a>
@@ -331,37 +308,15 @@ footer .mono { color: var(--ink-3); }
     <p class="lede">Something to press while your agent works. Ten materials that click, pop and squish under your cursor, and let go of you the moment your agent is done.</p>
     <p class="meta mono"><span>Mac menu bar</span><i>·</i><span>Any browser</span><i>·</i><span>Side panel</span></p>
     <div class="ctas">
-      <a class="btn" href="#play">Play it here ↓</a>
+      <a class="btn" href="#materials">Play it here ↓</a>
       <a class="btn ghost" href="#get">Get clack</a>
     </div>
   </div>
   <ul class="band" id="band" aria-label="The ten materials"></ul>
 
-  <section id="play">
-    <div class="wrap">
-      <div class="sh"><span>Play</span><span class="idx">[01]</span></div>
-      <h2 class="sr">Play clack</h2>
-      <div class="playgrid">
-        <div class="stage" id="try">
-          <div class="menubar" aria-hidden="true">
-            <span class="app">Terminal</span><span class="dim">Shell</span><span class="dim">Edit</span><span class="dim">View</span>
-            <span class="right"><span class="ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg></span><span id="mclock">Thu 10:42</span></span>
-          </div>
-          <div class="desk"><div class="pop"><iframe id="player" src="play/" title="clack: play it here" allow="autoplay; clipboard-write"></iframe></div></div>
-        </div>
-        <div class="picker">
-          <p class="lbl">Pick a material</p>
-          <ol class="mlist" id="chips" aria-label="Materials"></ol>
-          <div class="cap" id="caption" aria-live="polite"></div>
-          <p class="fine">Sound on, then move, press and drag inside clack. A demo agent stands in for yours here: press <b>try an agent wait</b> under the tally to feel it let go. <a href="play/">Play full screen ↗</a></p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section id="materials">
     <div class="wrap">
-      <div class="sh"><span>Materials</span><span class="idx">[02]</span></div>
+      <div class="sh"><span>Materials</span><span class="idx">[01]</span></div>
       <div class="intro">
         <h2>Ten materials, each with its own sound.</h2>
         <p>Each one is drawn after a print or a photo and synthesized live in the browser: no audio files, just soft attacks, rounded filters and small crisp details. Pick one to play it.</p>
@@ -372,7 +327,7 @@ footer .mono { color: var(--ink-3); }
 
   <section id="how" class="how">
     <div class="wrap">
-      <div class="sh"><span>How it works</span><span class="idx">[03]</span></div>
+      <div class="sh"><span>How it works</span><span class="idx">[02]</span></div>
       <div class="intro">
         <h2>It lets go the moment your agent is done.</h2>
         <p>Waiting on an agent is a strange few minutes: too short to start anything, long enough to drift into a feed. clack gives your hands something to do, then hands you back.</p>
@@ -409,7 +364,7 @@ footer .mono { color: var(--ink-3); }
 
   <section id="get">
     <div class="wrap">
-      <div class="sh"><span>Get clack</span><span class="idx">[04]</span></div>
+      <div class="sh"><span>Get clack</span><span class="idx">[03]</span></div>
       <div class="intro">
         <h2>Three ways to have it.</h2>
         <p>Keep it one click away in your Mac's menu bar, open it in your browser's side panel next to Claude or ChatGPT, or play it with nothing to install.</p>
@@ -472,7 +427,7 @@ footer .mono { color: var(--ink-3); }
 
   <section class="dark" id="privacy">
     <div class="wrap">
-      <div class="sh"><span>Privacy</span><span class="idx">[05]</span></div>
+      <div class="sh"><span>Privacy</span><span class="idx">[04]</span></div>
       <div class="keeps">
         <div>
           <h2 class="h2">It stays on your computer.</h2>
@@ -508,70 +463,88 @@ footer .mono { color: var(--ink-3); }
   <div class="wrap">
     <div>
       <span class="mono">clack · a sound toy</span>
-      <ul><li><a href="#play">Play</a></li><li><a href="#materials">Materials</a></li><li><a href="#how">How it works</a></li><li><a href="#get">Get clack</a></li></ul>
+      <ul><li><a href="#materials">Materials</a></li><li><a href="#how">How it works</a></li><li><a href="#get">Get clack</a></li></ul>
       <ul><li><a href="play/">Full screen ↗</a></li><li><a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md" target="_blank" rel="noopener">What it installs ↗</a></li><li><a href="https://github.com/kyuripark9/Keyboard" target="_blank" rel="noopener">GitHub ↗</a></li></ul>
     </div>
   </div>
 </footer>
 
+<dialog class="dlg" id="dlg" aria-labelledby="now">
+  <div class="top">
+    <p class="now mono" id="now"><span id="nowName">Crunchy Slime</span><span class="idx" id="nowNo">[01]</span></p>
+    <span class="hint mono">Sound on · move, press and drag</span>
+    <button class="x mono" id="close" type="button">Close<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9m0-9l-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+  </div>
+  <div class="screen" id="screen"></div>
+</dialog>
+
 <script>
-// the ten materials in clack's own order (SOUND_IDS in play/), with what to try on each, what it sounds like and the
-// colour its picture shows when the image hasn't loaded yet
+// the ten materials in clack's own order (SOUND_IDS in play/), with the colour its picture shows when the image hasn't
+// loaded yet
 const MATS = [
-  { id: 'slime', name: 'Crunchy Slime', bg: '#e6e6e6', try: 'Every step folds the sheet of stitches along a sharp crease, like crumpled paper.', hear: 'A wet press and a fizz of tiny crackles.' },
-  { id: 'cyano', name: 'Cyanotype', bg: '#3557b0', try: 'Trace over the blue to expose white dots. Go over a spot again and it turns solid.', hear: 'A soft breath of foam with a faint sizzle.' },
-  { id: 'bubble', name: 'Bubble Wrap', bg: '#72b4ed', try: 'Sweep across the contour map to pop the hills. Their ripples bounce back off the edges.', hear: 'A muffled pop that swoops up like a water drop.' },
-  { id: 'wax', name: 'Wax Ball', bg: '#c3c6db', try: 'Press through the lime squares like a thumb into clay. They shrink to diamonds and swell back.', hear: 'A dry snap, brittle crackles and a soft squish.' },
-  { id: 'thock', name: 'Thocky Keys', bg: '#d9d8de', try: 'Your cursor is a heat laser: holes burn open, grow into each other and cool through blue, pink and orange.', hear: 'A deep, muffled thock and a light tick.' },
-  { id: 'gummy', name: 'Chewy Jellies', bg: '#e8ecea', try: 'Drag a jelly into its neighbours, then pull them apart until the string of jelly snaps.', hear: 'Chewy and sticky: 쫀득, 쩍, 쩌저저적, 쫙.' },
-  { id: 'pudding', name: 'Pudding', bg: '#eed9b1', try: 'Brush over the soft green jellies: each one jiggles and turns red for a moment.', hear: 'A soft wet slap and a low, shivering wobble.' },
-  { id: 'soap', name: 'Soap Cutting', bg: '#ebead6', try: 'Shave a path down to the paper. Some of the dots you cut off tumble away like beads.', hear: 'A crisp, rising shave and the patter of falling flakes.' },
-  { id: 'snow', name: 'Squeaky Snow', bg: '#9ca6e2', try: 'Walk across it: each step washes out a print and sends ripples through the moiré.', hear: 'A hush and the fine creak of packing crystals (뽀드득).' },
-  { id: 'sugar', name: 'Sugar Slime', bg: '#acdc98', try: 'Rake three fingertips through the lime sugar, down to the blue slime underneath.', hear: 'A gentle, sandy 사각사각 and trickling sugar.' },
+  { id: 'slime', name: 'Crunchy Slime', bg: '#e6e6e6' },
+  { id: 'cyano', name: 'Cyanotype', bg: '#3557b0' },
+  { id: 'bubble', name: 'Bubble Wrap', bg: '#72b4ed' },
+  { id: 'wax', name: 'Wax Ball', bg: '#c3c6db' },
+  { id: 'thock', name: 'Thocky Keys', bg: '#d9d8de' },
+  { id: 'gummy', name: 'Chewy Jellies', bg: '#e8ecea' },
+  { id: 'pudding', name: 'Pudding', bg: '#eed9b1' },
+  { id: 'soap', name: 'Soap Cutting', bg: '#ebead6' },
+  { id: 'snow', name: 'Squeaky Snow', bg: '#9ca6e2' },
+  { id: 'sugar', name: 'Sugar Slime', bg: '#acdc98' },
 ];
 const $ = id => document.getElementById(id);
 const nn = i => String(i + 1).padStart(2, '0');
-const frame = $('player');
 
-$('chips').innerHTML = MATS.map((m, i) => `<li><button type="button" data-id="${m.id}" aria-pressed="false">` +
-  `<span class="no">${nn(i)}</span><img src="img/${m.id}.jpg" alt="" style="--bgc:${m.bg}" onerror="this.style.visibility='hidden'">` +
-  `<span class="nm">${m.name}</span><span class="on" aria-hidden="true"></span></button></li>`).join('');
 $('band').innerHTML = MATS.map((m, i) => `<li><button type="button" data-id="${m.id}" aria-label="Play ${nn(i)} ${m.name}" style="--bgc:${m.bg}">` +
   `<img src="img/${m.id}.jpg" alt="" onerror="this.remove()"><span>${nn(i)}<b>${m.name}</b></span></button></li>`).join('');
 $('mats').innerHTML = MATS.map((m, i) => `<li class="mat"><button type="button" data-id="${m.id}" aria-label="Play ${nn(i)} ${m.name}">` +
-  `<span class="ph" style="--bgc:${m.bg}"><img src="img/${m.id}.jpg" alt="" loading="lazy" onerror="this.remove()"><em>Play it ↑</em></span>` +
-  `<h3>${m.name}<sup>[${nn(i)}]</sup></h3><p>${m.try}</p><p class="hear">${m.hear}</p></button></li>`).join('');
+  `<span class="ph" style="--bgc:${m.bg}"><img src="img/${m.id}.jpg" alt="" loading="lazy" onerror="this.remove()"><em>Play it</em></span>` +
+  `<h3>${m.name}<sup>[${nn(i)}]</sup></h3></button></li>`).join('');
 
-// the player is clack itself (play/, same origin), so the page can read which material is up and switch it
-const clack = () => { try { return frame.contentWindow.__clack || null; } catch (e) { return null; } };
+// picking a material opens clack itself (play/, same origin) on it in a window over the page; closing the window takes
+// clack away again, so nothing keeps playing or drawing behind the page
+const dlg = $('dlg'), view = $('screen');
 function show(id) {
   const i = MATS.findIndex(m => m.id === id);
   if (i < 0) return;
-  const m = MATS[i];
-  for (const b of $('chips').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.id === id));
-  $('caption').innerHTML = `<dl><dt>Try</dt><dd><b>${m.name}.</b> ${m.try}</dd><dt>Hear</dt><dd>${m.hear}</dd></dl>`;
+  $('nowName').textContent = MATS[i].name;
+  $('nowNo').textContent = `[${nn(i)}]`;
+  view.style.setProperty('--bgc', MATS[i].bg);
 }
-function pick(id) {
-  const c = clack();
-  if (c) c.set({ sound: id });
+function play(id) {
   show(id);
+  const frame = document.createElement('iframe');
+  frame.src = 'play/'; frame.title = 'clack'; frame.allow = 'autoplay; clipboard-write';
+  frame.addEventListener('load', () => {
+    let c = null;
+    try { c = frame.contentWindow.__clack || null; } catch (e) {}
+    if (c) {
+      const doc = frame.contentDocument;
+      c.set({ sound: id });
+      c.initAudio(); // the click that opened it lets the sound start at once, where the browser allows
+      // the arrows and keys inside clack switch it too
+      new MutationObserver(() => show(c.S.sound)).observe(doc.body, { attributes: true, attributeFilter: ['data-scene'] });
+      // Esc closes the window too, unless it's closing clack's own install card or story first
+      frame.contentWindow.addEventListener('keydown', e => {
+        const card = doc.getElementById('get');
+        if (e.key === 'Escape' && !(card && !card.hidden) && !doc.body.classList.contains('story-open')) shut();
+      }, true);
+    }
+    frame.classList.add('ready');
+    frame.focus();
+  }, { once: true });
+  view.replaceChildren(frame);
+  dlg.showModal();
 }
-frame.addEventListener('load', () => {
-  const c = clack();
-  if (!c) return;
-  show(c.S.sound);
-  // the arrows and keys inside clack switch it too
-  new MutationObserver(() => show(c.S.sound)).observe(frame.contentDocument.body, { attributes: true, attributeFilter: ['data-scene'] });
-});
-show('slime');
-$('chips').addEventListener('click', e => { const b = e.target.closest('button'); if (b) pick(b.dataset.id); });
-const playIt = e => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  pick(b.dataset.id);
-  $('try').scrollIntoView({ block: 'center' });
-  frame.focus();
-};
+function shut() { dlg.close(); view.replaceChildren(); }
+dlg.addEventListener('close', () => view.replaceChildren()); // Esc outside clack closes it natively
+// a click on the dimmed page around it closes it, as long as it started there
+let outside = false;
+dlg.addEventListener('pointerdown', e => { outside = e.target === dlg; });
+dlg.addEventListener('click', e => { if (outside && e.target === dlg) shut(); });
+$('close').addEventListener('click', shut);
+const playIt = e => { const b = e.target.closest('button'); if (b) play(b.dataset.id); };
 $('mats').addEventListener('click', playIt);
 $('band').addEventListener('click', playIt);
 
@@ -597,12 +570,12 @@ const spy = new IntersectionObserver(entries => {
   for (const en of entries) if (en.isIntersecting)
     for (const a of links) a.setAttribute('aria-current', String(a.getAttribute('href') === '#' + en.target.id));
 }, { rootMargin: '-45% 0px -50% 0px' });
-for (const id of ['play', 'materials', 'how', 'get', 'privacy']) spy.observe($(id));
+for (const id of ['materials', 'how', 'get', 'privacy']) spy.observe($(id));
 
-// the clocks tell the real time, like the menu bar's
+// the clock tells the real time, like the menu bar's
 const tick = () => {
   const t = new Date().toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(',', '');
-  $('clock').textContent = $('mclock').textContent = t;
+  $('clock').textContent = t;
 };
 tick(); setInterval(tick, 15000);
 </script>
