@@ -31,7 +31,7 @@ body[data-scene="wax"]    { --bg: #c3c6db; --ink: #2d345d; --ink-soft: #60678b; 
 body[data-scene="laser"]  { --bg: #d9d8de; --ink: #2a5fa8; --ink-soft: #747990; --line: rgba(42,95,168,.16); --acc: #f2803e; --cursor: #2a5fa8; color-scheme: light; }
 body[data-scene="gummy"]  { --bg: #e8ecea; --ink: #8c1f4f; --ink-soft: #a5486f; --line: rgba(140,31,79,.15); --acc: #8c1f4f; --cursor: #8c1f4f; color-scheme: light; }
 body[data-scene="jelly"]  { --bg: #eed9b1; --ink: #17690a; --ink-soft: #7d6b45; --line: rgba(23,105,10,.16); --acc: #f31802; --cursor: #17690a; color-scheme: light; }
-body[data-scene="soap"]   { --bg: #ebead6; --ink: #4f1534; --ink-soft: #7d3d5f; --line: rgba(79,21,52,.18); --acc: #bd4885; --cursor: #4f1534; color-scheme: light; }
+body[data-scene="soap"]   { --bg: #ebead6; --ink: #4f1534; --ink-soft: #66284a; --line: rgba(79,21,52,.32); --acc: #bd4885; --cursor: #4f1534; color-scheme: light; }
 body[data-scene="snow"]   { --bg: #9ca6e2; --ink: #252a5e; --ink-soft: #4a5088; --line: rgba(37,42,94,.18); --acc: #e8dcb2; --cursor: #252a5e; color-scheme: light; }
 body[data-scene="grit"]   { --bg: #acdc98; --ink: #183c94; --ink-soft: #2d5aac; --line: rgba(24,60,148,.18); --acc: #183c94; --cursor: #183c94; color-scheme: light; }
 
@@ -837,6 +837,16 @@ function wrapText(ctx, txt, x, y, w, lh) {
 }
 const hexRGB = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 function mix(a, b, t) { const p = hexRGB(a), q = hexRGB(b); return `rgb(${p.map((v, i) => Math.round(v + (q[i] - v) * t)).join(',')})`; }
+// the marks set on the picture in its own ink: the logo with its page number, the two arrows and the tally (at least tw
+// to each side of its middle, to make room for a longer agent line), each as [left, top, right, bottom], and how far a
+// point is from the nearest of them
+function inkMarks(tw) {
+  const box = e => e.getBoundingClientRect(), lg = box(document.querySelector('.brand h1')), pg = box(document.getElementById('page')), ty = box(document.querySelector('.tally'));
+  tw = Math.max(ty.width / 2, tw);
+  return [[lg.left, Math.min(lg.top, pg.top), Math.max(lg.right, pg.right), lg.bottom], box(document.getElementById('prev')), box(document.getElementById('next')),
+    [ty.left + ty.width / 2 - tw, ty.top, ty.left + ty.width / 2 + tw, ty.bottom]].map(r => Array.isArray(r) ? r : [r.left, r.top, r.right, r.bottom]);
+}
+function markDist(M, x, y) { let d = 1e9; for (const [l, t, r, b] of M) d = Math.min(d, Math.hypot(Math.max(l - x, 0, x - r), Math.max(t - y, 0, y - b))); return d; }
 // a closed polygon with rounded corners, added to path p
 function roundPoly(p, P, r) {
   const L = P.length;
@@ -921,17 +931,13 @@ const SCENES = {
       this.L = new Float32Array(this.cols * this.rows); this.jit = new Float32Array(this.cols * this.rows);
       for (let i = 0; i < this.jit.length; i++) this.jit[i] = .85 + .3 * Math.random();
       this.G = new Float32Array(64 * 64); for (let i = 0; i < this.G.length; i++) this.G[i] = Math.random();
-      // how far each dot is from the logo, the arrows and the tally (wide enough for its longest agent line): 1 next to
-      // them, easing to 0 over a ragged band, so the patches drift around them instead of over them
-      const box = e => e.getBoundingClientRect(), lg = box(document.querySelector('.brand h1')), pg = box(document.getElementById('page')), ty = box(document.querySelector('.tally'));
-      const tw = Math.max(ty.width / 2, 150), keep = [[lg.left, Math.min(lg.top, pg.top), Math.max(lg.right, pg.right), lg.bottom],
-        box(document.getElementById('prev')), box(document.getElementById('next')), [ty.left + ty.width / 2 - tw, ty.top, ty.left + ty.width / 2 + tw, ty.bottom]]
-        .map(r => Array.isArray(r) ? r : [r.left, r.top, r.right, r.bottom]);
+      // how far each dot is from the logo, the arrows and the tally: 1 next to them, easing to 0 over a ragged band, so the
+      // patches drift around them instead of over them
+      const keep = inkMarks(150);
       this.K = new Float32Array(this.cols * this.rows);
       for (let j = 0; j < this.rows; j++) for (let i = 0; i < this.cols; i++) {
         const x = i * p + (j & 1) * p / 2 - p / 2, y = j * p / 2 - p / 2;
-        let d = 1e9; for (const [l, t, r, b] of keep) d = Math.min(d, Math.hypot(Math.max(l - x, 0, x - r), Math.max(t - y, 0, y - b)));
-        this.K[j * this.cols + i] = 1 - clamp((d - 14 - 40 * this.vn(x / 30, y / 30)) / 50, 0, 1);
+        this.K[j * this.cols + i] = 1 - clamp((markDist(keep, x, y) - 14 - 40 * this.vn(x / 30, y / 30)) / 50, 0, 1);
       }
       // dot sprites, one per size step, so a full screen of dots is cheap to stamp
       this.spr = [];
@@ -1918,7 +1924,8 @@ void main() {
 
   /* 08 Soap Cutting: a bar of soap printed as a magenta halftone on cream paper, after a halftone print: a 45° screen of
      dots that comes out as a checkerboard at the soap's middle tone, mottled a little darker and lighter, with a few
-     cream flecks in it. Every step shaves a path along the way the cursor travels, down to the cream paper with a
+     cream flecks in it. By the logo, the arrows and the tally the soap is printed paler, in small dots, so the ink on it
+     stays easy to read. Every step shaves a path along the way the cursor travels, down to the cream paper with a
      ragged edge like a coastline: the shaved soap heaps up along it in solid magenta that opens into cream holes as it
      fades back into the checkerboard, the paper keeps a few dots close to the edge, and now and then a fleck of cream
      flies off into the soap. About one in four of the dots the path cuts away comes loose just as the cut reaches it,
@@ -1961,6 +1968,7 @@ void main() {
         for (let k = Math.floor(rand(1, 5)); k--;) this.fleck(F0, x + rand(-2, 2) * c, y + rand(-2, 2) * c, c * rand(.5, 1), 1);
       }
       for (let o = 0; o < N; o++) base[o] *= 1 - F0[o];
+      this.base0 = base.slice(); this.J = Float32Array.from({ length: N }, () => rand(-.25, .25)); this.pale();
       this.DP = new Float32Array(N); this.CV = new Float32Array(N); this.HP = new Float32Array(N); this.FL = new Float32Array(N);
       // TO: each cell's tone as last drawn, and GONE: until when its dot has fallen out of a path
       this.TO = new Float32Array(N); this.GONE = new Float64Array(N);
@@ -1988,6 +1996,19 @@ void main() {
       }
       this.cuts = []; this.beads = []; this.dir = [1, 0]; this.last = null; this.dirty = true;
       this.field(0);
+    },
+    // by the logo, the arrows and the tally the soap is printed paler, in small dots that leave the ink room to read. Its
+    // edge wobbles in the same bays and points as a cut's and frays into single dots, so it shows like the print's own
+    // lighter mottle; it is only the untouched soap, so a path still cuts and heaps across them. The tally is measured
+    // as wide as its line is now, and again whenever that line changes
+    pale() {
+      const { c, nx, ny, E, J, base, base0 } = this, M = inkMarks(0);
+      for (let j = 0, o = 0; j < ny; j++) for (let i = 0; i < nx; i++, o++) {
+        const K = clamp(1 - (markDist(M, i * c, j * c) - c * (1.5 + 2.5 * (1 + E[o]))) / (c * 4) + J[o], 0, 1);
+        base[o] = base0[o] + (.25 - base0[o]) * K * K * (3 - 2 * K);
+      }
+      const ty = document.querySelector('.tally').getBoundingClientRect();
+      this.ty = ty.width + 'x' + ty.height;
     },
     // the heap of shaved soap in cell q, dd px past a path's edge: solid for about R1, then fading back into the soap
     // over R2
@@ -2097,6 +2118,10 @@ void main() {
     },
     draw(now, dt) {
       this.cuts = this.cuts.filter(s => now < s.t0 + this.CLOSE);
+      if (now - (this.tyT || 0) > 250) {
+        this.tyT = now; const ty = document.querySelector('.tally').getBoundingClientRect();
+        if (ty.width + 'x' + ty.height !== this.ty) { this.pale(); this.dirty = true; }
+      }
       // once the last path has closed, the picture is drawn once more and then kept
       if (this.cuts.length || this.dirty) {
         this.field(now); this.dirty = this.cuts.length > 0;
