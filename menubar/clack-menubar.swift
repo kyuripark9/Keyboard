@@ -6,7 +6,8 @@
 //   bridge offline                 the ring dims
 //
 // Click it to open clack (http://localhost:4545 in a popover), which stays over your other apps while you work in them
-// until you click the ring again or press Esc in it; right-click or Control-click for the menu. The state comes from the bridge's /events stream, the same one the page listens to.
+// until you click the ring again or press Esc in it; right-click or Control-click for the menu. Drag its left, right or
+// bottom edge to make it bigger or smaller, or pick a size in the menu. The state comes from the bridge's /events stream, the same one the page listens to.
 // Build it with build.sh next to this file.
 import AppKit
 import WebKit
@@ -99,21 +100,79 @@ final class Bridge: NSObject, URLSessionDataDelegate {
   }
 }
 
+// the popover's edges you drag to resize it: a strip along the left, the right and the bottom, and a square in each
+// bottom corner for both at once; the top hangs from the ring
+struct Edges: OptionSet {
+  let rawValue: Int
+  static let left = Edges(rawValue: 1), right = Edges(rawValue: 2), bottom = Edges(rawValue: 4)
+  static let strip = 6, corner = 16
+
+  init(rawValue: Int) { self.rawValue = rawValue }
+
+  // which edges a point in the page is on
+  init(_ p: NSPoint, in b: NSRect, flipped: Bool) {
+    let s = CGFloat(Edges.strip), c = CGFloat(Edges.corner)
+    let l = p.x - b.minX, r = b.maxX - p.x, up = flipped ? b.maxY - p.y : p.y - b.minY
+    var e: Edges = []
+    if l < s || (l < c && up < c) { e.insert(.left) }
+    if r < s || (r < c && up < c) { e.insert(.right) }
+    if up < s || (up < c && (l < c || r < c)) { e.insert(.bottom) }
+    self = e
+  }
+
+  // the same edges laid over the page, so they show a resize cursor instead of clack's ring, and the page sees the
+  // pointer leave when it reaches them rather than playing or holding a key there
+  static let script = """
+  (() => {
+    const s = \(strip), c = \(corner);
+    for (const [at, cursor] of [
+      [`left:0;top:0;bottom:0;width:${s}px`, 'ew-resize'], [`right:0;top:0;bottom:0;width:${s}px`, 'ew-resize'],
+      [`left:0;right:0;bottom:0;height:${s}px`, 'ns-resize'],
+      [`left:0;bottom:0;width:${c}px;height:${c}px`, 'nesw-resize'], [`right:0;bottom:0;width:${c}px;height:${c}px`, 'nwse-resize'],
+    ]) {
+      const d = document.createElement('div');
+      d.style.cssText = `position:fixed;${at};z-index:2147483647;cursor:${cursor} !important`;
+      d.addEventListener('pointermove', e => e.stopPropagation());
+      d.addEventListener('pointerenter', e => document.dispatchEvent(new PointerEvent('pointerleave', { pointerId: e.pointerId, pointerType: e.pointerType })));
+      document.documentElement.append(d);
+    }
+  })();
+  """
+}
+
 // the popover stays open while you're in another app, so the first click back into clack plays as well as bringing
 // it forward, rather than being spent on the bringing forward alone
 final class Web: WKWebView {
+  // a press on the edges resizes the popover instead of reaching the page: called on the press, each drag and the release
+  var onEdges: ((Edges, NSEvent) -> Void)?
+  private var held: Edges = []
+
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+  override func mouseDown(with e: NSEvent) {
+    held = onEdges == nil ? [] : Edges(convert(e.locationInWindow, from: nil), in: bounds, flipped: isFlipped)
+    if held.isEmpty { super.mouseDown(with: e) } else { onEdges?(held, e) }
+  }
+  override func mouseDragged(with e: NSEvent) {
+    if held.isEmpty { super.mouseDragged(with: e) } else { onEdges?(held, e) }
+  }
+  override func mouseUp(with e: NSEvent) {
+    if held.isEmpty { return super.mouseUp(with: e) }
+    onEdges?(held, e)
+    held = []
+  }
 }
 
 // clack itself, kept loaded between openings so it opens at once and keeps its place
 final class Page: NSViewController, WKNavigationDelegate, WKUIDelegate {
-  let web: WKWebView
+  let web: Web
   private(set) var failed = false
 
   init() {
     let config = WKWebViewConfiguration()
     config.mediaTypesRequiringUserActionForPlayback = []
-    web = Web(frame: NSRect(x: 0, y: 0, width: 420, height: 640), configuration: config)
+    config.userContentController.addUserScript(WKUserScript(source: Edges.script, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+    web = Web(frame: NSRect(origin: .zero, size: App.unit), configuration: config)
     super.init(nibName: nil, bundle: nil)
     web.navigationDelegate = self
     web.uiDelegate = self
@@ -175,6 +234,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private let menu = NSMenu()
   private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
   private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
+  private var sizeItems: [NSMenuItem] = []
   private var cameFrom: NSRunningApplication?
 
   private var phase = Phase.idle, reason = "", online = true, busy = 0
@@ -201,15 +261,26 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     popover.contentViewController = page
-    popover.contentSize = NSSize(width: 420, height: 640)
+    popover.contentSize = wanted()
     // closed only from the ring: clicks in other apps and switching apps leave it open, so clack stays beside your agent
     popover.behavior = .applicationDefined
     popover.animates = true
+    page.web.onEdges = { [weak self] edges, e in self?.drag(edges, e) }
 
     statusLine.isEnabled = false
     menu.delegate = self
     menu.addItem(statusLine)
     menu.addItem(.separator())
+    let sizes = NSMenu()
+    for (key, title, _) in App.sizes {
+      let it = sizes.addItem(withTitle: title, action: #selector(pickSize), keyEquivalent: "")
+      it.target = self
+      it.representedObject = key
+      sizeItems.append(it)
+    }
+    sizes.addItem(.separator())
+    sizes.addItem(withTitle: "Or drag clack's edges", action: nil, keyEquivalent: "").isEnabled = false
+    menu.addItem(withTitle: "Size", action: nil, keyEquivalent: "").submenu = sizes
     menu.addItem(withTitle: "Open in Browser", action: #selector(openInBrowser), keyEquivalent: "").target = self
     menu.addItem(withTitle: "Reload", action: #selector(reload), keyEquivalent: "").target = self
     menu.addItem(.separator())
@@ -360,9 +431,12 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private func open() {
     guard let b = item.button else { return }
     if page.failed { page.load() }
+    // its size again for the screen the ring is on now
+    popover.contentSize = wanted()
     // the popover takes the keyboard, so clack's keys play; the app you were in gets it back when it closes
     NSApp.activate(ignoringOtherApps: true)
     popover.show(relativeTo: b.bounds, of: b, preferredEdge: .minY)
+    if let w = page.view.window { rim = (w.frame.width - popover.contentSize.width) / 2 }
     popover.contentViewController?.view.window?.makeKey()
     popover.contentViewController?.view.window?.makeFirstResponder(page.web)
   }
@@ -376,7 +450,76 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   func menuNeedsUpdate(_ m: NSMenu) {
     statusLine.title = status()
+    let size = defaults.string(forKey: "size") ?? "small"
+    for it in sizeItems { it.state = it.representedObject as? String == size ? .on : .off }
     loginItem.state = FileManager.default.fileExists(atPath: App.agentPlist.path) ? .on : .off
+  }
+
+  // MARK: its size
+
+  // the menu's sizes, all in clack's first proportions (420 x 640) and shrunk to fit the screen in them; Full Height
+  // reaches down to the Dock. Dragging an edge leaves a size of your own (custom)
+  static let unit = NSSize(width: 420, height: 640), least = NSSize(width: 340, height: 520)
+  static let sizes: [(key: String, title: String, scale: CGFloat)] = [
+    ("small", "Small", 1), ("medium", "Medium", 1.25), ("large", "Large", 1.5), ("full", "Full Height", .infinity),
+  ]
+  // how far the popover's window reaches past clack on each side, for its arrow and shadow (measured once it shows)
+  private var rim: CGFloat = 13
+  private var grab: (mouse: NSPoint, size: NSSize, offset: CGFloat)?
+
+  // the most room under the ring: down to the Dock and across the screen, with a little air
+  private func room() -> NSSize {
+    guard let bar = item.button?.window, let vis = (bar.screen ?? NSScreen.main)?.visibleFrame else { return App.unit }
+    return NSSize(width: vis.width - rim * 2 - 8, height: bar.frame.minY - vis.minY - rim * 2 - 8)
+  }
+
+  private func fit(_ s: NSSize) -> NSSize {
+    let r = room()
+    return NSSize(width: min(r.width, max(App.least.width, s.width)).rounded(),
+                  height: min(r.height, max(App.least.height, s.height)).rounded())
+  }
+
+  private func wanted() -> NSSize {
+    let key = defaults.string(forKey: "size") ?? "small"
+    if key == "custom" { return fit(NSSize(width: defaults.double(forKey: "width"), height: defaults.double(forKey: "height"))) }
+    let r = room(), scale = App.sizes.first { $0.key == key }?.scale ?? 1
+    let k = min(scale, r.width / App.unit.width, r.height / App.unit.height)
+    return fit(NSSize(width: App.unit.width * k, height: App.unit.height * k))
+  }
+
+  @objc private func pickSize(_ it: NSMenuItem) {
+    defaults.set(it.representedObject as? String, forKey: "size")
+    open()
+  }
+
+  // the edge you hold follows the cursor. The popover hangs centred under the ring, so a side moves half of what the
+  // width does, until the screen's edge stops the other side and it moves all of it; the bottom moves on its own
+  private func drag(_ edges: Edges, _ e: NSEvent) {
+    guard let win = page.view.window, let bar = item.button?.window else { return }
+    let m = NSEvent.mouseLocation, size = popover.contentSize
+    let left = win.frame.minX + rim, right = win.frame.maxX - rim
+    switch e.type {
+    case .leftMouseDown:
+      popover.animates = false
+      grab = (m, size, m.x - (edges.contains(.left) ? left : right))
+    case .leftMouseDragged:
+      guard let g = grab, let vis = (bar.screen ?? NSScreen.main)?.visibleFrame else { return }
+      // an edge goes no further than the screen's, even with the cursor on the next display
+      let lo = vis.minX + rim, hi = vis.maxX - rim, ax = bar.frame.midX
+      var w = size.width, h = size.height
+      if edges.contains(.left) { let x = max(lo, m.x - g.offset); w = min(2 * (ax - x), hi - x) }
+      if edges.contains(.right) { let x = min(hi, m.x - g.offset); w = min(2 * (x - ax), x - lo) }
+      if edges.contains(.bottom) { h = g.size.height - (m.y - g.mouse.y) }
+      popover.contentSize = fit(NSSize(width: w, height: h))
+    default:
+      popover.animates = true
+      if let g = grab, size != g.size {
+        defaults.set("custom", forKey: "size")
+        defaults.set(Double(size.width), forKey: "width")
+        defaults.set(Double(size.height), forKey: "height")
+      }
+      grab = nil
+    }
   }
 
   @objc private func openInBrowser() { NSWorkspace.shared.open(base) }
