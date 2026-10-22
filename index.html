@@ -75,18 +75,18 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 .tally span { font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
 .tally .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 /* 08 Soap Cutting's halftone goes slightly out of focus along the top and the bottom: the dots still show through
-   behind the logo, the count and the agent line, only soft, so they no longer break up the letters. It is blurred fully
-   over the top row and up to the agent line, and eases back into the sharp print over about 80px past them, as far as
-   the paler soap reaches, so no pale stripe shows between the two. The other pictures stay sharp */
+   behind the logo, the count and the agent line, only soft, so they no longer break up the letters. The blur builds up
+   gradually towards each edge: four thin layers of 1px blur, each starting a quarter of the way further in over --f
+   (about as far as the paler soap reaches), stack up to 2px over the top row and from the agent line down */
 .haze {
   position: fixed; left: 0; right: 0; z-index: 0; pointer-events: none; display: none;
-  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
-  --f: 80px; --fade: #000 calc(100% - var(--f)), rgba(0,0,0,.55) calc(100% - var(--f) * .54), rgba(0,0,0,.15) calc(100% - var(--f) * .2), transparent;
+  -webkit-backdrop-filter: blur(1px); backdrop-filter: blur(1px);
+  --f: 96px; --ramp: transparent calc(var(--f) * var(--k) / 4), #000 calc(var(--f) * (var(--k) + 1) / 4);
 }
 .haze.head { top: 0; height: calc(16px + 28px + 6px + var(--f));
-  -webkit-mask-image: linear-gradient(to bottom, var(--fade)); mask-image: linear-gradient(to bottom, var(--fade)); }
+  -webkit-mask-image: linear-gradient(to top, var(--ramp)); mask-image: linear-gradient(to top, var(--ramp)); }
 .haze.foot { bottom: 0; height: calc(max(16px, env(safe-area-inset-bottom, 0px)) + var(--count-size) * 1.1 + 16px + var(--f));
-  -webkit-mask-image: linear-gradient(to top, var(--fade)); mask-image: linear-gradient(to top, var(--fade)); }
+  -webkit-mask-image: linear-gradient(to bottom, var(--ramp)); mask-image: linear-gradient(to bottom, var(--ramp)); }
 body[data-scene="soap"] .haze { display: block; }
 .stage { min-height: 0; min-width: 0; }
 
@@ -277,8 +277,14 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
 </head>
 <body>
 <canvas id="scene" aria-label="Interactive graphic. Move your cursor to play"></canvas>
-<div class="haze head" aria-hidden="true"></div>
-<div class="haze foot" aria-hidden="true"></div>
+<div class="haze head" style="--k: 0" aria-hidden="true"></div>
+<div class="haze head" style="--k: 1" aria-hidden="true"></div>
+<div class="haze head" style="--k: 2" aria-hidden="true"></div>
+<div class="haze head" style="--k: 3" aria-hidden="true"></div>
+<div class="haze foot" style="--k: 0" aria-hidden="true"></div>
+<div class="haze foot" style="--k: 1" aria-hidden="true"></div>
+<div class="haze foot" style="--k: 2" aria-hidden="true"></div>
+<div class="haze foot" style="--k: 3" aria-hidden="true"></div>
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
@@ -2045,18 +2051,18 @@ void main() {
       this.cuts = []; this.beads = []; this.dir = [1, 0]; this.last = null; this.dirty = true;
       this.field(0);
     },
-    // along the top and the bottom of the screen the soap is printed a little paler, in smaller dots that leave the logo,
-    // the arrows and the tally room to read, with the blur there (.haze) softening them under the letters. Under the top
-    // row and from the tally's top down it is palest, at a little over half its tone, and it eases back into the
-    // checkerboard over about 8 dots, keeping its mottle, how far it reaches wobbling in the same bays and points as a
+    // along the top and the bottom of the screen the soap is printed paler, in smaller dots that leave the logo, the
+    // arrows and the tally room to read, with the blur there (.haze) softening them under the letters. Under the top row
+    // and from the tally's top down it is palest, at about a quarter of its tone, and it eases back into the
+    // checkerboard over about 12 dots, keeping its mottle, how far it reaches wobbling in the same bays and points as a
     // cut's. It is only the untouched soap, so a path still cuts and heaps across them. The tally is measured again
     // whenever its top moves
     pale() {
       const { c, nx, ny, E, base, base0 } = this, hb = document.querySelector('.top').getBoundingClientRect().bottom;
       const tt = this.tt = document.querySelector('.tally').getBoundingClientRect().top;
       for (let j = 0, o = 0; j < ny; j++) for (let i = 0; i < nx; i++, o++) {
-        const d = Math.max(0, Math.min(j * c - hb, tt - j * c) - c * 1.5 * (1 + E[o])) / (c * 8);
-        base[o] = base0[o] * (1 - .45 * Math.exp(-d * d));
+        const d = Math.max(0, Math.min(j * c - hb, tt - j * c) - c * 1.5 * (1 + E[o])) / (c * 12);
+        base[o] = base0[o] * (1 - .72 * Math.exp(-d * d));
       }
     },
     // the heap of shaved soap in cell q, dd px past a path's edge: solid for about R1, then fading back into the soap
