@@ -19,7 +19,7 @@
 :root {
   --cobalt: #2c62fb; --peri: #becdf9; --mid: #5c80ea; --paper: #f3eee6; --grey-paper: #e6e6e3; --ink-black: #1c1c1c;
   --bg: #f4f5f7; --ink: #1b2a6b; --ink-soft: #5a6890; --line: rgba(27,42,107,.14);
-  --acc: var(--cobalt); --cursor: var(--cobalt);
+  --acc: var(--cobalt); --cursor: var(--cobalt); --count-size: 22px;
   --font-ui: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   color-scheme: light;
@@ -63,19 +63,21 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 /* the page number hangs off the word, so the word itself sits at the centre and stays put from page 1 to 10 */
 .brand h1 sup { position: absolute; left: 100%; top: 0; font: 500 10px/1 var(--font-mono); letter-spacing: 0; margin-left: 2px; color: var(--ink-soft); }
 .brand p { margin: 0; font: 500 12px/1.3 var(--font-mono); color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* the tally sits at the bottom centre and lets the picture play on under it */
+/* the tally sits at the bottom centre and lets the picture play on under it: the count and CLACKS share one line,
+   level with the arrows, and the agent line sits close over it */
 .tally {
   position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
   text-align: center; line-height: 1.1; font-family: var(--font-mono);
 }
-.tally b { display: block; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tally p { display: flex; justify-content: center; align-items: baseline; gap: 7px; margin: 0; white-space: nowrap; }
+.tally b { font-size: var(--count-size); font-weight: 600; font-variant-numeric: tabular-nums; }
 .tally span { font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
 .stage { min-height: 0; min-width: 0; }
 
 /* The agent line: one quiet line over the tally that knows when your agent is working, when it's done and how fast you
    went back, and is empty the rest of the time. It never shows a best or a streak, so there is nothing to stay for. It
    keeps a fixed height so the pictures that measure the tally never shift */
-.agent { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 18px; margin-bottom: 6px;
+.agent { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 14px; margin-bottom: 2px;
   font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap;
   transition: opacity .6s; }
 .agent.dim { opacity: .55; }
@@ -89,7 +91,7 @@ body.custom-cursor, body.custom-cursor * { cursor: none !important; }
 body.custom-cursor .agent button { cursor: none !important; }
 /* Getting clack: off localhost the agent line offers the one-line install for a Mac, in a card over the tally that
    sits above the trail canvas so the line stays readable and selectable */
-.get { position: fixed; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 72px); transform: translateX(-50%);
+.get { position: fixed; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 56px); transform: translateX(-50%);
   z-index: 6; width: min(460px, calc(100vw - 32px)); padding: 16px 16px 12px; border-radius: 14px; pointer-events: auto;
   background: var(--bg); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(10,20,60,.2);
   text-align: left; animation: getIn .18s ease-out; }
@@ -124,10 +126,10 @@ body.letting-go .cursor.on { opacity: var(--grip-op, 1); }
 
 /* Arrows: the previous and the next material, at the two ends of the bottom row level with the count, in the
    picture's own ink, far enough from it not to read as buttons for the number. Each tip sits on the page margin; the
-   button reaches past it to the screen's edge, and it stands a little above the tally's foot so its middle meets the
-   count's, over the CLACKS line. A button in the top row reaches above and below it instead */
+   button reaches past it to the screen's edge, and its middle meets the middle of the count's line, so it hangs a little
+   below the tally's foot. A button in the top row reaches above and below it instead */
 .pager {
-  position: fixed; left: 0; right: 0; bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 5px);
+  position: fixed; left: 0; right: 0; bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + var(--count-size) * .55 - 22px);
   padding-left: max(0px, env(safe-area-inset-left, 0px) - 16px); padding-right: max(0px, env(safe-area-inset-right, 0px) - 16px);
   display: flex; justify-content: space-between;
 }
@@ -149,13 +151,13 @@ button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 
 @media (max-width: 720px) {
   .brand p { display: none; }
-  .tally b { font-size: 18px; }
+  :root { --count-size: 18px; }
   .brand h1 { font-size: 24px; }
 }
 @media (max-height: 520px) {
   .top { padding-block: 8px 2px; }
   .tally { bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
-  .pager { bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 5px); }
+  .pager { bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + var(--count-size) * .55 - 22px); }
   .brand p { display: none; }
 }
 /* The story: what clack is for and how it came to be. Nothing on the page opens it for now. It keeps one palette of its own,
@@ -270,8 +272,7 @@ body.story-open .cursor, body.story-open #fx { visibility: hidden; }
 
   <div class="tally" aria-live="off">
     <div class="agent" id="agent" role="status" aria-live="polite"></div>
-    <b id="count">0</b>
-    <span>CLACKS</span>
+    <p><b id="count">0</b><span>CLACKS</span></p>
   </div>
 
   <nav class="pager" aria-label="Materials">
@@ -3002,8 +3003,9 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
     let html = '';
     // coming back while others still work, your return shows first and then their wait
     if (s === 'wait' && !backNew) {
+      // the pulsing dot says it's working, so the line only names who and for how long
       const who = AG.mode === 'demo' ? 'demo agent' : AG.busy > 1 ? AG.busy + ' agents' : 'agent';
-      html = `<i class="dot"></i><span>${who} working · ${clock(now - AG.startAt)}</span>`;
+      html = `<i class="dot"></i><span>${who} · ${clock(now - AG.startAt)}</span>`;
     } else if (s === 'done') {
       const gone = AG.grip <= 0.02, word = { Notification: 'agent needs you', StopFailure: 'agent stopped' }[AG.reason] || 'agent done';
       if (!gone) html = `<i class="dot"></i><span>${word} · go back</span>`;
