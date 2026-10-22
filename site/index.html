@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500&family=Xanh+Mono&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500&family=Figtree:wght@800&family=Xanh+Mono&display=swap">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap">
 <style>
 /* The clack website: one page with the ten materials, each opening clack itself to play in a window over the page, how
@@ -31,6 +31,7 @@
   --font-ui: "Switzer", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Chivo Mono", ui-monospace, "SF Mono", monospace;
   --font-display: "Xanh Mono", "Courier New", serif;
+  --font-brand: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   /* space */
   --wrap: 1248px; --gut: max(24px, env(safe-area-inset-left, 0px)); --sec: 112px; --bar-h: 68px;
   color-scheme: light;
@@ -91,7 +92,10 @@ section { padding-block: var(--sec); }
 
 /* ---------- hero: the name across the page, a rule down, and what clack is ---------- */
 .hero { padding-block: clamp(40px, 7vw, 104px) 0; text-align: center; }
-.word { margin: 0; font: 400 clamp(104px, 21vw, 272px)/.78 var(--font-display); letter-spacing: .06em; text-indent: .06em; }
+/* the name in clack's own wordmark: Figtree at its heaviest, set tight */
+.word { margin: 0; font: 800 clamp(80px, 21vw, 272px)/.78 var(--font-brand); letter-spacing: -.04em; }
+/* the L's foot would touch the A's leg at that spacing, so the pair gets a little more room */
+.word span:nth-child(2) { margin-right: .035em; }
 .rule { width: 1px; height: clamp(40px, 5vw, 72px); margin: clamp(28px, 3vw, 40px) auto; background: var(--ink); }
 .lede { max-width: 25em; margin: 0 auto; font: 500 clamp(21px, 2vw, 27px)/1.28 var(--font-ui); letter-spacing: -.025em; text-wrap: balance; }
 .meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 24px 0 0; color: var(--ink-3); }
