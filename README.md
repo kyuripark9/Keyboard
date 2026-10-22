@@ -2,7 +2,7 @@
 
 A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, and each sound draws its own picture to play with.
 
-**Play it in your browser: https://kyuripark9.github.io/Keyboard/** (there a demo agent stands in for yours).
+**Website: https://kyuripark9.github.io/Keyboard/**: play clack right on the page (a demo agent stands in for yours), get it on your Mac or add it to your browser. Full screen it is at https://kyuripark9.github.io/Keyboard/play/.
 
 ## Get it on your Mac
 
@@ -13,6 +13,10 @@ curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/ins
 ```
 
 It runs clack in the background, puts its ring in your menu bar, where one click opens clack from any app and the ring itself shows whether your agent is working or done, and offers to connect it to Claude Code. clack is also at http://localhost:4545, where Chrome or Safari can keep it as an app in your Dock. Everything stays on your Mac. See [bridge/README.md](bridge/README.md) for what it does, updating and removing it.
+
+## Add it to your browser
+
+The extension in [extension/](extension/) opens clack in the side panel of Chrome, Edge or Brave, on any system, next to claude.ai, ChatGPT or whatever you're waiting on. Download `clack-extension.zip` from the website, unzip it, open `chrome://extensions`, turn on Developer mode, click Load unpacked and pick the `clack-extension` folder; then pin clack and click its ring. If clack is running on the same computer (http://localhost:4545), the panel opens that one, which follows your agent; otherwise it opens the web version with its demo agent.
 
 ## The 10 sounds
 
@@ -47,6 +51,12 @@ It's a static page with no build step. Open `index.html`, or serve the folder:
 python3 -m http.server 8000   # http://localhost:8000
 ```
 
-## Deploy to GitHub Pages
+## The website
 
-In the repo, go to Settings → Pages, choose "Deploy from a branch", and pick this branch with the `/ (root)` folder.
+The website is the landing page in [site/](site/) with clack itself at `play/` and the extension's zip next to it. `site/build.sh` puts them together, taking clack from this repo's `index.html`, so there is only one copy of it:
+
+```sh
+bash site/build.sh && python3 -m http.server -d site/_site 8000   # http://clack.localhost:8000
+```
+
+(On plain `localhost` with a port, clack looks for its bridge there; `clack.localhost` shows it as the public site does, with the demo agent.) Every push to `main` builds and publishes it with GitHub Actions ([.github/workflows/pages.yml](.github/workflows/pages.yml)), once the repo's Settings → Pages → Source is set to GitHub Actions. The pictures of the ten materials in `site/img/` are renders of each scene, so redo them when a scene's look changes.
