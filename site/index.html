@@ -118,15 +118,13 @@ section { padding-block: var(--sec); }
 .over { z-index: 21; pointer-events: none; transition: opacity .25s; }
 .over .ctl { pointer-events: auto; }
 .cover.moving .over { opacity: 0; visibility: hidden; transition: opacity .1s, visibility 0s .1s; }
-/* under the middle, on the left its name and what to do with it, gone while the ring turns; on the right the agent's
-   line in the words clack uses, who's working and for how long, then done, with the way to send it another prompt
-   under it. Each pair shares a line, and the button keeps its room so nothing moves when the agent is done */
+/* under the middle, on the left its name, gone while the ring turns; on the right the agent's line in the words clack
+   uses, who's working and for how long, then done, with the way to send it another prompt under it. The button keeps
+   its room so nothing moves when the agent is done */
 .cap { container-type: inline-size; width: var(--wc); margin: 0 auto; padding-top: 16px; }
-.cap > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nm st" "try act"; align-items: baseline; gap: 8px 16px; }
-.cap .nm { grid-area: nm; margin: 0; font: 500 20px/1.15 var(--font-ui); letter-spacing: -.03em; }
-.cap .try { grid-area: try; margin: 0; font-size: 15px; line-height: 1.3; color: var(--ink-2); text-wrap: balance; }
-.cap .nm, .cap .try { transition: opacity .25s; }
-.cover.moving .cap .nm, .cover.moving .cap .try { opacity: 0; transition-duration: .1s; }
+.cap > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nm st" ". act"; align-items: baseline; gap: 8px 16px; }
+.cap .nm { grid-area: nm; margin: 0; font: 500 20px/1.15 var(--font-ui); letter-spacing: -.03em; transition: opacity .25s; }
+.cover.moving .cap .nm { opacity: 0; transition-duration: .1s; }
 .agent { grid-area: st; justify-self: end; margin: 0; color: var(--ink-2); white-space: nowrap; }
 .agent .dot { display: inline-block; width: 8px; height: 8px; margin-right: 9px; border-radius: 50%; background: var(--c1); vertical-align: 0; }
 .cover.working .agent { color: var(--ink); }
@@ -138,7 +136,7 @@ section { padding-block: var(--sec); }
 .again:hover { background: var(--accent); }
 /* under a middle too narrow for both sides (on a phone, or a short window), the agent's line goes under the name */
 @container (max-width: 379px) {
-  .cap > div { grid-template-columns: minmax(0, 1fr); grid-template-areas: "nm" "try" "st" "act"; }
+  .cap > div { grid-template-columns: minmax(0, 1fr); grid-template-areas: "nm" "st" "act"; }
   .agent, .again { justify-self: start; }
   .agent { margin-top: 8px; }
 }
@@ -327,7 +325,6 @@ footer .mono { color: var(--ink-3); }
   .bar > .wrap > .btn { order: 3; }
   .dlg { width: 100%; height: 100%; border-radius: 0; }
   .cap .nm { font-size: 17px; }
-  .cap .try { font-size: 13px; }
   .sh { margin-bottom: 40px; }
   .row { padding: 32px 0; }
   .cmd { flex-direction: column; align-items: stretch; padding: 14px; }
@@ -372,7 +369,6 @@ footer .mono { color: var(--ink-3); }
     </div>
     <div class="cap"><div>
       <p class="nm" id="capName" aria-live="polite">Cyanotype</p>
-      <p class="try" id="capTry" aria-live="polite">Trace to expose white dots</p>
       <p class="agent mono"><i class="dot" aria-hidden="true"></i><span id="agentLine">Play to start a demo agent</span></p>
       <button class="again mono" type="button" id="again">Send another prompt <span aria-hidden="true">↻</span></button>
     </div></div>
@@ -527,19 +523,18 @@ footer .mono { color: var(--ink-3); }
 
 <script>
 // the ten materials in clack's own order (SOUND_IDS in play/), with the colour its picture shows when the image hasn't
-// loaded yet, the one the agent's dot takes from it, strong enough to read on white, and what to do with it, which
-// shows under it when it's in the middle of the cover
+// loaded yet, and the one the agent's dot takes from it, strong enough to read on white
 const MATS = [
-  { id: 'slime', name: 'Crunchy Slime', bg: '#e6e6e6', c: '#1a1a1a', try: 'Crease it like paper' },
-  { id: 'cyano', name: 'Cyanotype', bg: '#3557b0', c: '#3857ab', try: 'Trace to expose white dots' },
-  { id: 'bubble', name: 'Bubble Wrap', bg: '#72b4ed', c: '#6eb2ed', try: 'Sweep across to pop' },
-  { id: 'wax', name: 'Wax Ball', bg: '#c3c6db', c: '#a9a6d8', try: 'Press in like clay' },
-  { id: 'thock', name: 'Thocky Keys', bg: '#d9d8de', c: '#2a5fa8', try: 'Burn it with a heat laser' },
-  { id: 'gummy', name: 'Chewy Jellies', bg: '#e8ecea', c: '#f392b7', try: 'Pull it into a string' },
-  { id: 'pudding', name: 'Pudding', bg: '#eed9b1', c: '#29a30c', try: 'Brush it to jiggle' },
-  { id: 'soap', name: 'Soap Cutting', bg: '#ebead6', c: '#c0518a', try: 'Shave a path' },
-  { id: 'snow', name: 'Squeaky Snow', bg: '#9ca6e2', c: '#8a9ae0', try: 'Walk across it' },
-  { id: 'sugar', name: 'Sugar Slime', bg: '#acdc98', c: '#9ccc58', try: 'Rake it down to the blue' },
+  { id: 'slime', name: 'Crunchy Slime', bg: '#e6e6e6', c: '#1a1a1a' },
+  { id: 'cyano', name: 'Cyanotype', bg: '#3557b0', c: '#3857ab' },
+  { id: 'bubble', name: 'Bubble Wrap', bg: '#72b4ed', c: '#6eb2ed' },
+  { id: 'wax', name: 'Wax Ball', bg: '#c3c6db', c: '#a9a6d8' },
+  { id: 'thock', name: 'Thocky Keys', bg: '#d9d8de', c: '#2a5fa8' },
+  { id: 'gummy', name: 'Chewy Jellies', bg: '#e8ecea', c: '#f392b7' },
+  { id: 'pudding', name: 'Pudding', bg: '#eed9b1', c: '#29a30c' },
+  { id: 'soap', name: 'Soap Cutting', bg: '#ebead6', c: '#c0518a' },
+  { id: 'snow', name: 'Squeaky Snow', bg: '#9ca6e2', c: '#8a9ae0' },
+  { id: 'sugar', name: 'Sugar Slime', bg: '#acdc98', c: '#9ccc58' },
 ];
 const $ = id => document.getElementById(id);
 const nn = i => String(i + 1).padStart(2, '0');
@@ -690,7 +685,7 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
     const m = MATS[at];
     cover.style.setProperty('--c1', m.c);
     box.style.setProperty('--bgc', m.bg);
-    $('capName').textContent = m.name; $('capTry').textContent = m.try;
+    $('capName').textContent = m.name;
     cover.classList.remove('moving');
     cards.forEach((c, i) => { c.setAttribute('aria-current', String(i === at)); c.tabIndex = i === at ? 0 : -1; });
     draw();
