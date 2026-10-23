@@ -95,9 +95,9 @@ section { padding-block: var(--sec); }
 .word { margin: 0; font: 800 clamp(80px, 21vw, 272px)/.78 var(--font-brand); letter-spacing: -.04em; }
 /* the L's foot would touch the A's leg at that spacing, so the pair gets a little more room */
 .word span:nth-child(2) { margin-right: .035em; }
-/* the pointer presses into it like clack's Wax Ball [04]. The name is drawn again on a canvas laid over the letters,
-   which stay underneath for reading and selecting, see-through once the canvas shows them. A sideways swipe on a phone
-   presses too */
+/* the pointer breaks it into dots like the name on the Soren template. The name is drawn again on a canvas laid over
+   the letters, which stay underneath for reading and selecting, see-through once the canvas shows them. A sideways
+   swipe on a phone breaks it too */
 .word { position: relative; touch-action: pan-y; }
 .word canvas { position: absolute; pointer-events: none; }
 .word.live span { color: transparent; }
@@ -660,168 +660,188 @@ const spy = new IntersectionObserver(entries => {
 }, { rootMargin: '-45% 0px -50% 0px' });
 for (const id of ['materials', 'how', 'get', 'privacy']) spy.observe($(id));
 
-// CLACK at the top plays clack's Wax Ball [04] (SCENES.wax in play/), paced like the name that breaks into dots on the
-// Soren template: the letters are its shell, a grid of small squares packed so close that they run together into solid
-// black. Wherever the pointer is, the shell gives way at once in a wide, ragged patch: the squares snap down and spin
-// as they shrink, almost to nothing right under it and less toward the patch's edge, scattering a little off their
-// grid, and the grid leans out from the middle so they bunch up around it; each step of travel cracks the chips around
-// it so they twist and wobble back into line. The patch holds while the pointer rests on it, and once the pointer moves
-// on the squares spring back into solid letters within a second or two, patch by patch. The squares are cut to the
-// letters, so their outline never changes. It is drawn on a canvas over the real letters; with reduced motion the name
-// stays as it is
+// CLACK at the top comes apart into dots under the pointer the way the name does on the Soren template (its Particle
+// Text, set as Soren Vale has it: round dots a couple of pixels apart, pushed away from the pointer and eased back home).
+// The letters are sampled on a fine grid, a dot wherever there is ink, each with a home of its own. Every dot within
+// reach of the pointer is pushed straight away from it, harder the nearer it sits, against a pull back home, so the
+// letters there loosen into a spray of dots that thins out right under the pointer and heaps up around it; each dot's
+// reach is its own, from about half to one and a half times the usual, so the spray's edge is ragged. The pointer is
+// followed a touch behind, so a quick flick sweeps through rather than jumping. Once it moves on, each dot eases back
+// home at its own pace and the letters close up solid again within a second or so. A click or a tap throws the dots
+// around it out at once. Only the dots away from home are drawn, each over a hole where it came from, on a canvas over
+// the real letters; with reduced motion the name stays as it is
 (() => {
   const word = document.querySelector('.word');
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const cv = document.createElement('canvas'), ctx = cv.getContext('2d'), lc = document.createElement('canvas');
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d'), lc = document.createElement('canvas'), ink = '#0a0a0a';
   // the baseline, read off an empty box sitting on it
   const probe = document.createElement('i');
   probe.style.cssText = 'display:inline-block;width:0;height:0';
   for (const e of [probe, cv]) { e.setAttribute('aria-hidden', 'true'); word.append(e); }
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rand = (a, b) => a + Math.random() * (b - a);
-  let W = 0, H = 0, fs = 100, p = 6, RL = 60, step = 30, cols = 0, rows = 0, x0 = 0, y0 = 0, raf = 0, lastT = 0, lp = null, trav = 0;
-  let E, A, V, F, S, SV, RT, JX, JY, NE, TAU;
+  let W = 0, H = 0, b = 2, reach = 85, push = 2.4, kick = 3.4, zone = null, dot, hole, raf = 0, lastT = 0, pt = null, sm = null, last = null;
+  let n = 0, X, Y, VX, VY, TX, TY, RCH, OM, MOV, ML;
 
-  // the canvas covers the letters with a little room for the squares to lean past them. The letters are drawn once in
-  // their black (lc), which cuts the squares to their shape. The squares sit on a grid of p, about thirty-eight to the
-  // em, the size of the template's dots, with a ring of spare ones past every edge so the grid can lean in without
-  // leaving a gap; RL is how far from the pointer the shell gives, about a fifth of the em
+  // a soft round dot d across, its edge blurred over about soft either side, drawn once and stamped for every dot
+  const sprite = (d, soft, dpr) => {
+    const s = Math.ceil(d + soft * 2 + 2), m = s / 2, c = document.createElement('canvas'), x = c.getContext('2d');
+    c.width = c.height = Math.ceil(s * dpr);
+    x.setTransform(c.width / s, 0, 0, c.height / s, 0, 0);
+    const g = x.createRadialGradient(m, m, Math.max(0, d / 2 - soft), m, m, d / 2 + soft);
+    g.addColorStop(0, ink); g.addColorStop(1, 'rgba(10,10,10,0)');
+    x.fillStyle = g; x.fillRect(0, 0, s, s);
+    return { c, s, m };
+  };
+
+  // the canvas covers the letters with room past them for the dots to be thrown into; the pointer works over the letters
+  // themselves (zone). The letters are drawn once in their black (lc), and once more a pixel to the pixel to find the
+  // ink: a dot goes in every b-by-b cell with ink in it, at its first inked pixel, b two pixels as on Soren unless that
+  // makes more than the thirty thousand dots it allows. The reach, the push and the way back are Soren's, scaled from
+  // its 249px name to this one: dots up to 85px off, held at most about 25px out, and easing home over about a third of
+  // a second each
   function layout() {
-    cancelAnimationFrame(raf); raf = lastT = 0;
+    cancelAnimationFrame(raf); raf = lastT = 0; pt = sm = null;
     const cs = getComputedStyle(word), spans = [...word.querySelectorAll('span')], rs = spans.map(e => e.getBoundingClientRect());
     const rw = word.getBoundingClientRect(), bl = probe.getBoundingClientRect().bottom, vw = document.documentElement.clientWidth;
-    fs = parseFloat(cs.fontSize);
-    const L = Math.max(0, Math.floor(rs[0].left - fs * .08)), R = Math.min(vw, Math.ceil(rs[rs.length - 1].right + fs * .08));
-    const top = Math.floor(bl - fs * .85), dpr = Math.min(2, devicePixelRatio || 1), base = bl - top;
-    W = R - L; H = Math.ceil(bl + fs * .1) - top;
-    Object.assign(cv.style, { left: L - rw.left + 'px', top: top - rw.top + 'px', width: W + 'px', height: H + 'px' });
+    const fs = parseFloat(cs.fontSize), pad = Math.ceil(fs * .2), dpr = Math.min(2, devicePixelRatio || 1);
+    const L = rs[0].left - fs * .08, R = rs[rs.length - 1].right + fs * .08, top = bl - fs * .85, bot = bl + fs * .1;
+    const ox = Math.max(0, Math.floor(L - pad)), oy = Math.floor(top - pad);
+    W = Math.min(vw, Math.ceil(R + pad)) - ox; H = Math.ceil(bot + pad) - oy;
+    zone = [L - ox, top - oy, R - ox, bot - oy];
+    Object.assign(cv.style, { left: ox - rw.left + 'px', top: oy - rw.top + 'px', width: W + 'px', height: H + 'px' });
     cv.width = lc.width = Math.round(W * dpr); cv.height = lc.height = Math.round(H * dpr);
-    const lx = lc.getContext('2d');
-    lx.setTransform(lc.width / W, 0, 0, lc.height / H, 0, 0);
-    lx.fillStyle = '#0a0a0a'; lx.font = `800 ${fs}px ${cs.fontFamily}`; lx.textBaseline = 'alphabetic';
-    spans.forEach((e, i) => lx.fillText(e.textContent, rs[i].left - L, base));
     ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
-    p = clamp(fs / 38, 2.5, 8); RL = fs * .19; step = fs * .1;
-    cols = Math.ceil(W / p) + 9; rows = Math.ceil(H / p) + 9; const n = cols * rows;
-    x0 = (W - (cols - 1) * p) / 2; y0 = (H - (rows - 1) * p) / 2;
-    // E: how far the shell is pressed in under each square; A and V: how far a cracked chip is turned, and how fast;
-    // F: the size the square is headed for, 1 where it is whole, and S and SV the size it has now and how fast that
-    // is changing, so it springs there; RT: which way and how far it spins as it shrinks; JX and JY: where it scatters
-    // to as it does
-    E = new Float32Array(n); A = new Float32Array(n); V = new Float32Array(n); F = new Float32Array(n).fill(1);
-    S = new Float32Array(n).fill(1); SV = new Float32Array(n);
-    RT = Float32Array.from({ length: n }, () => (Math.random() < .5 ? -1 : 1) * rand(.6, 1.6));
-    JX = Float32Array.from({ length: n }, () => rand(-.45, .45) * p); JY = Float32Array.from({ length: n }, () => rand(-.45, .45) * p);
-    // smooth value noise over the grid, its blotches about S squares across: NE makes the patch's edge ragged, and TAU
-    // is how quickly each part sets again, so it fills back in blotches rather than all at once
-    const vn = Sz => {
-      const gw = Math.ceil(cols / Sz) + 2, Rn = Float32Array.from({ length: gw * (Math.ceil(rows / Sz) + 2) }, () => rand(-1, 1));
-      return (i, j) => {
-        const a = Math.floor(i / Sz), b = Math.floor(j / Sz), f = i / Sz - a, g = j / Sz - b, fx = f * f * (3 - 2 * f), gy = g * g * (3 - 2 * g), o = b * gw + a;
-        return (Rn[o] * (1 - fx) + Rn[o + 1] * fx) * (1 - gy) + (Rn[o + gw] * (1 - fx) + Rn[o + gw + 1] * fx) * gy;
-      };
+    const letters = (c, opt) => {
+      const x = c.getContext('2d', opt);
+      x.setTransform(c.width / W, 0, 0, c.height / H, 0, 0);
+      x.fillStyle = ink; x.font = `800 ${fs}px ${cs.fontFamily}`; x.textBaseline = 'alphabetic';
+      spans.forEach((e, i) => x.fillText(e.textContent, rs[i].left - ox, bl - oy));
+      return x;
     };
-    const e1 = vn(9), e2 = vn(4), t1 = vn(7);
-    NE = new Float32Array(n); TAU = new Float32Array(n);
-    for (let j = 0, q = 0; j < rows; j++) for (let i = 0; i < cols; i++, q++) { NE[q] = .7 * e1(i, j) + .3 * e2(i, j); TAU[q] = 420 + 300 * t1(i, j); }
-    lp = null; trav = 0;
+    letters(lc);
+    const sc = document.createElement('canvas');
+    sc.width = W; sc.height = H;
+    const px = letters(sc, { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+    const sample = b => {
+      const out = [];
+      for (let y = 0; y < H; y += b) for (let x = 0; x < W; x += b) {
+        cell: for (let j = y; j < Math.min(y + b, H); j++) for (let i = x; i < Math.min(x + b, W); i++)
+          if (px[(j * W + i) * 4 + 3] > 64) { out.push(i + .5, j + .5); break cell; }
+      }
+      return out;
+    };
+    let at;
+    for (b = 2; (at = sample(b)).length > 6e4 && b < 48; b++);
+    n = at.length / 2;
+    TX = new Float32Array(n); TY = new Float32Array(n);
+    for (let q = 0; q < n; q++) { TX[q] = at[2 * q]; TY[q] = at[2 * q + 1]; }
+    X = TX.slice(); Y = TY.slice(); VX = new Float32Array(n); VY = new Float32Array(n);
+    MOV = new Uint8Array(n); ML = new Int32Array(n);
+    reach = Math.max(44, fs * .34); push = reach * .028; kick = reach * .04;
+    // RCH: how far off the pointer reaches each dot; OM: how quickly it eases home, the farther-reaching ones slower
+    RCH = new Float32Array(n); OM = new Float32Array(n);
+    for (let q = 0, s; q < n; q++) { s = Math.random(); RCH[q] = reach * (.55 + .75 * s); OM[q] = 2 / (23.3 * (.8 + .4 * s)); }
+    const d = b * 1.2;
+    dot = sprite(d, Math.max(.6, d * .24), dpr);
+    hole = sprite(Math.max(b * 1.9, d + Math.max(3, d * .6)), Math.max(.75, d * .24), dpr);
+    last = [0, 0, W, H];
     frame(performance.now());
     word.classList.add('live');
   }
-  // the shell gives way around the pointer at once, to its full depth: the square right under it shrinks almost to
-  // nothing, and they shrink less the farther out they sit, out to the patch's ragged edge
-  function press(x, y) {
-    const R = RL * 1.3;
-    const i0 = Math.max(0, Math.floor((x - R - x0) / p)), i1 = Math.min(cols - 1, Math.ceil((x + R - x0) / p));
-    const j0 = Math.max(0, Math.floor((y - R - y0) / p)), j1 = Math.min(rows - 1, Math.ceil((y + R - y0) / p));
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-      const q = j * cols + i, f = Math.hypot(x0 + i * p - x, y0 + j * p - y) / (RL * (1 + .3 * NE[q]));
-      if (f >= 1) continue;
-      const e = 1 - Math.sqrt(.05 + .95 * f ** 1.6);
-      if (e > E[q]) E[q] = e;
-    }
-  }
-  // a step cracks the chips around it: each one snaps round one way or the other, harder near the middle
-  function crack(x, y) {
-    const R = fs * .13;
-    const i0 = Math.max(0, Math.floor((x - R - x0) / p)), i1 = Math.min(cols - 1, Math.ceil((x + R - x0) / p));
-    const j0 = Math.max(0, Math.floor((y - R - y0) / p)), j1 = Math.min(rows - 1, Math.ceil((y + R - y0) / p));
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-      const q = j * cols + i, d = Math.hypot(x0 + i * p - x, y0 + j * p - y);
-      if (d < R) V[q] += (Math.random() < .5 ? -1 : 1) * rand(.25, .6) * (1 - d / R);
-    }
-  }
-  // every frame while the shell is pressed in, a square is still springing or a chip still wobbles, then the plain
-  // letters once it has all sprung back. A pressed square snaps down, overshooting and bouncing back, and spins its own
-  // way and scatters off its place as it goes; the grid leans hard away from the middle toward the big squares around
-  // it, so they bunch up at the patch's edge, and they tilt with the slope. Only the part of the name that moves is
-  // drawn as squares, over the plain letters
+  // every frame while the pointer is over the letters or a dot is still away from home. A dot in the pointer's reach is
+  // pushed off it and pulled home, its speed damped as it goes; one out of reach eases home on a critically damped
+  // spring, settling without overshooting. Steps are counted in sixtieths of a second, at most two and a half at once,
+  // so a slow frame can't throw them
   function frame(now) {
     raf = 0;
-    // the springs step at most a frame and a half at once, so a slow frame can't throw them
-    const dt = lastT ? Math.min(50, now - lastT) : 16, k = dt / 16, ks = Math.min(k, 1.5), damp = Math.pow(.82, k), sd = Math.pow(.56, ks);
+    let c = lastT ? (now - lastT) / (1000 / 60) : 1;
     lastT = now;
-    if (lp) press(lp[0], lp[1]); // the patch holds while the pointer rests on it
-    let busy = false, i0 = cols, i1 = -1, j0 = rows, j1 = -1;
-    for (let j = 0, q = 0; j < rows; j++) for (let i = 0; i < cols; i++, q++) {
-      if (E[q]) { E[q] *= Math.exp(-dt / TAU[q]); if (E[q] < .002) E[q] = 0; }
-      const e = 1 - E[q];
-      F[q] = e * e;
-      if (SV[q] || S[q] !== F[q]) {
-        SV[q] = (SV[q] + (F[q] - S[q]) * .55 * ks) * sd; S[q] += SV[q] * ks;
-        if (Math.abs(SV[q]) < 1e-4 && Math.abs(F[q] - S[q]) < 1e-3) { S[q] = F[q]; SV[q] = 0; }
+    c = c > 0 && isFinite(c) ? Math.max(.25, Math.min(2.5, c)) : 1;
+    const h = .88 ** c, m = .06, on = !!pt;
+    if (on) {
+      if (!sm) sm = pt.slice();
+      const k = Math.min(1, .75 * c);
+      sm[0] += (pt[0] - sm[0]) * k; sm[1] += (pt[1] - sm[1]) * k;
+    } else sm = null;
+    const sx = on ? sm[0] : 0, sy = on ? sm[1] : 0;
+    let C = 0;
+    for (let q = 0; q < n; q++) {
+      const dx = X[q] - sx, dy = Y[q] - sy, r = RCH[q], near = on && dx * dx + dy * dy < r * r;
+      if (!near && !MOV[q]) continue;
+      if (near) {
+        const o = Math.sqrt(dx * dx + dy * dy) || .001, s = 1 - o / r, l = s * s * push / o;
+        VX[q] = (VX[q] + ((TX[q] - X[q]) * m + dx * l) * c) * h; VY[q] = (VY[q] + ((TY[q] - Y[q]) * m + dy * l) * c) * h;
+        X[q] += VX[q] * c; Y[q] += VY[q] * c;
+        MOV[q] = 1; ML[C++] = q;
+        continue;
       }
-      if (V[q] || A[q]) { V[q] = (V[q] - A[q] * .15 * ks) * damp; A[q] += V[q] * ks; if (Math.abs(A[q]) + Math.abs(V[q]) < 1e-4) A[q] = V[q] = 0; }
-      if (E[q] || A[q] || SV[q] || S[q] !== 1) {
-        busy = true;
-        if (i < i0) i0 = i; if (i > i1) i1 = i; if (j < j0) j0 = j; if (j > j1) j1 = j;
-      }
+      const w = OM[q], z = w * c, e = 1 / (1 + z + .48 * z * z + .235 * z * z * z);
+      let g = X[q] - TX[q], t = (VX[q] + w * g) * c;
+      VX[q] = (VX[q] - w * t) * e; X[q] = TX[q] + (g + t) * e;
+      g = Y[q] - TY[q]; t = (VY[q] + w * g) * c;
+      VY[q] = (VY[q] - w * t) * e; Y[q] = TY[q] + (g + t) * e;
+      const ex = X[q] - TX[q], ey = Y[q] - TY[q];
+      if (ex * ex + ey * ey < .25 && VX[q] * VX[q] + VY[q] * VY[q] < .16) { X[q] = TX[q]; Y[q] = TY[q]; VX[q] = VY[q] = 0; MOV[q] = 0; }
+      else ML[C++] = q;
     }
-    ctx.clearRect(0, 0, W, H);
-    ctx.drawImage(lc, 0, 0, W, H);
-    if (!busy) { lastT = 0; return; }
-    // the squares around what moves, four rings past it so the ones that lean or scatter stay inside, cleared and
-    // redrawn in a box snapped to whole pixels so it leaves no seam
-    const a0 = Math.max(1, i0 - 4), a1 = Math.min(cols - 2, i1 + 4), b0 = Math.max(1, j0 - 4), b1 = Math.min(rows - 2, j1 + 4);
-    const bx0 = Math.floor(x0 + (a0 + 2) * p), by0 = Math.floor(y0 + (b0 + 2) * p), bx1 = Math.ceil(x0 + (a1 - 2) * p), by1 = Math.ceil(y0 + (b1 - 2) * p);
-    ctx.save();
-    ctx.beginPath(); ctx.rect(bx0, by0, bx1 - bx0, by1 - by0); ctx.clip(); ctx.clearRect(bx0, by0, bx1 - bx0, by1 - by0);
-    // the slope is read per pixel, so the lean and the tilt scale with the patch rather than the squares
-    const path = new Path2D(), K = 1.2 * p * RL, T = .4 * RL;
-    for (let j = b0; j <= b1; j++) for (let i = a0, q = j * cols + a0; i <= a1; i++, q++) {
-      const gx = (S[q + 1] - S[q - 1]) / (2 * p), gy = (S[q + cols] - S[q - cols]) / (2 * p), v = clamp(S[q], 0, 1.1), w = 1 - Math.min(v, 1);
-      const x = x0 + i * p + gx * K + JX[q] * w, y = y0 + j * p + gy * K + JY[q] * w;
-      const h = p * (.06 + .48 * v), a = w * RT[q] + (gx - gy) * T + A[q], c = Math.cos(a) * h, s = Math.sin(a) * h;
-      path.moveTo(x + c - s, y + s + c); path.lineTo(x - c - s, y - s + c); path.lineTo(x - c + s, y - s - c); path.lineTo(x + c + s, y + s - c); path.closePath();
+    // a dot barely off home is left to the letters, so they only break where they really move
+    const t2 = (b * .55) ** 2;
+    let k = 0, x0 = W, y0 = H, x1 = 0, y1 = 0;
+    for (let i = 0; i < C; i++) {
+      const q = ML[i], dx = X[q] - TX[q], dy = Y[q] - TY[q];
+      if (dx * dx + dy * dy < t2) continue;
+      ML[k++] = q;
+      x0 = Math.min(x0, X[q], TX[q]); x1 = Math.max(x1, X[q], TX[q]); y0 = Math.min(y0, Y[q], TY[q]); y1 = Math.max(y1, Y[q], TY[q]);
     }
-    ctx.fillStyle = '#0a0a0a'; ctx.fill(path);
-    ctx.globalCompositeOperation = 'destination-in'; ctx.drawImage(lc, 0, 0, W, H);
-    ctx.restore();
-    raf = requestAnimationFrame(frame);
+    // only the box around the dots away from home, now and a frame ago, is drawn again: the plain letters, a hole where
+    // each of those dots belongs, and the dot where it is
+    const box = k ? [x0 - hole.m - 1, y0 - hole.m - 1, x1 + hole.m + 1, y1 + hole.m + 1] : null;
+    const r = box && last ? [Math.min(box[0], last[0]), Math.min(box[1], last[1]), Math.max(box[2], last[2]), Math.max(box[3], last[3])] : box || last;
+    last = box;
+    if (r) {
+      const rx = Math.max(0, Math.floor(r[0])), ry = Math.max(0, Math.floor(r[1])), rw = Math.min(W, Math.ceil(r[2])) - rx, rh = Math.min(H, Math.ceil(r[3])) - ry;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(rx, ry, rw, rh); ctx.clip();
+      ctx.clearRect(rx, ry, rw, rh);
+      ctx.drawImage(lc, 0, 0, W, H);
+      ctx.globalCompositeOperation = 'destination-out';
+      for (let i = 0; i < k; i++) { const q = ML[i]; ctx.drawImage(hole.c, TX[q] - hole.m, TY[q] - hole.m, hole.s, hole.s); }
+      ctx.globalCompositeOperation = 'source-over';
+      for (let i = 0; i < k; i++) { const q = ML[i]; ctx.drawImage(dot.c, X[q] - dot.m, Y[q] - dot.m, dot.s, dot.s); }
+      ctx.restore();
+    }
+    if (C || (on && Math.abs(pt[0] - sm[0]) + Math.abs(pt[1] - sm[1]) > .5)) raf = requestAnimationFrame(frame);
+    else lastT = 0;
   }
   const wake = () => { if (!raf) raf = requestAnimationFrame(frame); };
 
-  // the pointer presses wherever it goes over the letters, hovering or not, all along the way it came so a quick flick
-  // leaves no gaps, and every step of travel cracks the chips as well; leaving them, or the page moving under it, lifts it
+  // the pointer works wherever it goes over the letters, hovering or not; leaving them, lifting a finger, or the page
+  // moving under it lets the dots go home
+  const spot = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const over = ([x, y]) => x >= zone[0] && x <= zone[2] && y >= zone[1] && y <= zone[3];
   addEventListener('pointermove', e => {
-    if (!E) return;
-    const b = cv.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
-    if (dlg.open || x < 0 || x > W || y < 0 || y > H) { lp = null; return; }
-    const [px, py] = lp || [x, y], dx = x - px, dy = y - py, d = Math.hypot(dx, dy), n = Math.min(40, Math.ceil(d / (p * 2)));
-    for (let i = 1; i <= n; i++) press(px + dx * i / n, py + dy * i / n);
-    if (!n) press(x, y);
-    trav += d;
-    if (!lp || trav >= step) { crack(x, y); trav = 0; }
-    lp = [x, y]; wake();
+    if (!X) return;
+    const was = pt, p = spot(e);
+    pt = !dlg.open && over(p) ? p : null;
+    if (pt || was) wake();
   }, { passive: true });
-  const lift = () => { lp = null; };
+  const lift = () => { pt = null; };
+  addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') lift(); });
+  addEventListener('pointercancel', lift);
   addEventListener('scroll', lift, { passive: true });
   addEventListener('blur', lift);
   document.documentElement.addEventListener('mouseleave', lift);
-  // a click or a tap presses and cracks where it lands
+  // a click or a tap throws the dots around it out at once, and a finger pushes them for as long as it stays down
   word.addEventListener('pointerdown', e => {
-    if (!E) return;
-    const b = cv.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
-    press(x, y); crack(x, y); wake();
+    if (!X) return;
+    const p = spot(e), [x, y] = p;
+    if (e.pointerType !== 'mouse' && over(p)) pt = p;
+    for (let q = 0; q < n; q++) {
+      const dx = X[q] - x, dy = Y[q] - y, r = RCH[q] * 1.2, d2 = dx * dx + dy * dy;
+      if (d2 >= r * r) continue;
+      const o = Math.sqrt(d2) || .001, s = 1 - o / r, l = s * s * kick / o;
+      VX[q] += dx * l; VY[q] += dy * l; MOV[q] = 1;
+    }
+    wake();
   });
   // drawn once Figtree is in, and again whenever the name changes size
   const ro = new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(layout); });
