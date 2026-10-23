@@ -169,16 +169,66 @@ html:has(.dlg[open]) { overflow: hidden; }
 .row .v > p b { color: var(--ink); font-weight: 500; }
 .row .v > p.fine { margin: 16px 0 0; font-size: 14px; color: var(--ink-3); }
 
-/* [02] how it lets go: the three moments, each with a small picture of clack then */
-.how .row { grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr); }
-.how figure { position: relative; margin: 0; aspect-ratio: 4 / 3; overflow: hidden; background: var(--bg-2); }
-.how figure img { width: 100%; height: 100%; object-fit: cover; }
-.how .done figure img { filter: saturate(.06) brightness(1.04); }
-.how figure span { position: absolute; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px 5px; border-radius: 999px;
-  background: rgba(255,255,255,.94); font: 500 11px/1 var(--font-mono); text-transform: uppercase; white-space: nowrap; }
-.how figure span i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.how .work figure span i { animation: pulse 1.6s ease-in-out infinite; }
+/* [02] how it lets go: the three moments, each a picture of the same screen then. Claude Code runs in a terminal on the
+   left, and clack hangs from its ring in the menu bar on the right, with its agent line and count at the bottom as on
+   the page. What changes from one to the next is what the moment is about: the prompt going in and clack waking in
+   colour, the pointer playing while the agent still works, then clack drained of colour and sound and the terminal
+   waiting for you. Everything in it is sized off the picture's width, so it stays the same picture at any size */
+.how .row { grid-template-columns: minmax(0, 4fr) minmax(0, 3fr) minmax(0, 5fr); }
+.scr { position: relative; margin: 0; aspect-ratio: 4 / 3; overflow: hidden; background: var(--bg-2); container-type: inline-size; }
+/* the menu bar, with clack's ring right over its window: it breathes while the agent works, and its dot fills in when
+   it's done */
+.scr .mb { position: absolute; inset: 0 0 auto; height: 5cqw; background: rgba(255,255,255,.8); border-bottom: 1px solid var(--line); }
+.scr .mb svg { position: absolute; left: 79cqw; top: 2.5cqw; width: 3cqw; height: 3cqw; translate: -50% -50%; color: var(--ink); }
+.scr .mb svg .d { display: none; }
+.scr .mb span { position: absolute; right: 2.6cqw; top: 0; font: 500 1.9cqw/5cqw var(--font-mono); color: var(--ink-2); }
+/* the terminal: what you sent, what the agent did and its box for the next prompt */
+.scr .term { position: absolute; left: 4cqw; top: 14cqw; width: 60cqw; height: 44cqw; padding: 6.4cqw 3cqw 0; border-radius: 1.4cqw;
+  background: #161616; color: #7c7c7c; box-shadow: 0 .4cqw 2.4cqw rgba(0,0,0,.18); font: 400 2.6cqw/1.75 var(--font-mono); transition: opacity .3s; }
+.scr .term::before { content: ""; position: absolute; left: 2.2cqw; top: 2cqw; width: 1.3cqw; height: 1.3cqw; border-radius: 50%; background: #3a3a3a; box-shadow: 2cqw 0 #3a3a3a, 4cqw 0 #3a3a3a; }
+.scr .term::after { content: "claude"; position: absolute; left: 0; right: 0; top: 2.65cqw; translate: 0 -50%; text-align: center; font-size: 1.8cqw; line-height: 1; color: #5c5c5c; }
+.scr .term p { margin: 0; white-space: nowrap; overflow: hidden; }
+.scr .term .hi { color: #fff; }
+.scr .term .t::before { content: ""; display: inline-block; width: .6em; height: .6em; margin: 0 .7em 0 .1em; border-radius: 50%; background: currentColor; vertical-align: .08em; }
+.scr .term .spin i { display: inline-block; font-style: normal; color: #e6e6e6; animation: pulse 1.6s ease-in-out infinite; }
+.scr kbd { display: inline-block; margin-left: .7em; padding: 0 .5em; border-radius: .35em; background: var(--accent); color: #fff; font: inherit; line-height: 1.5; }
+.scr .ask { position: absolute; left: 3cqw; right: 3cqw; bottom: 3cqw; padding: .7cqw 1.6cqw; border: .25cqw solid #383838; border-radius: .9cqw; }
+.scr .ask i { display: none; width: .55em; height: 1.15em; margin-left: .4em; vertical-align: -.22em; background: #fff; animation: blink 1.1s steps(1) infinite; }
+/* clack, open under its ring: the material, its name, and at the bottom the agent line over the count */
+.scr .pop { position: absolute; right: 4cqw; top: 7.4cqw; width: 34cqw; height: 63cqw; border-radius: 1.4cqw; background: var(--bgc, var(--bg-2));
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 .8cqw 3.2cqw rgba(0,0,0,.2); }
+.scr .pop::before { content: ""; position: absolute; left: 50%; bottom: 100%; translate: -50% 0; border: 1.3cqw solid transparent; border-top: 0; border-bottom-color: #fff; }
+.scr .pop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.scr .pop b { position: absolute; left: 0; right: 0; text-align: center; color: var(--fg, var(--ink)); }
+.scr .wm { top: 2.6cqw; font: 800 3.4cqw/1 var(--font-brand); letter-spacing: -.04em; }
+.scr .n { bottom: 2.4cqw; font: 600 4.6cqw/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.scr .al { position: absolute; left: 50%; bottom: 8.6cqw; translate: -50% 0; display: inline-flex; align-items: center; gap: .9cqw; padding: 1cqw 1.5cqw .9cqw;
+  border-radius: 999px; background: rgba(255,255,255,.94); font: 500 2cqw/1 var(--font-mono); text-transform: uppercase; white-space: nowrap; }
+.scr .al::before { content: ""; width: 1cqw; height: 1cqw; border-radius: 50%; background: currentColor; animation: pulse 1.6s ease-in-out infinite; }
+/* whether it's heard: a speaker with its sound waves, or crossed out */
+.scr .snd { position: absolute; left: 1.6cqw; top: 1.6cqw; display: grid; place-items: center; width: 4.6cqw; height: 4.6cqw; border-radius: 50%; background: rgba(255,255,255,.92); }
+.scr .snd svg { width: 2.6cqw; height: 2.6cqw; }
+.scr .snd .off { display: none; }
+.scr .ptr { position: absolute; width: 2.8cqw; fill: #0a0a0a; stroke: #fff; stroke-width: 1.4; stroke-linejoin: round; filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.3)); }
+/* 01 you send it, and clack wakes */
+.how .work .scr { --fg: #fff; }
+.how .work .scr .mb svg { animation: breathe 2.4s ease-in-out infinite; }
+/* 02 you play while the agent works behind it */
+.how .play .scr .term { opacity: .6; }
+.how .play .scr .mb svg { animation: breathe 2.4s ease-in-out infinite; }
+.how .play .scr .ptr { left: 88.6cqw; top: 31.6cqw; }
+/* 03 the agent is done: clack lets go, and the terminal is waiting for you */
+.how .done .scr .pop img { filter: saturate(.06) brightness(1.04); }
+.how .done .scr .al::before { animation: none; }
+.how .done .scr .mb svg .d { display: inline; }
+.how .done .scr .snd .on { display: none; }
+.how .done .scr .snd .off { display: inline; }
+.how .done .scr .ask { border-color: var(--accent); color: #fff; }
+.how .done .scr .ask i { display: inline-block; }
+.how .done .scr .ptr { left: 30cqw; top: 51.4cqw; }
 @keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
+@keyframes breathe { 50% { opacity: .3; } }
+@keyframes blink { 50% { opacity: 0; } }
 .aside { max-width: 46em; margin: 32px 0 0; font-size: 15px; color: var(--ink-3); }
 .aside b { color: var(--ink-2); font-weight: 500; }
 
@@ -233,12 +283,17 @@ footer .mono { color: var(--ink-3); }
 /* ---------- smaller screens ---------- */
 @media (max-width: 1120px) {
   .mats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* the moments keep their pictures big enough to read: the picture beside its heading and what it means */
+  .how .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  .how .row .k, .how .row .v { grid-column: 1; }
+  .how .row .scr { grid-column: 2; grid-row: 1 / span 2; }
 }
 @media (max-width: 900px) {
   :root { --sec: 96px; }
   .intro, .row, .how .row, .keeps { grid-template-columns: minmax(0, 1fr); }
   .intro { margin-bottom: 48px; }
-  .how figure { max-width: 360px; }
+  .how .row { grid-template-rows: none; }
+  .how .row .scr { grid-column: auto; grid-row: auto; max-width: 520px; }
   .mats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   footer .wrap > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   footer .wrap > div > :first-child { grid-column: 1 / -1; }
@@ -277,7 +332,7 @@ footer .mono { color: var(--ink-3); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .how .work figure span i { animation: none; }
+  .scr, .scr * { animation: none !important; }
   .band li:hover, .band li:focus-within { flex-grow: 1; }
   .dlg[open], .dlg[open]::backdrop { animation: none; }
   *, *::before, *::after { transition: none !important; }
@@ -335,21 +390,57 @@ footer .mono { color: var(--ink-3); }
           <div class="v">
             <p>Claude Code starts working and clack wakes up, in full colour and sound.</p>
           </div>
-          <figure><img src="img/cyano.jpg" alt="02 Cyanotype: white halftone dots exposed on cobalt blue" loading="lazy"><span><i></i>agent working · 0:42</span></figure>
+          <figure class="scr" role="img" aria-label="Claude Code in a terminal with a prompt just sent and working on it, and clack open under its ring in the menu bar, in full colour with its sound on, reading agent · 0:04">
+            <div class="mb"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="6.55" fill="none" stroke="currentColor" stroke-width="1.9"/><circle class="d" cx="9" cy="9" r="2.2" fill="currentColor"/></svg><span>10:21</span></div>
+            <div class="term">
+              <p class="hi">&gt; make the settings page dark<kbd>↵</kbd></p>
+              <p class="spin"><i>✻</i> Working…</p>
+              <p class="ask">&gt;<i></i></p>
+            </div>
+            <div class="pop" style="--bgc:#3557b0"><img src="img/cyano.jpg" alt="" loading="lazy"><b class="wm">clack</b>
+              <span class="snd"><svg viewBox="0 0 24 24"><path d="M3 9h3.5L11 5v14l-4.5-4H3z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path class="on" d="M15 9a4.2 4.2 0 0 1 0 6m2.8-8.8a8.2 8.2 0 0 1 0 11.6"/><path class="off" d="M15.5 9.5l5 5m0-5l-5 5"/></g></svg></span>
+              <span class="al">agent · 0:04</span><b class="n">0</b></div>
+          </figure>
         </li>
-        <li class="row">
+        <li class="row play">
           <div class="k"><span class="no">02</span><h3>Play</h3></div>
           <div class="v">
             <p>Crumple, pop, shave. No score and no streak, so nothing keeps you here.</p>
           </div>
-          <figure><img src="img/soap.jpg" alt="08 Soap Cutting: a path shaved through magenta halftone soap" loading="lazy"><span>nothing to win</span></figure>
+          <figure class="scr" role="img" aria-label="The pointer shaving a path through clack's Soap Cutting, with only a count of 214 and no score, while Claude Code keeps working in the terminal behind it">
+            <div class="mb"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="6.55" fill="none" stroke="currentColor" stroke-width="1.9"/><circle class="d" cx="9" cy="9" r="2.2" fill="currentColor"/></svg><span>10:24</span></div>
+            <div class="term">
+              <p>&gt; make the settings page dark</p>
+              <p class="t">Update(settings.css)</p>
+              <p class="t">Bash(npm test)</p>
+              <p class="spin"><i>✻</i> Working…</p>
+              <p class="ask">&gt;<i></i></p>
+            </div>
+            <div class="pop" style="--bgc:#ebead6"><img src="img/soap.jpg" alt="" loading="lazy"><b class="wm">clack</b>
+              <span class="snd"><svg viewBox="0 0 24 24"><path d="M3 9h3.5L11 5v14l-4.5-4H3z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path class="on" d="M15 9a4.2 4.2 0 0 1 0 6m2.8-8.8a8.2 8.2 0 0 1 0 11.6"/><path class="off" d="M15.5 9.5l5 5m0-5l-5 5"/></g></svg></span>
+              <span class="al">agent · 3:12</span><b class="n">214</b></div>
+            <svg class="ptr" viewBox="0 0 16 24"><path d="M1 1v18l4.5-4.2 3.1 7 3-1.3-3-6.9h6.1z"/></svg>
+          </figure>
         </li>
         <li class="row done">
           <div class="k"><span class="no">03</span><h3>Go back</h3></div>
           <div class="v">
             <p>When your agent is done or needs you, the picture fades to grey and the sound stops. <b>That's your cue.</b></p>
           </div>
-          <figure><img src="img/soap.jpg" alt="The same soap with its colour drained away" loading="lazy"><span><i></i>agent done · go back</span></figure>
+          <figure class="scr" role="img" aria-label="Claude Code done in the terminal and waiting for your next prompt, while clack has faded to grey with its sound off and reads agent done · go back">
+            <div class="mb"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="6.55" fill="none" stroke="currentColor" stroke-width="1.9"/><circle class="d" cx="9" cy="9" r="2.2" fill="currentColor"/></svg><span>10:27</span></div>
+            <div class="term">
+              <p>&gt; make the settings page dark</p>
+              <p class="t">Update(settings.css)</p>
+              <p class="t">Bash(npm test)</p>
+              <p class="t hi">Done. Dark mode is in.</p>
+              <p class="ask">&gt;<i></i></p>
+            </div>
+            <div class="pop" style="--bgc:#ebead6"><img src="img/soap.jpg" alt="" loading="lazy"><b class="wm">clack</b>
+              <span class="snd"><svg viewBox="0 0 24 24"><path d="M3 9h3.5L11 5v14l-4.5-4H3z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path class="on" d="M15 9a4.2 4.2 0 0 1 0 6m2.8-8.8a8.2 8.2 0 0 1 0 11.6"/><path class="off" d="M15.5 9.5l5 5m0-5l-5 5"/></g></svg></span>
+              <span class="al">agent done · go back</span><b class="n">388</b></div>
+            <svg class="ptr" viewBox="0 0 16 24"><path d="M1 1v18l4.5-4.2 3.1 7 3-1.3-3-6.9h6.1z"/></svg>
+          </figure>
         </li>
       </ol>
       <p class="aside">Running several sessions? clack lets go when the first one finishes.</p>
