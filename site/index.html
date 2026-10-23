@@ -17,8 +17,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500&family=Figtree:wght@800&display=swap">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap">
 <style>
-/* The clack website: one page with the ten materials, each opening clack itself to play in a window over the page, how
-   it lets go of you and the two ways to have it (the web version and a browser extension). The design
+/* The clack website: one page that opens on the ten materials turning round clack itself, there to play without a
+   click, then how it lets go of you and the two ways to have it (the web version and a browser extension). The design
    system is quiet so the materials carry the colour: white paper, black type, grey for everything secondary, one
    cobalt accent, hairlines between rows, mono capitals for labels and clack's own heavy wordmark for its name */
 :root {
@@ -85,58 +85,87 @@ section { padding-block: var(--sec); }
 .bar .btn { min-height: 36px; padding: 0 16px; font-size: 14px; }
 .menu { display: none; }
 
-/* ---------- hero: a demo agent at work, the name across the page in a material's colours, a rule down, and what
-   clack is. While the agent works the name is the material's to play with; once it's done the name fades to grey and
-   holds still, the way clack lets go of you, until you send it another prompt and the next material takes over ---------- */
-.hero { padding-block: clamp(40px, 7vw, 104px) 0; text-align: center; }
-/* the agent's line over the name, in the words clack itself uses: who's working and for how long, then done */
-.agent { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 12px; min-height: 34px; margin: 0 0 clamp(28px, 3.4vw, 48px); color: var(--ink-2); }
-.agent .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c1); animation: pulse 1.6s ease-in-out infinite; }
-.agent button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px 7px; border: 1px solid var(--line-2); border-radius: 999px; background: none;
-  color: var(--ink); font: inherit; text-transform: inherit; cursor: pointer; transition: border-color .15s, background-color .15s, color .15s; }
-.agent button:hover { border-color: var(--ink); background: var(--ink); color: #fff; }
-.hero.done .agent .dot { background: none; box-shadow: inset 0 0 0 1.5px var(--ink-3); animation: none; }
-/* the name and, at its top right like the page number by clack's own logo, the material it's in, which opens it */
-.name { position: relative; width: fit-content; margin: 0 auto; }
-.now { position: absolute; left: 100%; top: clamp(2px, .6vw, 8px); display: grid; justify-items: start; gap: 5px; margin-left: 10px; padding: 0; border: 0; background: none;
-  color: var(--ink-3); font: 500 12px/1 var(--font-mono); text-transform: uppercase; text-align: left; white-space: nowrap; cursor: pointer; transition: color .15s; }
-.now b { font-weight: 500; color: var(--ink); }
-.now:hover { color: var(--ink); }
-/* the name in clack's own wordmark: Figtree at its heaviest, set tight, in the material's colour or grey once it's let go */
-.word { margin: 0; font: 800 clamp(80px, 21vw, 272px)/.78 var(--font-brand); letter-spacing: -.04em; color: var(--c1, var(--ink)); }
-.hero.done .word span { color: #cbcbcb; }
-/* the grey fades in as the agent lets go and out again as the next prompt starts, but not when the canvas first covers
-   the letters, so they don't show through around its edges and holes */
-.hero.released .word span { transition: color 1.6s; }
-/* the L's foot would touch the A's leg at that spacing, so the pair gets a little more room */
-.word span:nth-child(2) { margin-right: .035em; }
-/* the pointer breaks it into dots like the name on the Soren template. The name is drawn again on a canvas laid over
-   the letters, which stay underneath for reading and selecting, see-through once the canvas shows them, and grey again
-   as it fades out once the agent is done. A sideways swipe on a phone breaks it too */
-.word { position: relative; touch-action: pan-y; }
-.word canvas { position: absolute; pointer-events: none; transition: opacity 1.6s; }
-.word.live span { color: transparent; }
-.hero.done .word canvas { opacity: 0; }
-.rule { width: 1px; height: clamp(40px, 5vw, 72px); margin: clamp(28px, 3vw, 40px) auto; background: var(--ink); }
+/* ---------- the cover: the ten materials in a ring you turn, the one in the middle big and in its colours, the rest
+   smaller and grey, and blurred further out. The one in the middle is clack itself, there to play the moment the
+   pointer is on it, no click needed. Under it, a demo agent's line: playing starts it, and when it's done the
+   middle fades to grey like the rest, the way clack lets go of you ---------- */
+/* the middle is 2:3 like the pictures, as tall as the first screen leaves room for, never wider than most of a phone */
+.cover { --wc: min(calc(clamp(360px, 100svh - var(--bar-h) - 108px, 690px) * 2 / 3), 72vw); --hc: calc(var(--wc) * 3 / 2); padding-block: 20px 0; }
+/* the ring runs the width of the window, as tall as the middle. Dragging it or swiping sideways turns it; up and down
+   still scroll the page */
+.deck { position: relative; isolation: isolate; height: var(--hc); overflow: hidden; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
+.cards { margin: 0; padding: 0; list-style: none; }
+/* every card is the middle's size, centred, and the script slides, shrinks, greys and blurs it by how far out it is */
+.card, .live, .over { position: absolute; left: 50%; top: 50%; width: var(--wc); height: var(--hc); margin: calc(var(--hc) / -2) 0 0 calc(var(--wc) / -2); }
+.card { padding: 0; border: 0; background: var(--bgc, var(--bg-2)); cursor: pointer; will-change: transform, filter; }
+/* its picture is clack's own, drawn by the clack in the middle as it opens, so a material looks the same in the ring as
+   it does once it's live; until then the card is the material's colour. A material played in the middle leaves the
+   ring with what was done to it (was), which then fades back the way the materials heal. The saved pictures are only
+   for when clack can't be had here */
+.card img, .card canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.card canvas { opacity: 0; transition: opacity .4s; }
+.card canvas.on { opacity: 1; }
+.card .was { transition: opacity 1.6s .6s; }
+.card .was.on { transition: none; }
+.card .was.quick { transition: opacity .25s; }
+/* only the middle card takes the focus (the arrow keys turn the ring), and its ring shows over clack when it's there */
+.card:focus-visible, .deck:has(.card:focus-visible) .live { outline: 3px solid var(--accent); outline-offset: -3px; }
+/* clack over the middle card, shown once the ring has come to rest on it, and away again the moment it turns. Its
+   sound and the way to a bigger one sit over the middle whenever the ring is at rest */
+.live { z-index: 20; background: var(--bgc, var(--bg-2)); opacity: 0; pointer-events: none; transition: opacity .15s; }
+.live.on { opacity: 1; pointer-events: auto; transition-duration: .3s; }
+.live iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.over { z-index: 21; pointer-events: none; transition: opacity .25s; }
+.over .ctl { pointer-events: auto; }
+.cover.moving .over { opacity: 0; visibility: hidden; transition: opacity .1s, visibility 0s .1s; }
+/* under the middle, on the left its name and what to do with it, gone while the ring turns; on the right the agent's
+   line in the words clack uses, who's working and for how long, then done, with the way to send it another prompt
+   under it. Each pair shares a line, and the button keeps its room so nothing moves when the agent is done */
+.cap { container-type: inline-size; width: var(--wc); margin: 0 auto; padding-top: 16px; }
+.cap > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nm st" "try act"; align-items: baseline; gap: 8px 16px; }
+.cap .nm { grid-area: nm; margin: 0; font: 500 20px/1.15 var(--font-ui); letter-spacing: -.03em; }
+.cap .try { grid-area: try; margin: 0; font-size: 15px; line-height: 1.3; color: var(--ink-2); text-wrap: balance; }
+.cap .nm, .cap .try { transition: opacity .25s; }
+.cover.moving .cap .nm, .cover.moving .cap .try { opacity: 0; transition-duration: .1s; }
+.agent { grid-area: st; justify-self: end; margin: 0; color: var(--ink-2); white-space: nowrap; }
+.agent .dot { display: inline-block; width: 8px; height: 8px; margin-right: 9px; border-radius: 50%; background: var(--c1); vertical-align: 0; }
+.cover.working .agent { color: var(--ink); }
+.cover.working .agent .dot { animation: pulse 1.6s ease-in-out infinite; }
+.cover.done .agent .dot { background: none; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.again { grid-area: act; justify-self: end; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px 6px; border: 0; border-radius: 999px;
+  background: var(--ink); color: #fff; white-space: nowrap; cursor: pointer; transition: background-color .15s; }
+.cover:not(.done) .again { visibility: hidden; }
+.again:hover { background: var(--accent); }
+/* under a middle too narrow for both sides (on a phone, or a short window), the agent's line goes under the name */
+@container (max-width: 379px) {
+  .cap > div { grid-template-columns: minmax(0, 1fr); grid-template-areas: "nm" "try" "st" "act"; }
+  .agent, .again { justify-self: start; }
+  .agent { margin-top: 8px; }
+}
+
+/* ---------- under it, a rule down and what clack is ---------- */
+.hero { padding-block: clamp(32px, 4vw, 56px) 0; text-align: center; }
+.rule { width: 1px; height: clamp(40px, 5vw, 72px); margin: 0 auto clamp(28px, 3vw, 40px); background: var(--ink); }
 .lede { max-width: 25em; margin: 0 auto; font: 500 clamp(21px, 2vw, 27px)/1.28 var(--font-ui); letter-spacing: -.025em; text-wrap: balance; }
 .meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 24px 0 0; color: var(--ink-3); }
 .meta i { font-style: normal; color: var(--line-2); }
 .ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 32px; }
 
-/* ---------- [01] the ten materials, in their own pictures, each a way into clack ---------- */
-.mats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 40px 20px; margin: 0; padding: 0; list-style: none; }
-.mat button { all: unset; display: block; width: 100%; cursor: pointer; }
-.mat .ph { position: relative; display: block; aspect-ratio: 2 / 3; overflow: hidden; background: var(--bgc, var(--bg-2)); }
-.mat .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
-.mat .ph em { position: absolute; left: 12px; bottom: 12px; padding: 7px 11px 6px; border-radius: 999px; background: rgba(255,255,255,.94);
-  font: 500 11.5px/1 var(--font-mono); font-style: normal; text-transform: uppercase; opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s; }
-.mat button:hover .ph img, .mat button:focus-visible .ph img { transform: scale(1.04); }
-.mat button:hover .ph em, .mat button:focus-visible .ph em { opacity: 1; transform: none; }
-.mat button:focus-visible .ph { outline: 2px solid var(--accent); outline-offset: 3px; }
-.mat h3 { display: flex; align-items: flex-start; gap: 8px; margin: 18px 0 0; font: 500 20px/1.15 var(--font-ui); letter-spacing: -.03em; }
-.mat h3 sup { font: 400 11px/1 var(--font-mono); letter-spacing: 0; color: var(--ink-3); margin-top: 1px; }
+/* ---------- white chips that read over every picture: the sound, which shows whether clack is heard and mutes or
+   unmutes it, and the way to a bigger clack or out of it ---------- */
+.ctl { --at: 12px; position: absolute; top: var(--at); z-index: 1; display: grid; place-items: center; width: 36px; height: 36px; padding: 0;
+  border: 0; border-radius: 50%; color: var(--ink); background: rgba(255,255,255,.9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  box-shadow: 0 0 0 .5px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.12); cursor: pointer; transition: background-color .15s, transform .15s; }
+.ctl:hover { background: #fff; transform: scale(1.06); }
+.ctl.snd { left: var(--at); }
+.ctl.snd svg { width: 16px; height: 16px; }
+.ctl.snd .off, .ctl.snd.muted .on { display: none; }
+.ctl.snd.muted .off { display: inline; }
+.ctl.x, .ctl.big { right: var(--at); }
+.ctl.x svg { width: 12px; height: 12px; }
+.ctl.big svg { width: 14px; height: 14px; }
 
-/* ---------- a material opens clack itself in a window over the page, as big as the screen allows ---------- */
+/* ---------- the middle's chip opens clack in a window over the page, as big as the screen allows ---------- */
 .dlg { width: min(1200px, calc(100vw - 2 * var(--gut))); height: min(840px, calc(100svh - 48px)); max-width: none; max-height: none;
   margin: auto; padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: var(--bg); color: var(--ink);
   box-shadow: 0 0 0 .5px rgba(0,0,0,.12), 0 32px 80px rgba(0,0,0,.28); container-type: size; }
@@ -146,19 +175,8 @@ section { padding-block: var(--sec); }
 @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.985); } }
 @keyframes fade { from { opacity: 0; } }
 html:has(.dlg[open]) { overflow: hidden; }
-/* clack fills it to the edges. In its two top corners, level with clack's logo, sit the sound, which shows whether
-   clack is heard and mutes or unmutes it, and the way out, on white chips that read over every picture */
-.dlg .ctl { --at: 12px; position: absolute; top: var(--at); z-index: 1; display: grid; place-items: center; width: 36px; height: 36px; padding: 0;
-  border: 0; border-radius: 50%; color: var(--ink); background: rgba(255,255,255,.9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  box-shadow: 0 0 0 .5px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.12); cursor: pointer; transition: background-color .15s, transform .15s; }
-.dlg .ctl:hover { background: #fff; transform: scale(1.06); }
-.dlg .snd { left: var(--at); }
-.dlg .snd svg { width: 16px; height: 16px; }
-.dlg .snd .off, .dlg .snd.muted .on { display: none; }
-.dlg .snd.muted .off { display: inline; }
-.dlg .x { right: var(--at); }
-.dlg .x svg { width: 12px; height: 12px; }
-/* on a short screen clack's top row tightens up, and the chips move up with its logo */
+/* clack fills it to the edges, with its sound and the way out in its two top corners, level with clack's logo. On a
+   short screen clack's top row tightens up, and the chips move up with its logo */
 @container (max-height: 520px) { .dlg .ctl { --at: 6px; width: 32px; height: 32px; } }
 /* the screen shows the material's own colour until clack has loaded on it */
 .screen { position: relative; flex: 1; background: var(--bgc, var(--bg-2)); }
@@ -276,7 +294,6 @@ footer .mono { color: var(--ink-3); }
 
 /* ---------- smaller screens ---------- */
 @media (max-width: 1120px) {
-  .mats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   /* the moments keep their pictures big enough to read: the picture beside its heading and what it means */
   .how .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; }
   .how .row .k, .how .row .v { grid-column: 1; }
@@ -288,7 +305,6 @@ footer .mono { color: var(--ink-3); }
   .intro { margin-bottom: 48px; }
   .how .row { grid-template-rows: none; }
   .how .row .scr { grid-column: auto; grid-row: auto; max-width: 520px; }
-  .mats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   footer .wrap > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   footer .wrap > div > :first-child { grid-column: 1 / -1; }
 }
@@ -309,22 +325,14 @@ footer .mono { color: var(--ink-3); }
   .bar.open .menu i::before { transform: translateY(5px) rotate(45deg); }
   .bar.open .menu i::after { transform: translateY(-5px) rotate(-45deg); }
   .bar > .wrap > .btn { order: 3; }
-  .mats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 14px; }
-  .mat h3 { font-size: 17px; margin-top: 14px; }
   .dlg { width: 100%; height: 100%; border-radius: 0; }
-  /* beside a name the width of the phone there's only room for the material's number */
-  .now { margin-left: 6px; font-size: 11px; }
-  .now b { display: none; }
+  .cap .nm { font-size: 17px; }
+  .cap .try { font-size: 13px; }
   .sh { margin-bottom: 40px; }
   .row { padding: 32px 0; }
   .cmd { flex-direction: column; align-items: stretch; padding: 14px; }
   .cmd button { align-self: flex-start; }
   .cmd.small { flex-direction: row; align-items: center; padding: 2px 2px 2px 8px; }
-}
-/* where the agent's line and its button don't fit side by side, there's room kept for both rows, so nothing moves when
-   the agent is done */
-@media (max-width: 520px) {
-  .agent { min-height: 76px; align-content: center; }
 }
 @media (max-width: 420px) {
   .bar > .wrap > .btn { display: none; }
@@ -353,34 +361,36 @@ footer .mono { color: var(--ink-3); }
 </header>
 
 <main>
-  <div class="wrap hero" id="hero">
-    <p class="agent mono" id="agent"><i class="dot" aria-hidden="true"></i><span id="agentLine">Demo agent working · 0:00</span><button type="button" id="again" hidden>Send another prompt <span aria-hidden="true">↻</span></button></p>
-    <div class="name">
-      <h1 class="word" aria-label="clack"><span aria-hidden="true">C</span><span aria-hidden="true">L</span><span aria-hidden="true">A</span><span aria-hidden="true">C</span><span aria-hidden="true">K</span></h1>
-      <button class="now" id="heroMat" type="button"><span id="heroNo">[02]</span><b id="heroName">Cyanotype</b></button>
+  <section class="cover" id="materials" aria-label="Materials" style="--c1:#3857ab">
+    <div class="deck" id="deck" role="region" aria-roledescription="carousel" aria-label="Ten materials">
+      <ul class="cards" id="cards"></ul>
+      <div class="live" id="live"></div>
+      <div class="over">
+        <button class="ctl snd" type="button" aria-label="Mute" title="Mute"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h3.5L11 5v14l-4.5-4H3z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path class="on" d="M15 9a4.2 4.2 0 0 1 0 6m2.8-8.8a8.2 8.2 0 0 1 0 11.6"/><path class="off" d="M15.5 9.5l5 5m0-5l-5 5"/></g></svg></button>
+        <button class="ctl big" id="big" type="button" aria-label="Open bigger" title="Open bigger"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M8.5 1.5h4v4m0-4L8 6M5.5 12.5h-4v-4m0 4L6 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
     </div>
+    <div class="cap"><div>
+      <p class="nm" id="capName" aria-live="polite">Cyanotype</p>
+      <p class="try" id="capTry" aria-live="polite">Trace to expose white dots</p>
+      <p class="agent mono"><i class="dot" aria-hidden="true"></i><span id="agentLine">Play to start a demo agent</span></p>
+      <button class="again mono" type="button" id="again">Send another prompt <span aria-hidden="true">↻</span></button>
+    </div></div>
+  </section>
+
+  <div class="wrap hero">
     <div class="rule" aria-hidden="true"></div>
-    <p class="lede">Something to clack instead of scrolling. Back to work the moment your agent is done.</p>
+    <h1 class="lede">Something to clack instead of scrolling. Back to work the moment your agent is done.</h1>
     <p class="meta mono"><span>Web version</span><i>·</i><span>Browser extension</span></p>
     <div class="ctas">
-      <a class="btn" href="#materials">Play it here ↓</a>
-      <a class="btn ghost" href="#get">Get clack</a>
+      <a class="btn" href="#get">Get clack</a>
+      <a class="btn ghost" href="#how">How it works ↓</a>
     </div>
   </div>
 
-  <section id="materials">
-    <div class="wrap">
-      <div class="sh"><span>Materials</span><span class="idx">[01]</span></div>
-      <div class="intro">
-        <h2>Ten squishies to see, hear and almost feel.</h2>
-      </div>
-      <ul class="mats" id="mats"></ul>
-    </div>
-  </section>
-
   <section id="how" class="how">
     <div class="wrap">
-      <div class="sh"><span>How it works</span><span class="idx">[02]</span></div>
+      <div class="sh"><span>How it works</span><span class="idx">[01]</span></div>
       <div class="intro">
         <h2>It lets go the moment your agent is done.</h2>
         <p>Something for your hands while you wait, then a clear sign to go back. Here a demo agent does the waiting, so you can try it now.</p>
@@ -435,13 +445,13 @@ footer .mono { color: var(--ink-3); }
           </figure>
         </li>
       </ol>
-      <p class="aside">Try it now: open any <a href="#materials">material</a> and click <b>try an agent wait</b>.</p>
+      <p class="aside">Try it now: the material at the <a href="#materials">top of the page</a> is clack itself, and playing it starts a demo agent.</p>
     </div>
   </section>
 
   <section id="get">
     <div class="wrap">
-      <div class="sh"><span>Get clack</span><span class="idx">[03]</span></div>
+      <div class="sh"><span>Get clack</span><span class="idx">[02]</span></div>
       <div class="intro">
         <h2>Pick where it lives.</h2>
         <p>Try it right here with nothing to install, or add it to your browser, where it sits in the side panel beside claude.ai or ChatGPT and follows them for real.</p>
@@ -517,30 +527,29 @@ footer .mono { color: var(--ink-3); }
 
 <script>
 // the ten materials in clack's own order (SOUND_IDS in play/), with the colour its picture shows when the image hasn't
-// loaded yet, and the two CLACK at the top takes from it: the one its letters are in, strong enough to read on white,
-// and a second one its motion shows when the pointer works it, such as Pudding's red blush or the blue under Sugar
-// Slime's furrows
+// loaded yet, the one the agent's dot takes from it, strong enough to read on white, and what to do with it, which
+// shows under it when it's in the middle of the cover
 const MATS = [
-  { id: 'slime', name: 'Crunchy Slime', bg: '#e6e6e6', c: ['#1a1a1a', '#b5b5b5'] },
-  { id: 'cyano', name: 'Cyanotype', bg: '#3557b0', c: ['#3857ab', '#c6cfe7'] },
-  { id: 'bubble', name: 'Bubble Wrap', bg: '#72b4ed', c: ['#6eb2ed', '#0d1240'] },
-  { id: 'wax', name: 'Wax Ball', bg: '#c3c6db', c: ['#a9a6d8', '#cfeeb6'] },
-  { id: 'thock', name: 'Thocky Keys', bg: '#d9d8de', c: ['#2a5fa8', '#f2803e'] },
-  { id: 'gummy', name: 'Chewy Jellies', bg: '#e8ecea', c: ['#f392b7', '#8c1f4f'] },
-  { id: 'pudding', name: 'Pudding', bg: '#eed9b1', c: ['#29a30c', '#ec2f14'] },
-  { id: 'soap', name: 'Soap Cutting', bg: '#ebead6', c: ['#c0518a', '#e6d8cd'] },
-  { id: 'snow', name: 'Squeaky Snow', bg: '#9ca6e2', c: ['#8a9ae0', '#8c8a5e'] },
-  { id: 'sugar', name: 'Sugar Slime', bg: '#acdc98', c: ['#9ccc58', '#3f86c9'] },
+  { id: 'slime', name: 'Crunchy Slime', bg: '#e6e6e6', c: '#1a1a1a', try: 'Crease it like paper' },
+  { id: 'cyano', name: 'Cyanotype', bg: '#3557b0', c: '#3857ab', try: 'Trace to expose white dots' },
+  { id: 'bubble', name: 'Bubble Wrap', bg: '#72b4ed', c: '#6eb2ed', try: 'Sweep across to pop' },
+  { id: 'wax', name: 'Wax Ball', bg: '#c3c6db', c: '#a9a6d8', try: 'Press in like clay' },
+  { id: 'thock', name: 'Thocky Keys', bg: '#d9d8de', c: '#2a5fa8', try: 'Burn it with a heat laser' },
+  { id: 'gummy', name: 'Chewy Jellies', bg: '#e8ecea', c: '#f392b7', try: 'Pull it into a string' },
+  { id: 'pudding', name: 'Pudding', bg: '#eed9b1', c: '#29a30c', try: 'Brush it to jiggle' },
+  { id: 'soap', name: 'Soap Cutting', bg: '#ebead6', c: '#c0518a', try: 'Shave a path' },
+  { id: 'snow', name: 'Squeaky Snow', bg: '#9ca6e2', c: '#8a9ae0', try: 'Walk across it' },
+  { id: 'sugar', name: 'Sugar Slime', bg: '#acdc98', c: '#9ccc58', try: 'Rake it down to the blue' },
 ];
 const $ = id => document.getElementById(id);
 const nn = i => String(i + 1).padStart(2, '0');
+// clack in the middle of the cover once it has loaded: clack itself (c), its agent (ag) and the material it's on (at),
+// whether its demo agent has been started, whether anyone has played it yet, and whether it has been played since it
+// came to the middle
+const live = { c: null, ag: null, at: -1, started: false, touched: false, dirty: false };
 
-$('mats').innerHTML = MATS.map((m, i) => `<li class="mat"><button type="button" data-id="${m.id}" aria-label="Play ${nn(i)} ${m.name}">` +
-  `<span class="ph" style="--bgc:${m.bg}"><img src="img/${m.id}.jpg" alt="" loading="lazy" onerror="this.remove()"><em>Play it</em></span>` +
-  `<h3>${m.name}<sup>[${nn(i)}]</sup></h3></button></li>`).join('');
-
-// picking a material opens clack itself (play/, same origin) on it in a window over the page; closing the window takes
-// clack away again, so nothing keeps playing or drawing behind the page
+// the middle's chip opens clack itself (play/, same origin) on its material in a window over the page; closing the
+// window takes clack away again, so nothing keeps playing or drawing behind the page
 const dlg = $('dlg'), view = $('screen');
 let clack = null, muted = false;
 function show(id) {
@@ -584,15 +593,15 @@ let outside = false;
 dlg.addEventListener('pointerdown', e => { outside = e.target === dlg; });
 dlg.addEventListener('click', e => { if (outside && e.target === dlg) shut(); });
 $('close').addEventListener('click', shut);
-// the sound chip mutes and unmutes clack, and the next material you open stays the way you left it
-$('snd').addEventListener('click', () => {
+// the sound chips, on the middle and in the window, mute and unmute clack in both, and the next material you open stays
+// the way you left it
+const chips = [...document.querySelectorAll('.ctl.snd')];
+chips.forEach(b => b.addEventListener('click', () => {
   muted = !muted;
-  const b = $('snd'), label = muted ? 'Unmute' : 'Mute';
-  b.classList.toggle('muted', muted); b.setAttribute('aria-label', label); b.title = label;
-  if (clack) clack.set({ muted });
-});
-const playIt = e => { const b = e.target.closest('button'); if (b) play(b.dataset.id); };
-$('mats').addEventListener('click', playIt);
+  const label = muted ? 'Unmute' : 'Mute';
+  for (const c of chips) { c.classList.toggle('muted', muted); c.setAttribute('aria-label', label); c.title = label; }
+  for (const c of [clack, live.c]) if (c) c.set({ muted });
+}));
 
 // copy buttons: the clipboard where the page may use it, otherwise the line is selected for ⌘C
 document.addEventListener('click', async e => {
@@ -618,568 +627,298 @@ const spy = new IntersectionObserver(entries => {
 }, { rootMargin: '-45% 0px -50% 0px' });
 for (const id of ['materials', 'how', 'get']) spy.observe($(id));
 
-// the cover plays out what clack does: a demo agent is already working when you arrive, for the twelve seconds clack's
-// own demo agent takes, and while it works CLACK is in one material's colours, there to break apart. Once it's done the
-// name fades to grey and the pointer no longer breaks it, the way clack lets go of you, and sending it another prompt
-// starts the next material. The name's number and material at its top right open that material in clack
-const cover = { m: 1, done: false, paint() {} };
+// the cover: the ten materials in a ring, turned by dragging it, swiping or scrolling sideways, clicking another one or
+// the arrow keys. The one in the middle is big and in its colours; the others are smaller and grey, blurred past the
+// next one on each side, and the last ones fade out where the ring comes round. Once the ring comes to rest, clack
+// itself is in the middle on that material, there to play the moment the pointer is on it; it steps away while the
+// ring turns, and each material the ring comes to rest on is handed to the same clack
 (() => {
-  const hero = $('hero'), line = $('agentLine'), again = $('again'), WORK_MS = 12000;
-  const clock = ms => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-  let t0 = 0, tick = 0;
-  function wear(i) {
-    const m = MATS[i];
-    cover.m = i;
-    hero.style.setProperty('--c1', m.c[0]);
-    $('heroNo').textContent = `[${nn(i)}]`; $('heroName').textContent = m.name;
-    $('heroMat').setAttribute('aria-label', `Play ${nn(i)} ${m.name}`);
-    cover.paint();
-  }
-  function work() {
-    cover.done = false; hero.classList.remove('done'); again.hidden = true;
-    t0 = Date.now(); clearInterval(tick);
-    const show = () => {
-      const ms = Date.now() - t0;
-      if (ms >= WORK_MS) done(); else line.textContent = `Demo agent working · ${clock(ms)}`;
-    };
-    show(); tick = setInterval(show, 250);
-  }
-  function done() {
-    clearInterval(tick); cover.done = true; hero.classList.add('done', 'released');
-    line.textContent = 'Demo agent done · go back'; again.hidden = false;
-  }
-  again.addEventListener('click', () => { wear((cover.m + 1) % MATS.length); work(); });
-  $('heroMat').addEventListener('click', () => play(MATS[cover.m].id));
-  wear(cover.m); work();
-})();
+  const cover = $('materials'), deck = $('deck'), box = $('live'), N = MATS.length, K = .52;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mod = a => ((a % N) + N) % N;
+  // how many places card i is from p, the short way round: -5 up to 5
+  const off = (i, p) => mod(i - p + N / 2) - N / 2;
+  $('cards').innerHTML = MATS.map((m, i) => `<li><button class="card" type="button" data-i="${i}" style="--bgc:${m.bg}" aria-label="${nn(i)} ${m.name}">` +
+    `</button></li>`).join('');
+  const cards = [...deck.querySelectorAll('.card')];
 
-// CLACK at the top plays the material the cover's agent is on, each the way clack plays it, so no two feel alike. The
-// letters are cut into a grid of cells of the material's own size, a dot in every cell that's mostly ink, and only the
-// dots the pointer has disturbed are drawn, over the real letters, until they're back at rest:
-//   01 Crunchy Slime   a sheet of + stitches that folds along a sharp crease and crunches back in little snaps
-//   02 Cyanotype       light exposes white dots in the blue, solid white where it passes twice, fading back slowly
-//   03 Bubble Wrap     bubbles pop under the pointer, shake the ones around them, and slowly fill back up
-//   04 Wax Ball        squares pressed in like a thumb into clay shrink to diamonds and swell back, wobbling
-//   05 Thocky Keys     the pointer is a heat laser: heat creeps outward, burns holes that grow into each other, and
-//                      cools through orange, pink and blue before the holes close
-//   06 Chewy Jellies   the jelly is pinched and pulled into a string until it snaps and springs back, wobbling
-//   07 Pudding         soft rounds jiggle when brushed, squashing and stretching, and blush red for a moment
-//   08 Soap Cutting    a blade shaves a cut: some dots drop away like beads, the rest heap up along its edges, and
-//                      the cut slowly closes
-//   09 Squeaky Snow    lines like a lenticular print; each step presses a print and sends ripples across the word
-//   10 Sugar Slime     three fingertips rake furrows down to the blue, heaping the lime sugar along them, and it
-//                      slowly flows back
-// A click or a tap does the same at once, harder. It plays only while the cover's agent works, and with reduced motion
-// the name stays as it is, only taking the material's colour
-(() => {
-  const word = document.querySelector('.word');
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const cv = document.createElement('canvas'), ctx = cv.getContext('2d'), lc = document.createElement('canvas');
-  // the baseline, read off an empty box sitting on it
-  const probe = document.createElement('i');
-  probe.style.cssText = 'display:inline-block;width:0;height:0';
-  for (const e of [probe, cv]) { e.setAttribute('aria-hidden', 'true'); word.append(e); }
+  // pos is where the ring is (the material in the middle, with fractions on the way) and target where it's going; it
+  // opens on Cyanotype, in the site's own cobalt. W is the middle's width, w a small card's, and gap the space between
+  let pos = 1, target = 1, at = 1, still = false, raf = 0, lastT = 0, W = 0, w = 0, gap = 0, sat = 1, drag = null, swallow = false;
 
-  // the word: its size, where the pointer works on it (zone), its ink a pixel to the pixel, and u, the font size the
-  // pointer's reach is measured against, never less than a phone's finger needs
-  let W = 0, H = 0, dpr = 1, fs = 0, u = 0, zone = null, letters = null, ink = null;
-  // the material on it (M), its cells g across in cols by rows, and which dot sits in each (GI, -1 for none)
-  let M = null, g = 0, cols = 0, rows = 0, GI = null, n = 0, sprites = {};
-  // each dot: its home (TX, TY), where it is (X, Y) and how fast it's going (VX, VY), its size (S) and turn (R), two
-  // amounts its material uses as it likes (A, B), its colour (K), its state (Q) and when the pointer last had it (T).
-  // ON marks the dots away from rest, the only ones drawn
-  let TX, TY, X, Y, VX, VY, S, R, A, B, K, Q, T, ON, ML;
-  let raf = 0, lastT = 0, pt = null, sm = null, pv = null, last = null;
-  const rnd = (a, b) => a + Math.random() * (b - a);
+  // a card d places out has its centre this far from the middle: the next one a gap past the middle's edge and each
+  // one after that a small card and a gap further, in between on the way
+  const x = d => { const a = Math.abs(d), d1 = (W + w) / 2 + gap; return Math.sign(d) * (a <= 1 ? a * d1 : d1 + (a - 1) * (w + gap)); };
+  function draw() {
+    cards.forEach((c, i) => {
+      const d = off(i, pos), a = Math.abs(d), s = K + (1 - K) * Math.max(0, 1 - a);
+      c.style.transform = `translateX(${x(d).toFixed(2)}px) scale(${s.toFixed(4)})`;
+      // grey by how far out it is, the middle as grey as clack goes when it lets go, and blurred past the next one (in
+      // the card's own pixels, before it's shrunk)
+      c.style.filter = `grayscale(${(1 - (1 - Math.min(1, a)) * sat).toFixed(3)}) blur(${(Math.min(1, Math.max(0, a - 1)) * 10).toFixed(1)}px)`;
+      c.style.opacity = a > 3.5 ? Math.max(0, 4.5 - a).toFixed(3) : '';
+      c.style.zIndex = 10 - Math.round(a);
+    });
+  }
+  function measure() { W = box.offsetWidth; w = W * K; gap = Math.max(12, W * .055); draw(); }
 
-  // one dot's picture, drawn once and stamped for every dot: a round dot with a soft edge, a frosted blur, a ring, a
-  // square, a + stitch or a dash, size across in the colour ink
-  function sprite(shape, ink, size, soft = .5) {
-    const key = [shape, ink, size, soft].join();
-    if (sprites[key]) return sprites[key];
-    const s = Math.ceil(size + soft * 2 + 2), m = s / 2, r = size / 2, c = document.createElement('canvas'), x = c.getContext('2d');
-    c.width = c.height = Math.ceil(s * dpr);
-    x.setTransform(c.width / s, 0, 0, c.height / s, 0, 0);
-    x.fillStyle = x.strokeStyle = ink;
-    if (shape === 'disc' || shape === 'blur') {
-      const rgb = [1, 3, 5].map(i => parseInt(ink.slice(i, i + 2), 16)).join(), blur = shape === 'blur';
-      const gr = x.createRadialGradient(m, m, Math.max(0, blur ? r * .4 : r - soft), m, m, blur ? r : r + soft);
-      gr.addColorStop(0, `rgb(${rgb})`); gr.addColorStop(1, `rgba(${rgb},0)`);
-      x.fillStyle = gr; x.fillRect(0, 0, s, s);
-    } else if (shape === 'ring') {
-      x.lineWidth = Math.max(1, size * .08);
-      x.beginPath(); x.arc(m, m, r - x.lineWidth / 2, 0, 2 * Math.PI); x.stroke();
-    } else if (shape === 'square') x.fillRect(m - r, m - r, size, size);
-    else if (shape === 'plus') { const t = Math.max(1.2, size * .18); x.fillRect(m - r, m - t / 2, size, t); x.fillRect(m - t / 2, m - r, t, size); }
-    else if (shape === 'dash') { const t = Math.max(1, size * .32); x.fillRect(m - r, m - t / 2, size, t); }
-    return sprites[key] = { c, s };
-  }
-  // stamps sprite p centred on x, y, scaled sx by sy and turned rot, at alpha
-  function put(p, x, y, sx = 1, sy = sx, rot = 0, alpha = 1) {
-    const w = p.s * sx, h = p.s * sy;
-    if (alpha < 1) ctx.globalAlpha = Math.max(0, alpha);
-    if (rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.drawImage(p.c, -w / 2, -h / 2, w, h); ctx.restore(); }
-    else ctx.drawImage(p.c, x - w / 2, y - h / 2, w, h);
-    if (alpha < 1) ctx.globalAlpha = 1;
-  }
-  // every dot whose home is within r of x, y, with how far off it is and which way
-  function each(x, y, r, f) {
-    const i0 = Math.max(0, Math.floor((x - r) / g)), i1 = Math.min(cols - 1, Math.floor((x + r) / g));
-    const j0 = Math.max(0, Math.floor((y - r) / g)), j1 = Math.min(rows - 1, Math.floor((y + r) / g));
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-      const q = GI[j * cols + i];
-      if (q < 0) continue;
-      const dx = TX[q] - x, dy = TY[q] - y, o = Math.hypot(dx, dy);
-      if (o < r) f(q, o, dx, dy);
-    }
-  }
-  // a spring home for dot q, k how stiff and d how much of its speed it keeps a frame; true while it's still away
-  function spring(q, c, k, d) {
-    const f = d ** c;
-    VX[q] = (VX[q] + (TX[q] - X[q]) * k * c) * f; VY[q] = (VY[q] + (TY[q] - Y[q]) * k * c) * f;
-    X[q] += VX[q] * c; Y[q] += VY[q] * c;
-    return Math.abs(X[q] - TX[q]) + Math.abs(Y[q] - TY[q]) > .3 || Math.abs(VX[q]) + Math.abs(VY[q]) > .1;
-  }
-  const near = (q, p) => Math.abs(X[q] - TX[q]) + Math.abs(Y[q] - TY[q]) > p;
-  function rest(q) { X[q] = TX[q]; Y[q] = TY[q]; VX[q] = VY[q] = R[q] = A[q] = B[q] = 0; S[q] = 1; K[q] = Q[q] = ON[q] = 0; }
-
-  // the ten, by clack's ids. g is the cell as a share of the font size (min in pixels at the least), and mode what's
-  // left where a disturbed dot belongs: 'hole' cuts it out of the letters, 'over' leaves the letters as they are under
-  // it, and 'floor' paints it the colour beneath (floor). move(x, y, dx, dy) is the pointer at x, y having just moved
-  // dx, dy; hit(x, y) a click or a tap; tick() runs every frame for what the material keeps of its own; relax(q) takes
-  // one disturbed dot a frame on its way back and says whether it's still away; draw(q) draws it
-  const MOTION = {
-    slime: {
-      g: .045, min: 6, mode: 'hole',
-      prep(c1) { this.sp = sprite('plus', c1, g * .8, .3); },
-      // a crease through x, y along (ux, uy): the sheet on one side slides along it and the other a little back, as
-      // flat facets that turn with it, up to a couple of stitches
-      crease(x, y, ux, uy, a, now) {
-        const r = u * .2;
-        each(x, y, r, (q, o, ex, ey) => {
-          const f = o < r * .5 ? 1 : (1 - o / r) * 2, side = ex * -uy + ey * ux > 0 ? 1 : -.4;
-          X[q] += ux * a * f * side; Y[q] += uy * a * f * side;
-          const ox = X[q] - TX[q], oy = Y[q] - TY[q], l = Math.hypot(ox, oy), mx = g * 2.2;
-          if (l > mx) { X[q] = TX[q] + ox / l * mx; Y[q] = TY[q] + oy / l * mx; }
-          R[q] = Math.max(-.6, Math.min(.6, R[q] + side * a * f * .03));
-          T[q] = now; ON[q] = 1;
-        });
-      },
-      move(x, y, dx, dy, now) { const v = Math.hypot(dx, dy); if (v > .4) this.crease(x, y, dx / v, dy / v, Math.min(v * .3, g * .5), now); },
-      hit(x, y, now) { const a = rnd(0, 2 * Math.PI); this.crease(x, y, Math.cos(a), Math.sin(a), g * 1.2, now); },
-      // held while the pointer works it, then it crunches back in little snaps, each stitch at its own moment
-      relax(q, c, now) {
-        if (now - T[q] < 380) return true;
-        if (Math.random() < .14 * c) { X[q] = TX[q] + (X[q] - TX[q]) * .4; Y[q] = TY[q] + (Y[q] - TY[q]) * .4; R[q] *= .4; }
-        return near(q, .35) || Math.abs(R[q]) > .03;
-      },
-      draw(q) { put(this.sp, X[q], Y[q], 1, 1, R[q]); },
-    },
-    cyano: {
-      g: .03, min: 4, mode: 'over',
-      prep() { this.sp = sprite('disc', '#f4f6fc', g * 1.6); },
-      expose(x, y, amt, now) {
-        const r = u * .12, s2 = 2 * (r / 2.4) ** 2;
-        each(x, y, r, (q, o) => { A[q] = Math.min(2, A[q] + amt * Math.exp(-o * o / s2)); T[q] = now; ON[q] = 1; });
-      },
-      move(x, y, dx, dy, now) { const v = Math.hypot(dx, dy); if (v > .3) this.expose(x, y, Math.min(.5, v * .035), now); },
-      hit(x, y, now) { this.expose(x, y, 1, now); },
-      // the print fades back to blue a while after the light has gone
-      relax(q, c, now) { if (now - T[q] > 1400) A[q] -= .005 * c; return A[q] > .02; },
-      // a white dot that grows with the light, until a spot exposed twice runs together into solid white
-      draw(q) { const a = A[q], d = a < 1 ? .15 + .6 * a : .75 + .8 * (a - 1); put(this.sp, TX[q], TY[q], d / 1.6); },
-    },
-    bubble: {
-      g: .075, min: 8, mode: 'hole',
-      prep(c1, c2) {
-        this.disc = sprite('disc', c1, g * .9); this.ring = sprite('ring', '#ffffff', g * .9, .3);
-        this.pop = sprite('ring', c2, g * .9, .3); this.film = sprite('disc', c2, g * .24, .4);
-      },
-      // a bubble under x, y pops, and the pop shakes the bubbles around it
-      burst(x, y, r, now) {
-        each(x, y, r, q => {
-          if (Q[q]) return;
-          Q[q] = 1; S[q] = 0; A[q] = 1; T[q] = now; ON[q] = 1;
-          const rr = g * 2.6;
-          each(TX[q], TY[q], rr, (p, o, ex, ey) => {
-            if (p === q || Q[p]) return;
-            const k = (1 - o / rr) * g * .09 / (o || 1);
-            VX[p] += ex * k; VY[p] += ey * k; ON[p] = 1;
-          });
-        });
-      },
-      move(x, y, dx, dy, now) { if (dx || dy) this.burst(x, y, g * .65, now); },
-      hit(x, y, now) { this.burst(x, y, g * 1.4, now); },
-      // the pop's ring fades at once; a popped bubble slowly fills back up, and a shaken one wobbles back into place
-      relax(q, c, now) {
-        A[q] = Math.max(0, A[q] - .09 * c);
-        if (Q[q] && now - T[q] > 700) { S[q] = Math.min(1, S[q] + .007 * c); if (S[q] >= 1) Q[q] = 0; }
-        return spring(q, c, .2, .8) || Q[q] || A[q] > 0;
-      },
-      // a bubble with its white contour, or once popped an empty hole with the burst film, and the pop's ring for a moment
-      draw(q) {
-        const s = S[q];
-        if (s > .05) { put(this.disc, X[q], Y[q], s); put(this.ring, X[q], Y[q], s); }
-        else put(this.film, X[q], Y[q]);
-        if (A[q] > 0) { const z = 1 + (1 - A[q]) * .7; put(this.pop, TX[q], TY[q], z, z, 0, A[q]); }
-      },
-    },
-    wax: {
-      g: .05, min: 6, mode: 'hole',
-      prep(c1) { this.sp = sprite('square', c1, g * .84, .3); },
-      // pressed in like a thumb into clay, deepest under the middle, and the chips crack round one way or the other
-      press(x, y, amt, now) {
-        const r = u * .12, s2 = 2 * (r / 2.2) ** 2;
-        each(x, y, r, (q, o) => {
-          const f = Math.exp(-o * o / s2);
-          A[q] = Math.min(1, A[q] + amt * f);
-          B[q] = Math.max(-.4, Math.min(.4, B[q] + rnd(-1, 1) * amt * f * .6));
-          T[q] = now; ON[q] = 1;
-        });
-      },
-      move(x, y, dx, dy, now) { const v = Math.hypot(dx, dy); if (v > .3) this.press(x, y, Math.min(.25, v * .012), now); },
-      hit(x, y, now) { this.press(x, y, .9, now); },
-      // a pressed square turns to a diamond and shrinks; let go, it swells back to a square, wobbling as it settles
-      relax(q, c, now) {
-        if (now - T[q] > 260) A[q] = Math.max(0, A[q] - .02 * c);
-        B[q] = (B[q] + (A[q] * Math.PI / 4 - R[q]) * .2 * c) * .8 ** c;
-        R[q] += B[q] * c;
-        S[q] += (1 - .5 * A[q] - S[q]) * Math.min(1, .25 * c);
-        return A[q] > .004 || Math.abs(R[q]) > .01 || Math.abs(B[q]) > .004 || Math.abs(S[q] - 1) > .01;
-      },
-      draw(q) { put(this.sp, TX[q], TY[q], S[q], S[q], R[q]); },
-    },
-    thock: {
-      g: .05, min: 6, mode: 'over',
-      prep(c1, c2) {
-        const z = g * 1.35;
-        this.heat = [sprite('blur', '#86a8de', z), sprite('blur', '#ee79a6', z), sprite('blur', c2, z)];
-        this.hole = sprite('disc', '#d3ecab', g * 1.12, .4); this.rim = sprite('ring', '#163a75', g * 1.12, .3);
-      },
-      burn(x, y, r, amt, now) { each(x, y, r, (q, o) => { A[q] = Math.min(1.6, A[q] + amt * (1 - o / r)); T[q] = now; ON[q] = 1; }); },
-      move(x, y, dx, dy, now) { const v = Math.hypot(dx, dy); if (v > .3) this.burn(x, y, g * 1.4, Math.min(.9, v * .09), now); },
-      hit(x, y, now) { this.burn(x, y, g * 2, 1.2, now); },
-      // the heat creeps into the cells beside it, losing some at every cell so it dies out a few cells off the path, and
-      // cools as it goes; where it's hot enough it burns a hole that grows into the next, and once it has cooled the
-      // holes slowly close
-      relax(q, c, now) {
-        const h = A[q], to = h * .72;
-        if (h > .35) {
-          const i = Math.floor(TX[q] / g), j = Math.floor(TY[q] / g);
-          for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-            const ii = i + di, jj = j + dj;
-            if (ii < 0 || jj < 0 || ii >= cols || jj >= rows) continue;
-            const p = GI[jj * cols + ii];
-            if (p >= 0 && A[p] < to) { A[p] += (to - A[p]) * Math.min(1, .08 * c); T[p] = now; ON[p] = 1; }
-          }
-        }
-        A[q] = Math.max(0, h - .006 * c);
-        if (h > .5) B[q] = Math.min(1, B[q] + (h - .5) * .15 * c);
-        else if (h < .3 && now - T[q] > 900) B[q] = Math.max(0, B[q] - .006 * c);
-        return A[q] > .01 || B[q] > .01;
-      },
-      // the heat glows orange, then pink, then a paler blue as it cools, round a lime hole in a dark blue rim
-      draw(q) {
-        const h = A[q], x = TX[q], y = TY[q];
-        if (h > .04) { const z = .6 + .5 * Math.min(1, h); put(this.heat[h > .9 ? 2 : h > .5 ? 1 : 0], x, y, z, z, 0, Math.min(1, h * 1.6)); }
-        if (B[q] > .04) { put(this.rim, x, y, B[q] * 1.1); put(this.hole, x, y, B[q]); }
-      },
-    },
-    gummy: {
-      g: .026, min: 3, mode: 'hole',
-      prep(c1, c2) { this.sp = [sprite('disc', c1, g * 1.3), sprite('disc', '#e0609a', g * 1.3), sprite('disc', c2, g * 1.3)]; },
-      reset() { this.grab = null; this.wait = 0; },
-      // the pointer pinches the jelly under it, the near part most, and pulls it along into a string
-      pinch(x, y, now) {
-        if (this.grab || now < this.wait) return;
-        const r = u * .16;
-        let any = false;
-        each(x, y, r, (q, o) => { Q[q] = 1; A[q] = (1 - o / r) ** 1.3; ON[q] = 1; any = true; });
-        if (any) this.grab = { x, y, at: [x, y] };
-      },
-      // pulled too far, or let go, the string snaps and every bit of it springs home, wobbling
-      snap(now) {
-        if (!this.grab) return;
-        Q.fill(0);
-        this.grab = null; this.wait = now + 220;
-      },
-      move(x, y, dx, dy, now) {
-        if (!this.grab) return this.pinch(x, y, now);
-        this.grab.at = [x, y];
-        if (Math.hypot(x - this.grab.x, y - this.grab.y) > u * .5) this.snap(now);
-      },
-      hit(x, y, now) { this.wait = 0; this.pinch(x, y, now); },
-      leave(now) { this.snap(now); },
-      tick(c) {
-        const G = this.grab;
-        this.loose = false;
-        if (!G) return false;
-        const ox = G.at[0] - G.x, oy = G.at[1] - G.y, k = Math.min(1, .35 * c);
-        let most = 0;
-        for (let q = 0; q < n; q++) if (Q[q]) {
-          const dx = (TX[q] + ox * A[q] - X[q]) * k, dy = (TY[q] + oy * A[q] - Y[q]) * k;
-          X[q] += dx; Y[q] += dy; most = Math.max(most, Math.abs(dx) + Math.abs(dy));
-        }
-        return this.moved = most > .05;
-      },
-      relax(q, c) { if (Q[q]) return true; this.loose = true; return spring(q, c, .09, .87); },
-      // held still with nothing else wobbling, there's nothing to draw again until the pointer moves
-      hold() { return !!this.grab && !this.moved && !this.loose; },
-      // the further it's pulled, the deeper the pink, so the string shows against the jelly it came out of
-      draw(q) { const d = Math.hypot(X[q] - TX[q], Y[q] - TY[q]); put(this.sp[d > u * .12 ? 2 : d > g * 1.5 ? 1 : 0], X[q], Y[q]); },
-    },
-    pudding: {
-      g: .09, min: 9, mode: 'floor',
-      prep(c1, c2) { this.floor = '#f6ead0'; this.sp = [sprite('blur', c1, g * 1.45), sprite('blur', c2, g * 1.45)]; },
-      // a round brushed past starts to jiggle and blushes red, unless it was set going a moment ago
-      poke(x, y, r, now, force) {
-        each(x, y, r, q => {
-          if (!force && now - T[q] < 500) return;
-          B[q] += rnd(.18, .26) * (Math.random() < .5 ? -1 : 1); K[q] = 1; T[q] = now; ON[q] = 1;
-        });
-      },
-      move(x, y, dx, dy, now) { if (dx || dy) this.poke(x, y, g * .7, now); },
-      hit(x, y, now) { this.poke(x, y, g * 1.6, now, true); },
-      // A how far it's squashed (stretched the other way), B how fast that's changing
-      relax(q, c, now) {
-        B[q] = (B[q] - A[q] * .3 * c) * .9 ** c; A[q] += B[q] * c;
-        if (now - T[q] > 650) K[q] = 0;
-        return K[q] || Math.abs(A[q]) > .005 || Math.abs(B[q]) > .005;
-      },
-      draw(q) { const a = Math.max(-.4, Math.min(.4, A[q])); put(this.sp[K[q]], TX[q], TY[q], 1 + a, 1 - a); },
-    },
-    soap: {
-      g: .024, min: 3, mode: 'hole',
-      prep(c1) { this.sp = sprite('disc', c1, g * .85, .4); },
-      // a blade through x, y going (ux, uy): about a third of what it shaves drops away as beads, the rest heaps up
-      // along the edges of the cut
-      shave(x, y, ux, uy, r, now) {
-        each(x, y, r, (q, o, ex, ey) => {
-          if (Q[q]) return;
-          T[q] = now; ON[q] = 1;
-          if (Math.random() < .3) { Q[q] = 2; VX[q] = ux * rnd(.5, 2) + rnd(-.6, .6); VY[q] = rnd(-1.6, .2); return; }
-          const side = ex * -uy + ey * ux >= 0 ? 1 : -1, d = r + rnd(0, g * 2.2);
-          Q[q] = 1; X[q] = x - uy * side * d + ux * rnd(-g, g); Y[q] = y + ux * side * d + uy * rnd(-g, g);
-        });
-      },
-      move(x, y, dx, dy, now) { const v = Math.hypot(dx, dy); if (v > .3) this.shave(x, y, dx / v, dy / v, u * .05, now); },
-      hit(x, y, now) { this.shave(x, y, 0, 1, u * .07, now); },
-      // beads fall off the bottom; after a moment the cut closes, the heaped soap flowing back and the beads growing
-      // back in place
-      relax(q, c, now) {
-        if (Q[q] === 2) {
-          VY[q] += .32 * c; X[q] += VX[q] * c; Y[q] += VY[q] * c;
-          if (Y[q] > H + g) { Q[q] = 3; X[q] = TX[q]; Y[q] = TY[q]; S[q] = 0; }
-          return true;
-        }
-        if (now - T[q] < 1700) return true;
-        if (Q[q] === 3) S[q] = Math.min(1, S[q] + .02 * c);
-        const k = Math.min(1, .05 * c);
-        X[q] += (TX[q] - X[q]) * k; Y[q] += (TY[q] - Y[q]) * k;
-        return near(q, .3) || S[q] < 1;
-      },
-      draw(q) { if (S[q] > .02) put(this.sp, X[q], Y[q], S[q]); },
-    },
-    snow: {
-      g: .032, min: 4, mode: 'hole',
-      prep(c1, c2) { this.sp = [sprite('dash', c1, g * 1.02, .3), sprite('dash', c2, g * 1.02, .3)]; },
-      reset() { this.waves = []; this.walked = 0; },
-      // a step presses an oval print in under it and sends a ripple out from it
-      step(x, y, now) {
-        const rx = u * .055, ry = u * .085;
-        each(x, y, ry, (q, o, ex, ey) => { if ((ex / rx) ** 2 + (ey / ry) ** 2 < 1) { A[q] = 1; T[q] = now; ON[q] = 1; } });
-        this.waves.push({ x, y, t: now });
-        if (this.waves.length > 8) this.waves.shift();
-      },
-      move(x, y, dx, dy, now) { this.walked += Math.hypot(dx, dy); if (this.walked > u * .16) { this.walked = 0; this.step(x, y, now); } },
-      hit(x, y, now) { this.step(x, y, now); },
-      // each ripple runs out across the whole word as a ring, lifting and dropping the lines it passes, fainter as it goes
-      tick(c, now) {
-        this.waves = this.waves.filter(w => now - w.t < 1600);
-        if (!this.waves.length) return false;
-        const band = u * .09;
-        for (let q = 0; q < n; q++) {
-          let dy = 0;
-          for (const w of this.waves) {
-            const a = now - w.t, o = Math.hypot(TX[q] - w.x, TY[q] - w.y) - a * u * .0011;
-            if (o > -band && o < band) dy += Math.sin(o / band * Math.PI) * g * .9 * (1 - a / 1600);
-          }
-          if (dy) { Y[q] = TY[q] + dy; ON[q] = 1; } else Y[q] = TY[q];
-        }
-        return true;
-      },
-      // a print washes out over a few seconds
-      relax(q, c) { A[q] = Math.max(0, A[q] - .006 * c); return A[q] > 0 || near(q, .2); },
-      draw(q) { put(this.sp[A[q] > .35 ? 1 : 0], X[q], Y[q], 1 - .5 * A[q], 1); },
-    },
-    sugar: {
-      g: .02, min: 3, mode: 'floor',
-      prep(c1, c2) { this.floor = c2; this.sp = sprite('square', '#7fb23f', g * .9, .2); },
-      // three tines side by side across the way it's going, each scraping a furrow down to the blue and heaping the
-      // sugar along its sides
-      rake(x, y, ux, uy, now) {
-        const s = u * .055, w = u * .017;
-        for (const k of [-1, 0, 1]) {
-          const cx = x - uy * s * k, cy = y + ux * s * k;
-          each(cx, cy, w, (q, o, ex, ey) => {
-            if (Q[q]) return;
-            const side = ex * -uy + ey * ux >= 0 ? 1 : -1, d = w + rnd(0, g * 1.6);
-            Q[q] = 1; X[q] = cx - uy * side * d; Y[q] = cy + ux * side * d; T[q] = now; ON[q] = 1;
-          });
-        }
-      },
-      move(x, y, dx, dy, now) { const v = Math.hypot(dx, dy); if (v > .3) this.rake(x, y, dx / v, dy / v, now); },
-      hit(x, y, now) { this.rake(x, y, 1, 0, now); },
-      // after a while the slime flows back into the furrows
-      relax(q, c, now) {
-        if (now - T[q] < 2200) return true;
-        const k = Math.min(1, .035 * c);
-        X[q] += (TX[q] - X[q]) * k; Y[q] += (TY[q] - Y[q]) * k;
-        return near(q, .3);
-      },
-      draw(q) { put(this.sp, X[q], Y[q]); },
-    },
-  };
-
-  // the material the cover's agent is on: its cells, a dot in each one that's mostly ink, all at rest, and the letters
-  // drawn once in its colour (lc)
-  function build() {
-    const mat = MATS[cover.m];
-    M = MOTION[mat.id]; sprites = {};
-    g = Math.max(M.min || 3, Math.round(fs * M.g));
-    cols = Math.ceil(W / g); rows = Math.ceil(H / g);
-    GI = new Int32Array(cols * rows).fill(-1);
-    const at = [];
-    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-      let k = 0;
-      for (let y = j * g; y < Math.min(H, j * g + g); y++) for (let x = i * g; x < Math.min(W, i * g + g); x++) k += ink[y * W + x] > 64;
-      if (k > g * g * .45) { GI[j * cols + i] = at.length / 2; at.push((i + .5) * g, (j + .5) * g); }
-    }
-    n = at.length / 2;
-    TX = new Float32Array(n); TY = new Float32Array(n);
-    for (let q = 0; q < n; q++) { TX[q] = at[2 * q]; TY[q] = at[2 * q + 1]; }
-    X = TX.slice(); Y = TY.slice(); VX = new Float32Array(n); VY = new Float32Array(n);
-    S = new Float32Array(n).fill(1); R = new Float32Array(n); A = new Float32Array(n); B = new Float32Array(n); T = new Float64Array(n);
-    K = new Uint8Array(n); Q = new Uint8Array(n); ON = new Uint8Array(n); ML = new Int32Array(n);
-    if (M.reset) M.reset();
-    letters(lc, mat.c[0]);
-    M.prep(mat.c[0], mat.c[1]);
-    last = [0, 0, W, H];
-    cancelAnimationFrame(raf); raf = 0; wake();
-  }
-  cover.paint = () => { if (ink) build(); };
-
-  // the canvas covers the letters with room past them for what's thrown out of them; the pointer works over the
-  // letters themselves (zone). Their ink is read once a pixel to the pixel, for every material's cells
-  function layout() {
-    cancelAnimationFrame(raf); raf = lastT = 0; pt = sm = pv = null;
-    const cs = getComputedStyle(word), spans = [...word.querySelectorAll('span')], rs = spans.map(e => e.getBoundingClientRect());
-    const rw = word.getBoundingClientRect(), bl = probe.getBoundingClientRect().bottom, vw = document.documentElement.clientWidth;
-    fs = parseFloat(cs.fontSize); u = Math.max(fs, 150);
-    const pad = Math.ceil(fs * .2);
-    dpr = Math.min(2, devicePixelRatio || 1);
-    const L = rs[0].left - fs * .08, Rt = rs[rs.length - 1].right + fs * .08, top = bl - fs * .85, bot = bl + fs * .1;
-    const ox = Math.max(0, Math.floor(L - pad)), oy = Math.floor(top - pad);
-    W = Math.min(vw, Math.ceil(Rt + pad)) - ox; H = Math.ceil(bot + pad) - oy;
-    zone = [L - ox, top - oy, Rt - ox, bot - oy];
-    Object.assign(cv.style, { left: ox - rw.left + 'px', top: oy - rw.top + 'px', width: W + 'px', height: H + 'px' });
-    cv.width = lc.width = Math.round(W * dpr); cv.height = lc.height = Math.round(H * dpr);
-    ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
-    letters = (c, color, opt) => {
-      const x = c.getContext('2d', opt);
-      x.setTransform(c.width / W, 0, 0, c.height / H, 0, 0);
-      x.clearRect(0, 0, W, H);
-      x.fillStyle = color; x.font = `800 ${fs}px ${cs.fontFamily}`; x.textBaseline = 'alphabetic';
-      spans.forEach((e, i) => x.fillText(e.textContent, rs[i].left - ox, bl - oy));
-      return x;
-    };
-    const sc = document.createElement('canvas');
-    sc.width = W; sc.height = H;
-    const px = letters(sc, '#000', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
-    ink = new Uint8Array(W * H);
-    for (let i = 0; i < ink.length; i++) ink[i] = px[i * 4 + 3];
-    build();
-    word.classList.add('live');
-  }
-
-  // every frame while the pointer is over the letters or anything is still away from rest: the pointer, followed a
-  // touch behind so a quick flick sweeps through, works on the material; the material keeps what it keeps; and every
-  // disturbed dot goes a frame further on its way back. Steps are counted in sixtieths of a second, at most two and a
-  // half at once, so a slow frame can't throw them. Only the box around the disturbed dots, now and a frame ago, is
-  // drawn again: the plain letters, what's left where each dot belongs, and the dot
+  // every frame the ring eases the same share of the way for the same time, and comes to rest once it's there, on a
+  // whole card; a sideways scroll leaves it between two until it stops
   function frame(now) {
     raf = 0;
-    let c = lastT ? (now - lastT) / (1000 / 60) : 1;
+    const dt = lastT ? Math.min(64, now - lastT) : 16;
     lastT = now;
-    c = c > 0 && isFinite(c) ? Math.max(.25, Math.min(2.5, c)) : 1;
-    let busy = false;
-    if (pt && !cover.done) {
-      if (!sm) { sm = pt.slice(); pv = pt.slice(); }
-      const k = Math.min(1, .6 * c);
-      sm[0] += (pt[0] - sm[0]) * k; sm[1] += (pt[1] - sm[1]) * k;
-      M.move(sm[0], sm[1], sm[0] - pv[0], sm[1] - pv[1], now);
-      pv = sm.slice();
-      busy = Math.abs(pt[0] - sm[0]) + Math.abs(pt[1] - sm[1]) > .5;
-    } else if (sm) { if (M.leave) M.leave(now); sm = pv = null; }
-    if (M.tick && M.tick(c, now)) busy = true;
-    let k = 0, x0 = W, y0 = H, x1 = 0, y1 = 0;
-    for (let q = 0; q < n; q++) {
-      if (!ON[q]) continue;
-      if (!M.relax(q, c, now)) { rest(q); continue; }
-      ML[k++] = q;
-      x0 = Math.min(x0, X[q], TX[q]); x1 = Math.max(x1, X[q], TX[q]); y0 = Math.min(y0, Y[q], TY[q]); y1 = Math.max(y1, Y[q], TY[q]);
-    }
-    const p = g * 1.2 + 2, box = k ? [x0 - p, y0 - p, x1 + p, y1 + p] : null;
-    const r = box && last ? [Math.min(box[0], last[0]), Math.min(box[1], last[1]), Math.max(box[2], last[2]), Math.max(box[3], last[3])] : box || last;
-    last = box;
-    if (r) {
-      const rx = Math.max(0, Math.floor(r[0])), ry = Math.max(0, Math.floor(r[1])), rw = Math.min(W, Math.ceil(r[2])) - rx, rh = Math.min(H, Math.ceil(r[3])) - ry;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(rx, ry, rw, rh); ctx.clip();
-      ctx.clearRect(rx, ry, rw, rh);
-      ctx.drawImage(lc, 0, 0, W, H);
-      if (M.mode !== 'over') {
-        if (M.mode === 'hole') { ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = '#000'; }
-        else ctx.fillStyle = M.floor;
-        for (let i = 0; i < k; i++) { const q = ML[i]; ctx.fillRect(TX[q] - g / 2 - .25, TY[q] - g / 2 - .25, g + .5, g + .5); }
-        ctx.globalCompositeOperation = 'source-over';
-      }
-      for (let i = 0; i < k; i++) M.draw(ML[i]);
-      ctx.restore();
-    }
-    if (busy || (k && !(M.hold && M.hold()))) raf = requestAnimationFrame(frame);
-    else lastT = 0;
+    if (!drag) { pos += (target - pos) * (1 - Math.exp(-dt / 110)); if (Math.abs(target - pos) < .002) pos = target; }
+    draw();
+    if (drag || pos !== target) raf = requestAnimationFrame(frame);
+    else { lastT = 0; if (target === Math.round(target)) rest(); }
   }
-  const wake = () => { if (!raf) raf = requestAnimationFrame(frame); };
+  function turn() {
+    if (still) { still = false; leave(); box.classList.remove('on'); cover.classList.add('moving'); }
+    // the focus goes along to the card coming to the middle
+    if (document.activeElement && document.activeElement.classList.contains('card')) cards[mod(Math.round(target))].focus({ preventScroll: true });
+    if (reduce && !drag && target === Math.round(target)) { pos = target; draw(); return rest(); }
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
+  const by = d => { target = Math.round(target) + d; turn(); };
+  const to = i => by(off(i, Math.round(target)));
 
-  // the pointer works wherever it goes over the letters, hovering or not; leaving them, lifting a finger, or the page
-  // moving under it lets go
-  const spot = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  const over = ([x, y]) => x >= zone[0] && x <= zone[2] && y >= zone[1] && y <= zone[3];
-  addEventListener('pointermove', e => {
-    if (!ink) return;
-    const was = pt, p = spot(e);
-    pt = !dlg.open && !cover.done && over(p) ? p : null;
-    if (pt || was) wake();
-  }, { passive: true });
-  const lift = () => { pt = null; wake(); };
-  addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') lift(); });
-  addEventListener('pointercancel', lift);
-  addEventListener('scroll', lift, { passive: true });
-  addEventListener('blur', lift);
-  document.documentElement.addEventListener('mouseleave', lift);
-  // a click or a tap does what the material does, at once and harder, and a finger works it for as long as it's down
-  word.addEventListener('pointerdown', e => {
-    if (!ink || cover.done) return;
-    const p = spot(e);
-    if (!over(p)) return;
-    if (e.pointerType !== 'mouse') pt = p;
-    M.hit(p[0], p[1], performance.now());
+  // at rest: the caption, the agent's colour, and clack on the material in the middle
+  function rest() {
+    at = mod(Math.round(pos)); pos = target = at;
+    still = true;
+    const m = MATS[at];
+    cover.style.setProperty('--c1', m.c);
+    box.style.setProperty('--bgc', m.bg);
+    $('capName').textContent = m.name; $('capTry').textContent = m.try;
+    cover.classList.remove('moving');
+    cards.forEach((c, i) => { c.setAttribute('aria-current', String(i === at)); c.tabIndex = i === at ? 0 : -1; });
+    draw();
+    heal();
     wake();
+  }
+
+  // dragging the ring turns it with the pointer, a card's width and a gap for each place; let go, it carries on the way
+  // it was flung, up to three places, and comes to rest on the nearest card. On a phone, swiping up or down over it
+  // still scrolls the page
+  deck.addEventListener('pointerdown', e => {
+    swallow = false;
+    if (e.button || e.target.closest('.live, .ctl')) return;
+    drag = { id: e.pointerId, x0: e.clientX, from: pos, lx: e.clientX, lt: e.timeStamp, v: 0, on: false };
   });
-  // drawn once Figtree is in, and again whenever the name changes size
-  const ro = new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(layout); });
-  document.fonts.load(`800 1em ${getComputedStyle(word).fontFamily}`, 'CLACK').catch(() => {}).then(() => ro.observe(word));
+  addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x0;
+    if (!drag.on) {
+      if (Math.abs(dx) < 6) return;
+      drag.on = true;
+      try { deck.setPointerCapture(e.pointerId); } catch (err) {} // it keeps the drag when the pointer leaves the ring
+    }
+    const dt = Math.max(1, e.timeStamp - drag.lt);
+    drag.v = drag.v * .5 + (e.clientX - drag.lx) / dt * .5; drag.lx = e.clientX; drag.lt = e.timeStamp;
+    pos = target = drag.from - dx / (w + gap);
+    turn();
+  });
+  const drop = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag;
+    drag = null;
+    if (!d.on) return;
+    swallow = e.type === 'pointerup'; // the click a drag ends on doesn't pick a card
+    target = Math.round(pos - Math.max(-3, Math.min(3, d.v * 160 / (w + gap))));
+    turn();
+  };
+  addEventListener('pointerup', drop);
+  addEventListener('pointercancel', drop);
+  // a click on another card brings it round to the middle, the short way, and one on the middle card (Enter, as clack
+  // covers it) opens it bigger
+  deck.addEventListener('click', e => {
+    const b = e.target.closest('.card');
+    if (swallow || !b) { swallow = false; return; }
+    if (+b.dataset.i === at && still) play(MATS[at].id); else to(+b.dataset.i);
+  });
+  // scrolling sideways (or with shift held) turns it as far as it goes and lets it settle once it stops; scrolling up
+  // and down is left to the page
+  let wheelT = 0;
+  function wheel(e) {
+    let dx = e.deltaX;
+    if (!dx && e.shiftKey) dx = e.deltaY;
+    if (!dx || (Math.abs(dx) < Math.abs(e.deltaY) && !e.shiftKey)) return;
+    e.preventDefault();
+    if (e.deltaMode === 1) dx *= 16;
+    target += Math.max(-.5, Math.min(.5, dx / (w + gap)));
+    turn();
+    clearTimeout(wheelT);
+    wheelT = setTimeout(() => { target = Math.round(target); turn(); }, 140);
+  }
+  deck.addEventListener('wheel', wheel, { passive: false });
+  // the arrow keys, while the ring is on screen and nothing else on the page has the focus
+  addEventListener('keydown', e => {
+    if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.metaKey || e.ctrlKey || e.altKey || dlg.open) return;
+    const t = document.activeElement, r = deck.getBoundingClientRect();
+    if ((t && t !== document.body && !deck.contains(t)) || r.bottom < 0 || r.top > innerHeight) return;
+    e.preventDefault();
+    by(e.key === 'ArrowLeft' ? -1 : 1);
+  });
+
+  // clack itself, loaded once for the middle (same origin). The ring turns the materials and the line under it speaks
+  // for the agent, so clack's own arrows, logo, count and agent line step aside and leave the material just as its
+  // picture in the ring shows it. On a phone, swiping up and down over it scrolls the page, while a sideways swipe plays it
+  const frm = document.createElement('iframe');
+  frm.src = 'play/'; frm.title = 'clack'; frm.allow = 'autoplay';
+  let win = null, scn = null, busy = true, shots = 0, healing = [];
+  // without clack (the page opened from its file, say, or clack slow to come), the ring shows the saved pictures
+  const saved = () => cards.forEach((c, i) => {
+    if (!c.querySelector('img')) c.insertAdjacentHTML('afterbegin', `<img src="img/${MATS[i].id}.jpg" alt="" draggable="false" onerror="this.remove()">`);
+  });
+  const fallback = setTimeout(saved, 5000);
+  frm.addEventListener('load', async () => {
+    let c = null;
+    try { win = frm.contentWindow; c = win.__clack; } catch (e) {}
+    if (!c) { clearTimeout(fallback); saved(); return; }
+    const doc = frm.contentDocument, st = doc.createElement('style');
+    // (the logo and count keep their room, as some materials lay themselves out around them)
+    st.textContent = '.top, .tally { visibility: hidden !important; } .pager, .haze { display: none !important; } body { touch-action: pan-y; }';
+    doc.head.append(st);
+    scn = doc.getElementById('scene');
+    Object.assign(live, { c, ag: win.__clackAgent || null, at: -1 });
+    c.set({ muted });
+    // the first time it's played, with the pointer or a finger, its demo agent starts
+    const begin = e => {
+      if (!e.isTrusted) return;
+      live.touched = live.dirty = true;
+      if (!live.started && live.ag) { live.started = true; live.ag.start(); speak(); }
+    };
+    win.addEventListener('pointermove', begin, { passive: true });
+    win.addEventListener('pointerdown', begin);
+    win.addEventListener('keydown', e => { if (e.isTrusted) live.dirty = true; });
+    win.addEventListener('wheel', wheel, { passive: false });
+    // its own keys switch materials too, and the ring follows
+    new MutationObserver(() => {
+      const i = MATS.findIndex(m => m.id === c.S.sound);
+      if (i >= 0 && i !== live.at) { live.at = -1; to(i); }
+    }).observe(doc.body, { attributes: true, attributeFilter: ['data-scene'] });
+    // a new size draws the material afresh, so the pictures are taken again at it
+    let rt = 0;
+    win.addEventListener('resize', () => { busy = true; box.classList.remove('on'); clearTimeout(rt); rt = setTimeout(shoot, 250); });
+    // clack draws its material again once its fonts are in, so the pictures wait for that
+    try { await doc.fonts.ready; } catch (e) {}
+    shoot();
+  }, { once: true });
+  box.prepend(frm);
+
+  // clack starts a material at random each time it comes to it. While it starts material i, its randomness follows
+  // this page's own seed for i, so it starts the same every time, the way the ring's picture of it shows it
+  const seed = Math.random() * 2 ** 32 >>> 0;
+  function put(i) {
+    const c = live.c, M = win.Math, rnd = M.random, id = MATS[i].id;
+    live.at = i; live.dirty = false;
+    if (c.S.sound === id) c.set({ sound: MATS[mod(i + 1)].id }); // it starts a material only on its way to it
+    let a = (seed + i * 0x9E3779B9) >>> 0;
+    M.random = () => {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    try { c.set({ sound: id }); } finally { M.random = rnd; }
+    frm.title = `clack, on ${MATS[i].name}`;
+  }
+  // card i's picture (pic), or what was done to it in the middle (was), as clack has drawn it
+  function snap(i, cls) {
+    const card = cards[i];
+    let cv = card.querySelector('canvas.' + cls);
+    if (!cv) { cv = document.createElement('canvas'); cv.className = cls; card.append(cv); }
+    cv.width = box.offsetWidth; cv.height = box.offsetHeight;
+    const x = cv.getContext('2d');
+    x.imageSmoothingQuality = 'high';
+    x.drawImage(scn, 0, 0, cv.width, cv.height);
+    cv.classList.add('on');
+    return cv;
+  }
+  // the pictures: clack starts each material in turn, the one in the middle first, and the ring takes each one as soon
+  // as clack has drawn it; then clack goes back to the middle one, which starts just as before
+  const frames = n => new Promise(r => { const f = () => (--n > 0 ? win.requestAnimationFrame(f) : r()); win.requestAnimationFrame(f); });
+  async function shoot() {
+    const run = ++shots, first = at;
+    busy = true; box.classList.remove('on');
+    for (let k = 0; k < N; k++) {
+      const i = mod(first + k);
+      try { put(i); } catch (e) { continue; } // a material that won't start keeps its colour
+      await frames(2);
+      if (run !== shots) return;
+      snap(i, 'pic');
+    }
+    clearTimeout(fallback);
+    busy = false; wake();
+  }
+  // the material leaving the middle takes what was done to it along, which fades back once the ring is at rest
+  function leave() {
+    if (box.classList.contains('on') && live.dirty && live.at >= 0) { const cv = snap(live.at, 'was'); cv.classList.remove('quick'); healing.push(cv); }
+  }
+  function heal() {
+    for (const cv of healing) { if (cv.parentNode === cards[at]) cv.classList.add('quick'); cv.classList.remove('on'); }
+    healing = [];
+  }
+
+  // hands clack the material at rest in the middle, and shows it a few frames later, once it has drawn it
+  let showT = 0;
+  function wake() {
+    if (!live.c || !still || busy) return;
+    if (live.at !== at) put(at);
+    clearTimeout(showT);
+    showT = setTimeout(() => { if (!still || busy) return; box.classList.add('on'); setTimeout(ghost, 700); }, 90);
+  }
+  $('big').addEventListener('click', () => play(MATS[at].id));
+  // a browser keeps a page quiet until it's clicked, tapped or typed on; the first of those anywhere on the page lets
+  // clack in the middle be heard too
+  ['pointerdown', 'keydown'].forEach(t => addEventListener(t, () => { if (live.c) live.c.initAudio(); }, true));
+
+  // the first time clack shows in the middle, a pointer that isn't there runs a stroke across it, so it's plain it's
+  // there to play: only before anything on the page has made a sound, so it isn't heard, and it isn't counted
+  let ghosted = false;
+  function ghost() {
+    const c = live.c, r = deck.getBoundingClientRect();
+    if (ghosted || reduce || live.touched || !still || busy || r.bottom < 0 || r.top > innerHeight || (c.A.ctx && c.A.ctx.state === 'running')) return;
+    ghosted = true; live.dirty = true;
+    const n = c.S.count, fw = frm.clientWidth, fh = frm.clientHeight;
+    const ev = (type, px, py) => new win.PointerEvent(type, { pointerId: 99, pointerType: 'mouse', isPrimary: true, clientX: px, clientY: py, bubbles: true });
+    let k = 0;
+    const id = setInterval(() => {
+      if (k > 40 || live.touched || !still) {
+        clearInterval(id);
+        win.document.dispatchEvent(ev('pointerleave', 0, 0));
+        if (!live.touched) c.set({ count: n });
+        return;
+      }
+      const t = k++ / 40;
+      win.dispatchEvent(ev('pointermove', fw * (.16 + .68 * t), fh * (.56 - .12 * Math.sin(t * Math.PI))));
+    }, 20);
+  }
+
+  // the line under the middle speaks for clack's demo agent there, in the words clack uses: ready to start, working
+  // and for how long, done, and once you've gone back (left the middle after it let go) just done
+  const line = $('agentLine'), again = $('again');
+  const clock = ms => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  function speak() {
+    const AG = live.ag && live.ag.AG, s = AG ? AG.state : 'idle';
+    const mode = s === 'wait' ? 'working' : s === 'done' || live.started ? 'done' : 'ready';
+    const text = mode === 'working' ? `Demo agent working · ${clock(Date.now() - AG.startAt)}`
+      : s === 'done' ? 'Demo agent done · go back'
+      : mode === 'done' ? 'Demo agent done'
+      : 'Play to start a demo agent';
+    cover.classList.toggle('working', mode === 'working');
+    cover.classList.toggle('done', mode === 'done');
+    if (line.textContent !== text) line.textContent = text;
+    // the middle card greys with clack as it lets go, for when the ring turns away from it
+    const g = s === 'done' ? .25 + .75 * AG.grip : 1;
+    if (g !== sat) { sat = g; draw(); }
+  }
+  again.addEventListener('click', () => { if (!live.ag) return; live.started = true; live.ag.start(); speak(); });
+  setInterval(speak, 250);
+
+  new ResizeObserver(measure).observe(box);
+  measure(); rest(); speak();
 })();
 </script>
 </body>
