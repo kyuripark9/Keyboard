@@ -45,7 +45,9 @@ Claude Code's hooks tell the bridge that you sent a prompt, that Claude stopped 
 running in the background, such as a shell command or a subagent) or stopped on an error, that it needs your permission
 for something, and that a session closed. clack uses that to know when you're waiting and when to let go. With several
 sessions working at once, the first to finish lets go of you; once you've gone back, clack holds you again while the
-others work, and the next to finish lets go again. The bridge looks at a prompt only to tell yours apart from Claude
+others work, and the next to finish lets go again. The time it shows is how long since you last sent a prompt to a
+session that's still working. A shell Claude leaves running counts as its own work for ten minutes; one that's still
+going after that is taken for a server (a dev server it started for you, say), and that session lets go. The bridge looks at a prompt only to tell yours apart from Claude
 waking itself up, and at the last lines of a working session's transcript only to see whether you stopped it with Esc,
 which no hook reports. For the Claude app's Code tab, where Claude Code passes a permission prompt on only 6 seconds
 late, it also reads the app's log (`~/Library/Logs/Claude/main.log`) for the line the app writes the moment it shows

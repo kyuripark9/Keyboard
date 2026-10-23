@@ -63,12 +63,15 @@ if (args.includes('--hooks')) {
 }
 
 const clients = new Set();
-let state = { phase: 'idle', at: Date.now(), sessions: [], working: 0, since: null };
+let state = { phase: 'idle', at: Date.now(), sessions: [], working: 0, since: null, prompted: null };
 // each session the agent is working in: since when, when you last prompted it, its transcript
 const working = new Map();
 // background work that is the agent's own and wakes it when it ends. A monitor (the comment watch every published
 // artifact keeps, say) waits on other people and can run all day, so a turn that leaves only that behind is done
 const AGENT_WORK = ['shell', 'subagent', 'workflow', 'MCP task', 'cloud session'];
+// a shell can also be a server that never ends (the dev server it started for you, say), so a turn that leaves only
+// shells behind and doesn't wake again within ten minutes is done after all
+const HOLD_MS = 10 * 60 * 1000;
 
 function broadcast(event) {
   const line = `data: ${JSON.stringify(event)}\n\n`;
@@ -77,12 +80,14 @@ function broadcast(event) {
 
 // the wait goes on while any session still works, so one finishing doesn't end the others' wait
 function settle(at, type) {
-  const since = [...working.values()].map(w => w.since);
+  const ws = [...working.values()];
   state = { phase: working.size ? 'wait' : type === 'done' ? 'done' : 'idle', at, sessions: [...working.keys()],
-    working: working.size, since: since.length ? Math.min(...since) : null };
+    working: working.size, since: ws.length ? Math.min(...ws.map(w => w.since)) : null,
+    prompted: ws.length ? Math.max(...ws.map(w => w.prompted)) : null };
 }
-// every event says how many sessions are still working, and since when the longest of them has been
-const tagged = event => ({ ...event, working: state.working, since: state.since });
+// every event says how many sessions are still working, since when the longest of them has been, and when you last
+// handed one of them something
+const tagged = event => ({ ...event, working: state.working, since: state.since, prompted: state.prompted });
 
 // the last lines of a session's transcript
 function tail(w) {
@@ -112,10 +117,20 @@ function interrupted(w) {
 
 // no hook reports Esc, so every few seconds the transcripts show which sessions were stopped that way
 setInterval(() => {
+  const now = Date.now();
+  // and which turns left only a shell behind that has run too long to be anything but a server
+  for (const [s, w] of working) {
+    if (!w.held || now - w.held < HOLD_MS) continue;
+    working.delete(s);
+    settle(now, 'done');
+    const event = tagged({ type: 'done', at: now, session: s, reason: 'Stop', held: true });
+    broadcast(event);
+    log(event);
+  }
   const gone = [...working].filter(([, w]) => interrupted(w)).map(([s]) => s);
   if (!gone.length) return;
   gone.forEach(s => working.delete(s));
-  settle(Date.now(), 'end');
+  settle(now, 'end');
   const event = tagged({ type: 'tally', at: state.at, session: gone[0], reason: 'interrupt' });
   broadcast(event);
   log(event);
@@ -273,10 +288,12 @@ const server = http.createServer(async (req, res) => {
     const adopt = type === 'done' && stop && !working.has(session);
     // any other "done" for a session that wasn't working (an idle reminder) is nothing to report
     if (type === 'done' && !working.has(session) && !adopt) return skip();
-    if (auto && working.has(session)) return skip();
+    // it woke again, so whatever it left running wasn't a server after all
+    if (auto && working.has(session)) { working.get(session).held = 0; return skip(); }
     const w = working.get(session) || { since: now, prompted: now };
     w.transcript = hook.transcript_path || w.transcript;
     if (type === 'start' && !auto) w.prompted = now;
+    w.held = type === 'done' && bg.length && bg.every(t => t.type === 'shell') ? now : 0;
     working.set(session, w);
     settle(now, 'start');
     if (adopt) broadcast(tagged({ type: 'start', at: now, session, reason: 'Stop', auto: true }));
@@ -301,7 +318,8 @@ function log(e) {
   const what = e.type === 'hold' ? `agent still running: ${e.reason}`
     : e.type === 'tally' ? (e.reason === 'interrupt' ? 'agent stopped with Esc' : 'agent closed')
     : e.type === 'start' ? 'agent working'
-    : ({ Notification: 'agent needs you', StopFailure: 'agent stopped on an error' })[e.reason] || 'agent done';
+    : ({ Notification: 'agent needs you', StopFailure: 'agent stopped on an error' })[e.reason]
+      || (e.held ? 'agent done (its shell still running)' : 'agent done');
   const busy = state.working ? `${state.working} working · ` : '';
   console.log(`${t}  ${what}  (${busy}${clients.size} clack tab${clients.size === 1 ? '' : 's'} listening)`);
 }

@@ -194,21 +194,26 @@ if '--install' in args:
 lock = threading.RLock()  # re-entrant: broadcast() runs inside handlers that already hold it
 clients = set()            # one queue per open clack tab
 working = {}               # each session the agent is working in: since when, when you last prompted it, its transcript
-state = {'phase': 'idle', 'at': int(time.time() * 1000), 'sessions': [], 'working': 0, 'since': None}
+state = {'phase': 'idle', 'at': int(time.time() * 1000), 'sessions': [], 'working': 0, 'since': None, 'prompted': None}
 # background work that is the agent's own and wakes it when it ends. A monitor (the comment watch every published
 # artifact keeps, say) waits on other people and can run all day, so a turn that leaves only that behind is done
 AGENT_WORK = ('shell', 'subagent', 'workflow', 'MCP task', 'cloud session')
+# a shell can also be a server that never ends (the dev server it started for you, say), so a turn that leaves only
+# shells behind and doesn't wake again within ten minutes is done after all
+HOLD_MS = 10 * 60 * 1000
 
 
 def settle(now, kind):
     # the wait goes on while any session still works, so one finishing doesn't end the others' wait
     state.update(phase='wait' if working else 'done' if kind == 'done' else 'idle', at=now, sessions=sorted(working),
-                 working=len(working), since=min((w['since'] for w in working.values()), default=None))
+                 working=len(working), since=min((w['since'] for w in working.values()), default=None),
+                 prompted=max((w['prompted'] for w in working.values()), default=None))
 
 
 def tagged(event):
-    # every event says how many sessions are still working, and since when the longest of them has been
-    return {**event, 'working': state['working'], 'since': state['since']}
+    # every event says how many sessions are still working, since when the longest of them has been, and when you
+    # last handed one of them something
+    return {**event, 'working': state['working'], 'since': state['since'], 'prompted': state['prompted']}
 
 
 def tail(w):
@@ -248,10 +253,17 @@ def watch():
     while True:
         time.sleep(5)
         with lock:
+            now = int(time.time() * 1000)
+            # and which turns left only a shell behind that has run too long to be anything but a server
+            for s in [s for s, w in working.items() if w.get('held') and now - w['held'] >= HOLD_MS]:
+                del working[s]
+                settle(now, 'done')
+                event = tagged({'type': 'done', 'at': now, 'session': s, 'reason': 'Stop', 'held': True})
+                broadcast(event)
+                log(event, len(clients))
             gone = [s for s, w in working.items() if interrupted(w)]
             if not gone:
                 continue
-            now = int(time.time() * 1000)
             for s in gone:
                 del working[s]
             settle(now, 'end')
@@ -361,7 +373,8 @@ def log(e, n):
     elif e['type'] == 'start':
         what = 'agent working'
     else:
-        what = {'Notification': 'agent needs you', 'StopFailure': 'agent stopped on an error'}.get(e['reason'], 'agent done')
+        what = {'Notification': 'agent needs you', 'StopFailure': 'agent stopped on an error'}.get(
+            e['reason'], 'agent done (its shell still running)' if e.get('held') else 'agent done')
     busy = f"{state['working']} working · " if state['working'] else ''
     print(f"{time.strftime('%I:%M:%S %p')}  {what}  ({busy}{n} clack tab{'' if n == 1 else 's'} listening)", flush=True)
 
@@ -474,11 +487,14 @@ class Handler(BaseHTTPRequestHandler):
             if kind == 'done' and session not in working and not adopt:
                 return self.send(204)
             if auto and session in working:
+                # it woke again, so whatever it left running wasn't a server after all
+                working[session]['held'] = 0
                 return self.send(204)
             w = working.get(session) or {'since': now, 'prompted': now}
             w['transcript'] = hook.get('transcript_path') or w.get('transcript')
             if kind == 'start' and not auto:
                 w['prompted'] = now
+            w['held'] = now if kind == 'done' and bg and all(t.get('type') == 'shell' for t in bg) else 0
             working[session] = w
             settle(now, 'start')
             if adopt:

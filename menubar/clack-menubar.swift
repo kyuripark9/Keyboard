@@ -278,7 +278,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private var cameFrom: NSRunningApplication?
 
   private var phase = Phase.idle, reason = "", online = true, busy = 0
-  private var waitAt = Date(), breathFrom: CFTimeInterval = 0, doneAt: CFTimeInterval = 0, ringAtDone: CGFloat = 1
+  private var waitAt = Date(), promptedAt: Date?, breathFrom: CFTimeInterval = 0, doneAt: CFTimeInterval = 0, ringAtDone: CGFloat = 1
   private var timer: Timer?
   private var shown: (CGFloat, CGFloat, Bool)?
 
@@ -363,8 +363,10 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private func handle(_ e: [String: Any]) {
     let type = e["type"] as? String
     let at = (e["at"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) } ?? Date()
-    // how many sessions are still working, and since when the longest of them has been (older bridges don't say)
+    // how many sessions are still working, since when the longest of them has been, and when you last handed one of
+    // them something, which the clock counts from (older bridges don't say)
     let since = (e["since"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) }
+    promptedAt = (e["prompted"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) }
     if let n = e["working"] as? Int { busy = n }
     if type == "hello" {
       // what the bridge knows on (re)connecting; a done from before shows its dot without filling it in again
@@ -445,7 +447,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     switch phase {
     case .idle: return "no agent running"
     case .wait:
-      let s = max(0, Int(Date().timeIntervalSince(waitAt)))
+      let s = max(0, Int(Date().timeIntervalSince(promptedAt ?? waitAt)))
       return (busy > 1 ? "\(busy) agents" : "agent") + String(format: " working · %d:%02d", s / 60, s % 60)
     case .done:
       let word = ["Notification": "agent needs you", "StopFailure": "agent stopped"][reason] ?? "agent done"

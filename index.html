@@ -2957,7 +2957,7 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   const q = new URLSearchParams(location.search);
   const bridge = q.get('bridge') || (LOCAL.test(location.hostname) && location.port ? location.origin : null);
   Object.assign(AG, { mode: bridge ? 'bridge' : 'demo', state: 'idle', offline: false, startAt: 0, doneAt: 0, reason: '',
-    backMs: null, backAt: 0, demoT: 0, busy: 0, since: 0, here: !document.hidden && document.hasFocus(), hereAt: 0, seen: false });
+    backMs: null, backAt: 0, demoT: 0, busy: 0, since: 0, prompted: 0, here: !document.hidden && document.hasFocus(), hereAt: 0, seen: false });
 
   let returns = [];
   try { returns = JSON.parse(localStorage.getItem('clack-returns') || '[]').filter(n => typeof n === 'number'); } catch (e) {}
@@ -3027,9 +3027,10 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
     let html = '';
     // coming back while others still work, your return shows first and then their wait
     if (s === 'wait' && !backNew) {
-      // the pulsing dot says it's working, so the line only names who and for how long
+      // the pulsing dot says it's working, so the line only names who and how long since you last handed them
+      // something: how long you've been waiting, which one long-running session elsewhere doesn't stretch
       const who = AG.mode === 'demo' ? 'demo agent' : AG.busy > 1 ? AG.busy + ' agents' : 'agent';
-      html = `<i class="dot"></i><span>${who} · ${clock(now - AG.startAt)}</span>`;
+      html = `<i class="dot"></i><span>${who} · ${clock(now - (AG.prompted || AG.startAt))}</span>`;
     } else if (s === 'done') {
       const gone = AG.grip <= 0.02, word = { Notification: 'agent needs you', StopFailure: 'agent stopped' }[AG.reason] || 'agent done';
       if (!gone) html = `<i class="dot"></i><span>${word} · go back</span>`;
@@ -3084,8 +3085,9 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
     es.onmessage = m => {
       let e; try { e = JSON.parse(m.data); } catch (err) { return; }
       AG.offline = false;
-      // how many sessions are still working, and since when the longest of them has been (older bridges don't say)
-      if (typeof e.working === 'number') Object.assign(AG, { busy: e.working, since: e.since || 0 });
+      // how many sessions are still working, since when the longest of them has been, and when you last handed one of
+      // them something (older bridges don't say)
+      if (typeof e.working === 'number') Object.assign(AG, { busy: e.working, since: e.since || 0, prompted: e.prompted || 0 });
       if (e.type === 'hello') { if (e.phase === 'wait' && AG.state === 'idle') { start(); AG.startAt = AG.since || e.at || AG.startAt; } }
       else if (e.type === 'start') start(e.auto);
       else if (e.type === 'done') done(e.reason);
