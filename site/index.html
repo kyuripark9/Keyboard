@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>clack — something to press while your agent works</title>
-<meta name="description" content="Ten satisfying materials under your cursor. Play clack in your browser, keep it in your Mac's menu bar beside Claude Code, or open it in your browser's side panel.">
+<meta name="description" content="Ten satisfying materials under your cursor. Play clack in your browser, or open it in your browser's side panel next to whatever you're working in.">
 <meta property="og:title" content="clack">
 <meta property="og:description" content="Something to clack instead of scrolling. Back to work the moment your agent is done.">
 <meta property="og:image" content="https://kyuripark9.github.io/Keyboard/img/soap.jpg">
@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap">
 <style>
 /* The clack website: one page with the ten materials, each opening clack itself to play in a window over the page, how
-   it lets go of you, what it hears and never does, and the three ways to have it (the Mac's menu bar, a browser extension, the browser). The design
+   it lets go of you, what it hears and never does, and the two ways to have it (a browser extension and the browser). The design
    system is quiet so the materials carry the colour: white paper, black type, grey for everything secondary, one
    cobalt accent, hairlines between rows, mono capitals for labels and clack's own heavy wordmark for its name */
 :root {
@@ -270,7 +270,7 @@ html:has(.dlg[open]) { overflow: hidden; }
 .more a { text-decoration: none; color: var(--dim); transition: color .15s; }
 .more a:hover { color: #fff; }
 
-/* [04] get it, the last section: one row per way, from the full Mac app to nothing to install */
+/* [04] get it, the last section: one row per way, the side panel and then nothing to install */
 .way .ico { width: 28px; height: 28px; color: var(--ink); }
 .way .go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 /* a line of Terminal or an address to copy: selectable whole, with a copy button at its end */
@@ -388,7 +388,7 @@ footer .mono { color: var(--ink-3); }
     <h1 class="word" aria-label="clack"><span aria-hidden="true">C</span><span aria-hidden="true">L</span><span aria-hidden="true">A</span><span aria-hidden="true">C</span><span aria-hidden="true">K</span></h1>
     <div class="rule" aria-hidden="true"></div>
     <p class="lede">Something to clack instead of scrolling. Back to work the moment your agent is done.</p>
-    <p class="meta mono"><span>Mac menu bar</span><i>·</i><span>Any browser</span><i>·</i><span>Side panel</span></p>
+    <p class="meta mono"><span>Any browser</span><i>·</i><span>Side panel</span></p>
     <div class="ctas">
       <a class="btn" href="#materials">Play it here ↓</a>
       <a class="btn ghost" href="#get">Get clack</a>
@@ -514,38 +514,10 @@ footer .mono { color: var(--ink-3); }
     <div class="wrap">
       <div class="sh"><span>Get clack</span><span class="idx">[04]</span></div>
       <div class="intro">
-        <h2>Three ways to have it.</h2>
-        <p>Keep it one click away in your Mac's menu bar, open it in your browser's side panel next to Claude or ChatGPT, or play it with nothing to install.</p>
+        <h2>Two ways to have it.</h2>
+        <p>Open it in your browser's side panel next to Claude or ChatGPT, or play it with nothing to install. A demo agent stands in for yours, so you can feel clack let go.</p>
       </div>
       <div class="rows ways">
-
-        <article class="row way" id="mac">
-          <div class="k">
-            <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="4.5" width="23" height="17" rx="2"/><path d="M2.5 8.5h23M10 25h8M14 21.5V25"/><circle cx="20.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/></svg>
-            <h3>Keep it in your menu bar</h3>
-            <ul class="tags"><li class="hi">Follows Claude Code</li><li>macOS</li></ul>
-          </div>
-          <div class="v">
-            <p>Its ring sits at the top right of the screen and opens clack from any app. Connected to Claude Code, it holds you while your agent works and lets go the moment it's done.</p>
-            <ol class="steps">
-              <li><span><b>Download</b> clack, open the download and drag <b>clack</b> into <b>Applications</b>.</span></li>
-              <li><span>Open clack. The first time, macOS stops it, as it isn't from the App Store: click <b>Done</b>, then in <b>System Settings › Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b>.</span></li>
-              <li><span>clack opens under its ring and asks once whether to connect to Claude Code.</span></li>
-            </ol>
-            <div class="go"><a class="btn" href="clack.dmg" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>Download for Mac</a></div>
-            <p class="fine">For Apple silicon and Intel Macs on macOS 12 or later. Download it again to update. <a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md" target="_blank" rel="noopener">What it installs ↗</a></p>
-            <details>
-              <summary>Or install it from Terminal</summary>
-              <div class="cmd"><code id="installCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash</code><button type="button" data-copy="installCmd">Copy</button></div>
-              <p>It builds clack on your Mac in a few seconds and asks before connecting it to Claude Code. It needs Apple's Command Line Tools, and offers to install them if they're missing. Run the same line again to update.</p>
-            </details>
-            <details>
-              <summary>Remove it</summary>
-              <p>Right-click clack's ring and choose Remove clack: it comes out of Claude Code's settings, stops opening at login and goes to the Trash. Installed from Terminal, paste this there instead:</p>
-              <div class="cmd"><code id="removeCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash</code><button type="button" data-copy="removeCmd">Copy</button></div>
-            </details>
-          </div>
-        </article>
 
         <article class="row way" id="extension">
           <div class="k">
@@ -562,7 +534,7 @@ footer .mono { color: var(--ink-3); }
               <li><span>Pin clack and click its ring: clack opens in the side panel.</span></li>
             </ol>
             <div class="go"><a class="btn" href="clack-extension.zip" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>Download extension</a></div>
-            <p class="fine">If clack is also on your Mac, the panel opens that one and follows your agent; otherwise the demo agent stands in.</p>
+            <p class="fine">A demo agent stands in for yours, as on the web.</p>
           </div>
         </article>
 
@@ -589,7 +561,7 @@ footer .mono { color: var(--ink-3); }
     <div>
       <span class="mono">clack · a sound toy</span>
       <ul><li><a href="#materials">Materials</a></li><li><a href="#how">How it works</a></li><li><a href="#get">Get clack</a></li></ul>
-      <ul><li><a href="play/">Full screen ↗</a></li><li><a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md" target="_blank" rel="noopener">What it installs ↗</a></li><li><a href="https://github.com/kyuripark9/Keyboard" target="_blank" rel="noopener">GitHub ↗</a></li></ul>
+      <ul><li><a href="play/">Full screen ↗</a></li><li><a href="https://github.com/kyuripark9/Keyboard" target="_blank" rel="noopener">GitHub ↗</a></li></ul>
     </div>
   </div>
 </footer>
