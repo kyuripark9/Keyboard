@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>clack — something to press while your agent works</title>
-<meta name="description" content="Ten satisfying materials under your cursor. Play clack in your browser, or open it in your browser's side panel next to whatever you're working in.">
+<meta name="description" content="Ten satisfying materials under your cursor. Play clack in your browser, or add it to your browser's side panel, where it follows claude.ai and ChatGPT.">
 <meta property="og:title" content="clack">
 <meta property="og:description" content="Something to clack instead of scrolling. Back to work the moment your agent is done.">
 <meta property="og:image" content="https://kyuripark9.github.io/Keyboard/img/soap.jpg">
@@ -235,6 +235,8 @@ html:has(.dlg[open]) { overflow: hidden; }
 .spec div { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .spec dt { font: 500 12px/1.2 var(--font-mono); text-transform: uppercase; color: var(--ink-3); }
 .spec dd { margin: 0; font-size: 15px; line-height: 1.4; color: var(--ink); }
+/* the agent that's really yours, in cobalt */
+.spec dd.hi { color: var(--accent); font-weight: 500; }
 .way .go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 /* a line of Terminal or an address to copy: selectable whole, with a copy button at its end */
 .cmd { display: flex; align-items: center; gap: 12px; margin: 0; padding: 8px 8px 8px 18px; background: var(--bg-2); border: 1px solid var(--line); }
@@ -440,12 +442,12 @@ footer .mono { color: var(--ink-3); }
       <div class="sh"><span>Get clack</span><span class="idx">[03]</span></div>
       <div class="intro">
         <h2>Pick where it lives.</h2>
-        <p>Play it right here with nothing to install, or keep it open in your browser's side panel beside whatever you're working in.</p>
+        <p>Try it right here with nothing to install, or add it to your browser, where it sits in the side panel beside claude.ai or ChatGPT and follows them for real.</p>
       </div>
       <aside class="demo" aria-label="About the demo">
         <b>Demo</b>
-        <p>Both are demos: a pretend agent starts and finishes on its own, so you can feel clack let go. For the real thing, install clack on your Mac, where it follows your own coding agent and lets go of you the moment it's done.</p>
-        <a href="https://github.com/kyuripark9/Keyboard#get-it-on-your-mac" target="_blank" rel="noopener">How to install ↗</a>
+        <p>The web version is a demo: a pretend agent starts and finishes on its own, so you can feel clack let go. For the real thing, add the extension, which follows your own chats on claude.ai and ChatGPT.</p>
+        <a href="#extension">Get the extension ↓</a>
       </aside>
       <div class="rows ways">
 
@@ -454,6 +456,7 @@ footer .mono { color: var(--ink-3); }
             <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="14" cy="14" r="11"/><path d="M3 14h22M14 3c3 3.2 4.5 6.8 4.5 11S17 21.8 14 25M14 3c-3 3.2-4.5 6.8-4.5 11S11 21.8 14 25"/></svg>
             <h3>Web version</h3>
             <dl class="spec">
+              <div><dt>Agent</dt><dd>A demo</dd></div>
               <div><dt>Runs on</dt><dd>Any browser, phones too</dd></div>
               <div><dt>Setup</dt><dd>None</dd></div>
             </dl>
@@ -470,19 +473,21 @@ footer .mono { color: var(--ink-3); }
             <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="4.5" width="23" height="19" rx="2"/><path d="M2.5 9h23M17.5 9v14.5"/><path d="M20 13.5h3M20 16.5h3" stroke-linecap="round"/></svg>
             <h3>Browser extension</h3>
             <dl class="spec">
+              <div><dt>Agent</dt><dd class="hi">Yours, on claude.ai or ChatGPT</dd></div>
               <div><dt>Runs on</dt><dd>Chrome, Edge or Brave</dd></div>
               <div><dt>Setup</dt><dd>Download, then load it by hand</dd></div>
             </dl>
           </div>
           <div class="v">
-            <p>Opens clack in your browser's side panel, beside whatever you're working in. It isn't in the Chrome Web Store, so you add it by hand.</p>
+            <p>Opens clack in your browser's side panel and follows claude.ai and ChatGPT: when one starts writing an answer, clack wakes up, and when the answer is done, the picture fades to grey and the sound stops, so you go back and read it. It isn't in the Chrome Web Store, so you add it by hand.</p>
             <div class="go"><a class="btn" href="clack-extension.zip" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>Download extension</a></div>
             <ol class="steps">
               <li><span>Unzip the download. You'll get a <b>clack-extension</b> folder.</span></li>
               <li><span>Open <span class="cmd small"><code id="extUrl">chrome://extensions</code><button type="button" data-copy="extUrl" aria-label="Copy chrome://extensions">Copy</button></span> and turn on <b>Developer mode</b>.</span></li>
               <li><span>Click <b>Load unpacked</b> and choose the <b>clack-extension</b> folder.</span></li>
-              <li><span>Pin clack from the puzzle-piece menu and click its ring: clack opens in the side panel.</span></li>
+              <li><span>Pin clack from the puzzle-piece menu, open claude.ai or ChatGPT and click clack's ring: clack opens in the side panel and waits for the next answer.</span></li>
             </ol>
+            <p class="fine">For Claude Code or Codex on your Mac, clack has a Mac app that follows them the same way. <a href="https://github.com/kyuripark9/Keyboard#get-it-on-your-mac" target="_blank" rel="noopener">How to install it ↗</a></p>
           </div>
         </article>
 

@@ -2,7 +2,7 @@
 
 A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, and each sound draws its own picture to play with.
 
-**Website: https://kyuripark9.github.io/Keyboard/**: play clack right on the page or add it to your browser, both with a demo agent standing in for yours. The real clack, which follows your own agent, is the Mac app below. Full screen it is at https://kyuripark9.github.io/Keyboard/play/.
+**Website: https://kyuripark9.github.io/Keyboard/**: play clack right on the page, where a demo agent stands in for yours, or add it to your browser, where it follows claude.ai and ChatGPT. For Claude Code and Codex, get it on your Mac (below). Full screen it is at https://kyuripark9.github.io/Keyboard/play/.
 
 ## Get it on your Mac
 
@@ -18,7 +18,7 @@ It runs clack's bridge in the background, puts its ring in your menu bar and off
 
 ## Add it to your browser
 
-The extension in [extension/](extension/) opens clack in the side panel of Chrome, Edge or Brave, on any system, next to claude.ai, ChatGPT or whatever you're waiting on. Download `clack-extension.zip` from the website, unzip it, open `chrome://extensions`, turn on Developer mode, click Load unpacked and pick the `clack-extension` folder; then pin clack and click its ring. If clack is running on the same computer (http://localhost:4545), the panel opens that one, which follows your agent; otherwise it opens the web version with its demo agent.
+The extension in [extension/](extension/) opens clack in the side panel of Chrome, Edge or Brave, on any system, next to claude.ai, ChatGPT or whatever you're waiting on. Download `clack-extension.zip` from the website, unzip it, open `chrome://extensions`, turn on Developer mode, click Load unpacked and pick the `clack-extension` folder; then pin clack and click its ring. It follows claude.ai and ChatGPT: while one of their tabs is writing an answer (its stop button is up by the box you type in), clack holds you, and when the answer is done it lets go, the first of several to finish first; the extension reads nothing else on those pages and sends nothing anywhere. If clack is running on the same computer (http://localhost:4545), the panel opens that one instead, which follows Claude Code and Codex.
 
 ## The 10 sounds
 

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "clack",
-  "version": "1.0.0",
-  "description": "Something to press while your agent works: ten materials that click, pop and squish, in your browser's side panel.",
+  "version": "1.1.0",
+  "description": "Something to press while claude.ai or ChatGPT answers: ten materials in your side panel that let go of you when it's done.",
   "homepage_url": "https://kyuripark9.github.io/Keyboard/",
   "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
   "action": {
@@ -11,6 +11,9 @@
   },
   "side_panel": { "default_path": "panel.html" },
   "background": { "service_worker": "background.js" },
-  "permissions": ["sidePanel"],
-  "host_permissions": ["http://localhost:4545/*"]
+  "permissions": ["sidePanel", "scripting"],
+  "host_permissions": ["http://localhost:4545/*", "https://claude.ai/*", "https://chatgpt.com/*"],
+  "content_scripts": [
+    { "matches": ["https://claude.ai/*", "https://chatgpt.com/*"], "js": ["watch.js"], "run_at": "document_idle" }
+  ]
 }
