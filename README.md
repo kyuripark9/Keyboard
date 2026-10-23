@@ -2,7 +2,7 @@
 
 A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, and each sound draws its own picture to play with.
 
-**Website: https://kyuripark9.github.io/Keyboard/**: play clack right on the page (a demo agent stands in for yours), get it on your Mac or add it to your browser. Full screen it is at https://kyuripark9.github.io/Keyboard/play/.
+**Website: https://kyuripark9.github.io/Keyboard/**: play clack right on the page or add it to your browser, both with a demo agent standing in for yours. The real clack, which follows your own agent, is the Mac app below. Full screen it is at https://kyuripark9.github.io/Keyboard/play/.
 
 ## Get it on your Mac
 

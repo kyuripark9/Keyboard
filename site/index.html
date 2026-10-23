@@ -234,6 +234,14 @@ html:has(.dlg[open]) { overflow: hidden; }
 
 /* [03] get it, the last section: one row per way, the side panel and then nothing to install */
 .way .ico { width: 28px; height: 28px; color: var(--ink); }
+/* over the ways, a note that both are demos, and where the real clack is: installed on a Mac, following your own agent */
+.demo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; margin: -24px 0 48px;
+  padding: 20px 24px; background: var(--bg-2); border: 1px solid var(--line); }
+.demo b { padding: 6px 10px 5px; border-radius: 999px; background: var(--accent); color: #fff; font: 500 11.5px/1 var(--font-mono); text-transform: uppercase; }
+.demo p { margin: 0; max-width: 44em; font-size: 15px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+.demo a { font: 500 13px/1.2 var(--font-mono); text-transform: uppercase; text-decoration: none; white-space: nowrap; }
+.demo a:hover { color: var(--accent); }
+@media (max-width: 760px) { .demo { grid-template-columns: minmax(0, 1fr); justify-items: start; } }
 .way .go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 /* a line of Terminal or an address to copy: selectable whole, with a copy button at its end */
 .cmd { display: flex; align-items: center; gap: 12px; margin: 0; padding: 8px 8px 8px 18px; background: var(--bg-2); border: 1px solid var(--line); }
@@ -440,16 +448,21 @@ footer .mono { color: var(--ink-3); }
     <div class="wrap">
       <div class="sh"><span>Get clack</span><span class="idx">[03]</span></div>
       <div class="intro">
-        <h2>Two ways to have it.</h2>
-        <p>Open it in your browser's side panel next to Claude or ChatGPT, or play it with nothing to install. A demo agent stands in for yours, so you can feel clack let go.</p>
+        <h2>Two ways to try it.</h2>
+        <p>Open it in your browser's side panel next to Claude or ChatGPT, or play it with nothing to install.</p>
       </div>
+      <aside class="demo" aria-label="About the demo">
+        <b>Demo</b>
+        <p>Both are demos: a pretend agent starts and finishes on its own, so you can feel clack let go. For the real thing, install clack on your Mac, where it follows your own coding agent and lets go of you the moment it's done.</p>
+        <a href="https://github.com/kyuripark9/Keyboard#get-it-on-your-mac" target="_blank" rel="noopener">How to install ↗</a>
+      </aside>
       <div class="rows ways">
 
         <article class="row way" id="extension">
           <div class="k">
             <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="4.5" width="23" height="19" rx="2"/><path d="M2.5 9h23M17.5 9v14.5"/><path d="M20 13.5h3M20 16.5h3" stroke-linecap="round"/></svg>
             <h3>Open it in the side panel</h3>
-            <ul class="tags"><li>Chrome · Edge · Brave</li><li>Any OS</li></ul>
+            <ul class="tags"><li class="hi">Demo</li><li>Chrome · Edge · Brave</li><li>Any OS</li></ul>
           </div>
           <div class="v">
             <p>A browser extension that opens clack in the side panel, right next to claude.ai, ChatGPT or whatever you're waiting on.</p>
@@ -468,7 +481,7 @@ footer .mono { color: var(--ink-3); }
           <div class="k">
             <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="14" cy="14" r="11"/><path d="M3 14h22M14 3c3 3.2 4.5 6.8 4.5 11S17 21.8 14 25M14 3c-3 3.2-4.5 6.8-4.5 11S11 21.8 14 25"/></svg>
             <h3>Play on the web</h3>
-            <ul class="tags"><li>Nothing to install</li><li>Any browser</li></ul>
+            <ul class="tags"><li class="hi">Demo</li><li>Nothing to install</li><li>Any browser</li></ul>
           </div>
           <div class="v">
             <p>All ten materials, right in the page, on a laptop or a phone. A demo agent stands in for yours, so you can feel clack let go.</p>

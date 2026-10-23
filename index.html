@@ -101,10 +101,10 @@ body[data-scene="soap"] .haze { display: block; }
 .agent.wait .dot { animation: agentPulse 1.6s ease-in-out infinite; }
 .agent.done { color: var(--ink); }
 @keyframes agentPulse { 50% { opacity: .25; transform: scale(.7); } }
-.agent button { pointer-events: auto; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--ink);
-  background: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; cursor: pointer; }
-.agent button:hover { border-color: var(--ink); }
-body.custom-cursor .agent button { cursor: none !important; }
+.agent button, .agent a { pointer-events: auto; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--ink);
+  background: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; cursor: pointer; text-decoration: none; }
+.agent button:hover, .agent a:hover { border-color: var(--ink); }
+body.custom-cursor .agent button, body.custom-cursor .agent a { cursor: none !important; }
 /* letting go: once the agent is done, the picture loses its colour and the cursor fades with the sound */
 #scene { transition: filter .3s linear; }
 body.letting-go #scene { filter: saturate(var(--grip-sat, 1)); }
@@ -744,7 +744,7 @@ const lastPt = new Map();
 const pressed = new Set();
 function keyAt(x, y) {
   const el = document.elementFromPoint(x, y);
-  return el && el.closest('.edge, .top, .story, .agent button') ? null : cellAt(x, y);
+  return el && el.closest('.edge, .top, .story, .agent button, .agent a') ? null : cellAt(x, y);
 }
 function enter(id, k) {
   const cur = active.get(id);
@@ -2995,6 +2995,8 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   // played in without ever taking the focus (a window behind your terminal, say), clack is left when the pointer goes
   document.addEventListener('mouseout', e => { if (!e.relatedTarget && !document.hasFocus()) leave('pointer'); });
 
+  // the demo says it's one, and offers the real clack, which follows your own agent
+  const OWN = '<a href="https://github.com/kyuripark9/Keyboard#get-it-on-your-mac" target="_blank" rel="noopener">your own agent ↗</a>';
   let lastHtml = null;
   function render() {
     const now = Date.now(), s = AG.state;
@@ -3011,13 +3013,13 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
       const gone = AG.grip <= 0.02, word = { Notification: 'agent needs you', StopFailure: 'agent stopped' }[AG.reason] || 'agent done';
       if (!gone) html = `<i class="dot"></i><span>${word} · go back</span>`;
       else if (now - AG.doneAt < RELEASE_MS + 9000) html = `<span>clack let go · ${AG.mode === 'demo' ? 'tab away to go back' : 'your agent is waiting'}</span>`;
-      else if (AG.mode === 'demo') html = `<span>still here?</span><button type="button" data-a="again">try again</button>`;
+      else if (AG.mode === 'demo') html = `<span>still here?</span><button type="button" data-a="again">try again</button>${OWN}`;
       else html = `<span>clack let go · your agent is waiting</span>`;
     } else if (backNew) {
       const typ = returns.length >= 3 ? ` · typical ${secs(median(returns))}` : '';
       html = `<span>back in ${secs(AG.backMs)}${typ}</span>`;
     } else if (AG.mode === 'demo') {
-      html = `<button type="button" data-a="try">try an agent wait</button>`;
+      html = `<button type="button" data-a="try">try an agent wait</button>${OWN}`;
     } else if (AG.offline) {
       // with the bridge up and nothing to wait for, the line says nothing and the count stands alone
       html = `<span>bridge offline</span>`;
