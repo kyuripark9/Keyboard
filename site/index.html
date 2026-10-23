@@ -193,7 +193,7 @@ html:has(.dlg[open]) { overflow: hidden; }
 .keeps ul:last-child { margin-bottom: 0; }
 .keeps li { padding: 13px 0; border-top: 1px solid rgba(255,255,255,.16); font: 500 13px/1.3 var(--font-mono); text-transform: uppercase; }
 
-/* [04] get it, the last section: a row for each way to install it, then the way with nothing to install, PLAY CLACK */
+/* [04] get it, the last section: one row per way, from the full Mac app to nothing to install */
 .way .ico { width: 28px; height: 28px; color: var(--ink); }
 .way .go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 /* a line of Terminal or an address to copy: selectable whole, with a copy button at its end */
@@ -219,23 +219,6 @@ html:has(.dlg[open]) { overflow: hidden; }
 .steps li::before { content: counter(s, decimal-leading-zero); font: 400 12px/1 var(--font-mono); color: var(--ink-3); }
 .steps li b { color: var(--ink); font-weight: 500; }
 
-/* the web way, under the rows: PLAY CLACK in clack's own wordmark to go and play it, then its pills and words on the
-   rows' own columns */
-.web { margin-top: 40px; scroll-margin-top: calc(var(--bar-h) + 8px); }
-.web .row { padding: 28px 0 0; border-bottom: 0; }
-.big { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 24px; padding: clamp(24px, 3vw, 40px) clamp(20px, 3vw, 40px);
-  background: var(--bg-2); text-decoration: none; transition: background-color .2s; }
-.big b { font: 800 clamp(48px, 10.6vw, 152px)/.82 var(--font-brand); letter-spacing: -.04em; white-space: nowrap; }
-/* the Ls get the same room before their A as in CLACK at the top */
-.big b i { font-style: normal; margin-right: .035em; }
-/* where it goes: a pill with a globe, turning cobalt under the pointer */
-.big span { display: inline-flex; align-items: center; gap: 10px; padding: 14px 20px 13px; border-radius: 999px; background: #fff;
-  font: 500 14px/1 var(--font-mono); text-transform: uppercase; white-space: nowrap; transition: background-color .2s, color .2s; }
-.big span svg { width: 20px; height: 20px; flex: none; }
-.big span i { font-style: normal; transition: transform .2s; }
-.big:hover { background: var(--bg-3); }
-.big:hover span { background: var(--accent); color: #fff; }
-.big:hover span i { transform: translate(3px, -3px); }
 footer { padding-block: 0 48px; }
 footer .wrap > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; padding-top: 32px; border-top: 1px solid var(--line); }
 footer ul { margin: 0; padding: 0; list-style: none; }
@@ -282,7 +265,6 @@ footer .mono { color: var(--ink-3); }
   .band li:hover, .band li:focus-within { flex-grow: 0; }
   .sh { margin-bottom: 40px; }
   .row { padding: 32px 0; }
-  .web { margin-top: 32px; }
   .cmd { flex-direction: column; align-items: stretch; padding: 14px; }
   .cmd button { align-self: flex-start; }
   .cmd.small { flex-direction: row; align-items: center; padding: 2px 2px 2px 8px; }
@@ -435,18 +417,19 @@ footer .mono { color: var(--ink-3); }
           </div>
         </article>
 
-      </div>
-
-      <div class="web" id="web">
-        <h3 class="sr">Play on the web</h3>
-        <a class="big" href="play/" aria-label="Play clack, web version"><b>P<i>L</i>AY C<i>L</i>ACK</b><span aria-hidden="true"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="14" cy="14" r="11"/><path d="M3 14h22M14 3c3 3.2 4.5 6.8 4.5 11S17 21.8 14 25M14 3c-3 3.2-4.5 6.8-4.5 11S11 21.8 14 25"/></svg>Web version<i>↗</i></span></a>
-        <div class="row">
-          <div class="k"><ul class="tags"><li>Nothing to install</li><li>Any browser</li></ul></div>
+        <article class="row way" id="web">
+          <div class="k">
+            <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="14" cy="14" r="11"/><path d="M3 14h22M14 3c3 3.2 4.5 6.8 4.5 11S17 21.8 14 25M14 3c-3 3.2-4.5 6.8-4.5 11S11 21.8 14 25"/></svg>
+            <h3>Play on the web</h3>
+            <ul class="tags"><li>Nothing to install</li><li>Any browser</li></ul>
+          </div>
           <div class="v">
             <p>All ten materials, right in the page, on a laptop or a phone. A demo agent stands in for yours, so you can feel clack let go.</p>
+            <div class="go"><a class="btn" href="play/">Open clack ↗</a></div>
             <p class="fine">To keep it as an app with its own window: in Chrome or Edge, click the install icon in the address bar; in Safari, choose File › Add to Dock.</p>
           </div>
-        </div>
+        </article>
+
       </div>
     </div>
   </section>
