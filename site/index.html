@@ -340,7 +340,7 @@ footer .mono { color: var(--ink-3); }
   <div class="wrap">
     <a class="logo" href="./" aria-label="clack home"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>clack</a>
     <nav class="nav" id="nav" aria-label="Sections">
-      <a href="#materials">Materials</a>
+      <a href="#play">Play</a>
       <a href="#how">How it works</a>
       <a class="dup" href="#get">Get clack</a>
     </nav>
@@ -350,7 +350,7 @@ footer .mono { color: var(--ink-3); }
 </header>
 
 <main>
-  <section class="cover" id="materials" aria-label="Materials" style="--c1:#3857ab">
+  <section class="cover" id="play" aria-label="Play" style="--c1:#3857ab">
     <div class="deck" id="deck" role="region" aria-roledescription="carousel" aria-label="Ten materials">
       <ul class="cards" id="cards"></ul>
       <div class="live" id="live"></div>
@@ -423,7 +423,7 @@ footer .mono { color: var(--ink-3); }
           </figure>
         </li>
       </ol>
-      <p class="aside">Try it now: the material at the <a href="#materials">top of the page</a> is clack itself, and playing it starts a demo agent.</p>
+      <p class="aside">Try it now: the material at the <a href="#play">top of the page</a> is clack itself, and playing it starts a demo agent.</p>
     </div>
   </section>
 
@@ -490,7 +490,7 @@ footer .mono { color: var(--ink-3); }
   <div class="wrap">
     <div>
       <span class="mono">clack · a sound toy</span>
-      <ul><li><a href="#materials">Materials</a></li><li><a href="#how">How it works</a></li><li><a href="#get">Get clack</a></li></ul>
+      <ul><li><a href="#play">Play</a></li><li><a href="#how">How it works</a></li><li><a href="#get">Get clack</a></li></ul>
       <ul><li><a href="play/">Web version →</a></li><li><a href="https://github.com/kyuripark9/Keyboard" target="_blank" rel="noopener">GitHub ↗</a></li></ul>
     </div>
   </div>
@@ -602,7 +602,7 @@ const spy = new IntersectionObserver(entries => {
   for (const en of entries) if (en.isIntersecting)
     for (const a of links) a.setAttribute('aria-current', String(a.getAttribute('href') === '#' + en.target.id));
 }, { rootMargin: '-45% 0px -50% 0px' });
-for (const id of ['materials', 'how', 'get']) spy.observe($(id));
+for (const id of ['play', 'how', 'get']) spy.observe($(id));
 
 // the cover: the ten materials in a ring, turned by dragging it, swiping or scrolling sideways, clicking another one or
 // the arrow keys. The one in the middle is big and in its colours; the others are smaller and grey, blurred past the
@@ -610,7 +610,7 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
 // itself is in the middle on that material, there to play the moment the pointer is on it; it steps away while the
 // ring turns, and each material the ring comes to rest on is handed to the same clack
 (() => {
-  const cover = $('materials'), deck = $('deck'), box = $('live'), N = MATS.length, K = .52;
+  const cover = $('play'), deck = $('deck'), box = $('live'), N = MATS.length, K = .52;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const mod = a => ((a % N) + N) % N;
   // how many places card i is from p, the short way round: -5 up to 5
