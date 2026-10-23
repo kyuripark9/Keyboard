@@ -11,7 +11,7 @@ set -euo pipefail
 SOURCE="${CLACK_SOURCE:-https://raw.githubusercontent.com/kyuripark9/Keyboard/main}"
 PORT="${CLACK_PORT:-4545}"
 DIR="$HOME/Library/Application Support/clack"
-FILES="bridge/clack-bridge.py bridge/icon-192.png bridge/icon-512.png bridge/apple-touch-icon.png bridge/favicon-32.png index.html menubar/clack-menubar.swift menubar/build.sh"
+FILES="bridge/clack-bridge.py bridge/icon-192.png bridge/icon-512.png bridge/apple-touch-icon.png bridge/favicon-32.png index.html menubar/clack-menubar.swift menubar/clack-bridge.swift menubar/build.sh"
 # not ~/Applications/clack.app, which is where Safari's File > Add to Dock keeps clack as a web app
 MENUBAR="$HOME/Applications/clack menu bar.app"
 

@@ -206,6 +206,9 @@ html:has(.dlg[open]) { overflow: hidden; }
 .cmd.small code { font-size: 12.5px; word-break: normal; white-space: nowrap; }
 .cmd.small button { min-width: 0; height: 24px; padding: 0 9px; font-size: 10.5px; }
 .way details { margin-top: 18px; border-top: 1px solid var(--line); }
+.way details + details { margin-top: 0; }
+.way details[open]:not(:last-child) { padding-bottom: 18px; }
+.way details p + .cmd { margin-top: 12px; }
 .way summary { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; cursor: pointer; list-style: none;
   font: 500 12.5px/1 var(--font-mono); text-transform: uppercase; color: var(--ink-2); }
 .way summary::-webkit-details-marker { display: none; }
@@ -387,13 +390,23 @@ footer .mono { color: var(--ink-3); }
             <ul class="tags"><li class="hi">Follows Claude Code</li><li>macOS</li></ul>
           </div>
           <div class="v">
-            <p>Its ring sits at the top right of the screen and opens clack from any app. Connected to Claude Code, it holds you while your agent works and lets go the moment it's done. Paste this into Terminal:</p>
-            <div class="cmd"><code id="installCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash</code><button type="button" data-copy="installCmd">Copy</button></div>
-            <p class="fine">It builds clack on your Mac in a few seconds and asks before connecting it to Claude Code. It needs Apple's Command Line Tools, and offers to install them if they're missing. Run the same line again to update. <a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md" target="_blank" rel="noopener">What it installs ↗</a></p>
+            <p>Its ring sits at the top right of the screen and opens clack from any app. Connected to Claude Code, it holds you while your agent works and lets go the moment it's done.</p>
+            <ol class="steps">
+              <li><span><b>Download</b> clack, open the download and drag <b>clack</b> into <b>Applications</b>.</span></li>
+              <li><span>Open clack. The first time, macOS stops it, as it isn't from the App Store: click <b>Done</b>, then in <b>System Settings › Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b>.</span></li>
+              <li><span>clack opens under its ring and asks once whether to connect to Claude Code.</span></li>
+            </ol>
+            <div class="go"><a class="btn" href="clack.dmg" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>Download for Mac</a></div>
+            <p class="fine">For Apple silicon and Intel Macs on macOS 12 or later. Download it again to update. <a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md" target="_blank" rel="noopener">What it installs ↗</a></p>
+            <details>
+              <summary>Or install it from Terminal</summary>
+              <div class="cmd"><code id="installCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash</code><button type="button" data-copy="installCmd">Copy</button></div>
+              <p>It builds clack on your Mac in a few seconds and asks before connecting it to Claude Code. It needs Apple's Command Line Tools, and offers to install them if they're missing. Run the same line again to update.</p>
+            </details>
             <details>
               <summary>Remove it</summary>
+              <p>Right-click clack's ring and choose Remove clack: it comes out of Claude Code's settings, stops opening at login and goes to the Trash. Installed from Terminal, paste this there instead:</p>
               <div class="cmd"><code id="removeCmd">curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash</code><button type="button" data-copy="removeCmd">Copy</button></div>
-              <p>This quits the menu bar app, stops clack, takes its hooks back out of Claude Code and deletes its files.</p>
             </details>
           </div>
         </article>

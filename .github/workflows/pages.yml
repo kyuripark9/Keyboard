@@ -1,6 +1,7 @@
 # Publishes the clack website to GitHub Pages on every push to main: the landing page from site/, clack itself at
-# play/ and the browser extension's zip, all put together by site/build.sh. Pages must be set to deploy from
-# GitHub Actions (Settings > Pages > Source)
+# play/ and the browser extension's zip, all put together by site/build.sh, and clack for the Mac as clack.dmg, which
+# a Mac runner builds from menubar/ for Apple silicon and Intel. Pages must be set to deploy from GitHub Actions
+# (Settings > Pages > Source)
 name: Website
 on:
   push:
@@ -14,7 +15,23 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
+  mac:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - run: CLACK_ARCHS="arm64 x86_64" bash menubar/build.sh dmg/clack.app
+      # a broken signature would make macOS call the download damaged instead of offering to open it anyway
+      - run: codesign --verify --deep --strict dmg/clack.app
+      # the disk image opens on clack and a shortcut to Applications, to drag it onto
+      - run: |
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname clack -srcfolder dmg -fs HFS+ -format UDZO -ov clack.dmg
+      - uses: actions/upload-artifact@v7
+        with:
+          name: clack-dmg
+          path: clack.dmg
   deploy:
+    needs: mac
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -22,6 +39,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - run: bash site/build.sh _site
+      - uses: actions/download-artifact@v8
+        with:
+          name: clack-dmg
+          path: _site
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

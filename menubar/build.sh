@@ -1,8 +1,10 @@
 #!/bin/bash
-# builds clack's menu bar app, clack.app, from clack-menubar.swift with the Swift compiler in Apple's Command Line Tools
+# builds clack's menu bar app, clack.app, from clack-menubar.swift and the bridge inside it (clack-bridge.swift) with the
+# Swift compiler in Apple's Command Line Tools, and puts clack itself (index.html) and its icons in it for the bridge
 #
 #   bash menubar/build.sh                  -> menubar/build/clack.app
 #   bash menubar/build.sh <app> [icon.png] -> that app, with a PNG of 512 px or more as its icon
+#   CLACK_ARCHS="arm64 x86_64" bash ...    -> one app for Apple silicon and Intel Macs, as the website gives out
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -10,10 +12,17 @@ OUT="${1:-$HERE/build/clack.app}"
 # it replaces what is there, so it only ever writes an app
 case "$OUT" in *.app) ;; *) echo "build.sh: give a path ending in .app" >&2; exit 1 ;; esac
 ICON="${2:-}"
-# installed, the icon sits next to this script; in a clone of the repo, it is the bridge's
-for f in "$HERE/icon-512.png" "$HERE/../bridge/icon-512.png"; do
-  if [ -z "$ICON" ] && [ -f "$f" ]; then ICON="$f"; fi
-done
+# installed, the page and the icons sit next to this script; in a clone of the repo, the page is the repo's own and
+# the icons are the bridge's
+find_file() {
+  for f in "$HERE/$1" "$HERE/../$1" "$HERE/../bridge/$1"; do
+    if [ -f "$f" ]; then echo "$f"; return; fi
+  done
+  echo "build.sh: $1 is missing" >&2
+  exit 1
+}
+PAGE="$(find_file index.html)"
+if [ -z "$ICON" ]; then ICON="$(find_file icon-512.png)"; fi
 
 xcrun --find swiftc >/dev/null 2>&1 || { echo "clack.app needs Apple's Command Line Tools: xcode-select --install" >&2; exit 1; }
 
@@ -22,7 +31,13 @@ trap 'rm -rf "$TMP"' EXIT
 APP="$TMP/clack.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
-xcrun swiftc -O -suppress-warnings -target "$(uname -m)-apple-macos12" "$HERE/clack-menubar.swift" -o "$APP/Contents/MacOS/clack"
+for arch in ${CLACK_ARCHS:-$(uname -m)}; do
+  xcrun swiftc -O -parse-as-library -suppress-warnings -target "$arch-apple-macos12" "$HERE/clack-menubar.swift" "$HERE/clack-bridge.swift" \
+    -o "$TMP/clack-$arch"
+done
+lipo -create "$TMP"/clack-* -output "$APP/Contents/MacOS/clack"
+cp "$PAGE" "$APP/Contents/Resources/index.html"
+for f in icon-192.png icon-512.png apple-touch-icon.png favicon-32.png; do cp "$(find_file $f)" "$APP/Contents/Resources/"; done
 
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -45,7 +60,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-if [ -n "$ICON" ]; then
+if [ -f "$ICON" ]; then
   mkdir "$TMP/AppIcon.iconset"
   for s in 16 32 128 256 512; do
     sips -z $s $s "$ICON" --out "$TMP/AppIcon.iconset/icon_${s}x${s}.png" >/dev/null

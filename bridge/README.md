@@ -5,7 +5,24 @@ of you the moment it's done. This folder is what runs it on your own computer.
 
 ## Install
 
-Open Terminal and paste:
+The easy way is the app: download [clack.dmg](https://kyuripark9.github.io/Keyboard/clack.dmg), open it and drag clack
+into Applications. It's built for Apple silicon and Intel Macs on macOS 12 or later, with this bridge inside
+([menubar/clack-bridge.swift](../menubar/clack-bridge.swift), the same as `clack-bridge.py`), so it needs nothing else.
+
+1. The first time you open it, macOS stops it, as it isn't from the App Store: click Done, then in System Settings ›
+   Privacy & Security, scroll down and click Open Anyway. (Opened straight from the download, clack offers to move
+   itself into Applications first.)
+2. It opens under its ring in the menu bar and asks once whether to connect to Claude Code (five small hooks in
+   `~/.claude/settings.json`, backed up first). Right-click the ring and choose Connect to Claude Code to change that
+   any time.
+3. From then on it opens at login, and its bridge runs while the ring is there.
+
+Download it again to update. To remove it, right-click the ring and choose Remove clack: it takes its hooks out of
+Claude Code's settings, stops opening at login, forgets its settings and moves itself to the Trash.
+
+### From Terminal
+
+Or open Terminal and paste:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash
@@ -32,8 +49,10 @@ bar app). If they are missing, the installer opens Apple's window to install the
   smaller, or click the button at its top right to expand it to Full Height and shrink it back. The ring shows your
   agent without opening anything: it breathes while the agent works, holds still with its dot filled in when it's
   done, and dims when the bridge is offline. Right-click it to pick a size (Small, Medium, Large, or Full Height down
-  to the Dock), open clack in your browser, reload it, choose whether it opens at login (it does unless you turn that
-  off) or quit it.
+  to the Dock), open clack in your browser, reload it, connect it to Claude Code or take it out again, choose whether
+  it opens at login (it does unless you turn that off) or quit it. Opening clack again from Applications or Spotlight
+  opens it under the ring too; when the menu bar is so full that macOS hides the ring behind the camera, clack says so
+  and offers to open in your browser instead.
 - **As its own app**: open http://localhost:4545 in Chrome or Edge and click the install icon in the address bar, or in
   Safari choose *File > Add to Dock*. clack then opens from the Dock in its own window, which you can keep next to the
   Claude or ChatGPT app, a terminal or your editor.
@@ -55,6 +74,8 @@ you one. It stores none of this, and never sees your code. Nothing leaves your M
 
 ## Remove
 
+The app: right-click its ring and choose Remove clack. Installed from Terminal:
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash
 ```
@@ -72,7 +93,8 @@ python3 bridge/clack-bridge.py --install   # connect Claude Code
 python3 bridge/clack-bridge.py             # run it (or: node bridge/clack-bridge.js), then open http://localhost:4545
 ```
 
-On a Mac, build the menu bar app from the clone too:
+On a Mac, build the menu bar app from the clone too, which runs the bridge itself when no other one answers on its
+port:
 
 ```sh
 bash menubar/build.sh && open menubar/build/clack.app

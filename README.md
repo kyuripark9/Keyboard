@@ -6,13 +6,15 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 
 ## Get it on your Mac
 
-clack can sit beside your coding agent: it wakes when you hand Claude Code a task and lets go of you the moment it's done. Paste this into Terminal:
+clack can sit beside your coding agent: it wakes when you hand Claude Code a task and lets go of you the moment it's done. Download [clack.dmg](https://kyuripark9.github.io/Keyboard/clack.dmg) from the website, open it and drag clack into Applications. The first time you open it, macOS stops it, as it isn't from the App Store: click Done, then in System Settings › Privacy & Security, scroll down and click Open Anyway. clack opens under its ring in your menu bar, where one click opens clack from any app and the ring itself shows whether your agent is working or done, and asks once whether to connect it to Claude Code. It's one app for Apple silicon and Intel Macs, with clack's bridge inside, so it needs nothing else; right-click its ring and choose Remove clack to take it all away again.
+
+Or paste this into Terminal, which builds clack on your Mac with Apple's Command Line Tools:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash
 ```
 
-It runs clack in the background, puts its ring in your menu bar, where one click opens clack from any app and the ring itself shows whether your agent is working or done, and offers to connect it to Claude Code. clack is also at http://localhost:4545, where Chrome or Safari can keep it as an app in your Dock. Everything stays on your Mac. See [bridge/README.md](bridge/README.md) for what it does, updating and removing it.
+It runs clack's bridge in the background, puts its ring in your menu bar and offers to connect it to Claude Code. Either way clack is also at http://localhost:4545, where Chrome or Safari can keep it as an app in your Dock. Everything stays on your Mac. See [bridge/README.md](bridge/README.md) for what it does, updating and removing it.
 
 ## Add it to your browser
 
@@ -53,10 +55,10 @@ python3 -m http.server 8000   # http://localhost:8000
 
 ## The website
 
-The website is the landing page in [site/](site/) with clack itself at `play/` and the extension's zip next to it. `site/build.sh` puts them together, taking clack from this repo's `index.html`, so there is only one copy of it:
+The website is the landing page in [site/](site/) with clack itself at `play/` and the extension's zip and `clack.dmg` next to it. `site/build.sh` puts them together, taking clack from this repo's `index.html`, so there is only one copy of it:
 
 ```sh
 bash site/build.sh && python3 -m http.server -d site/_site 8000   # http://clack.localhost:8000
 ```
 
-(On plain `localhost` with a port, clack looks for its bridge there; `clack.localhost` shows it as the public site does, with the demo agent.) Every push to `main` builds and publishes it with GitHub Actions ([.github/workflows/pages.yml](.github/workflows/pages.yml)), once the repo's Settings → Pages → Source is set to GitHub Actions. The pictures of the ten materials in `site/img/` are renders of each scene, so redo them when a scene's look changes.
+(On plain `localhost` with a port, clack looks for its bridge there; `clack.localhost` shows it as the public site does, with the demo agent.) Every push to `main` builds and publishes it with GitHub Actions ([.github/workflows/pages.yml](.github/workflows/pages.yml)), where a Mac runner builds `clack.dmg` from [menubar/](menubar/) with `CLACK_ARCHS="arm64 x86_64" bash menubar/build.sh`, once the repo's Settings → Pages → Source is set to GitHub Actions. The pictures of the ten materials in `site/img/` are renders of each scene, so redo them when a scene's look changes.

@@ -9,13 +9,20 @@
 // until you click the ring again or press Esc in it; right-click or Control-click for the menu. Drag its left, right or
 // bottom edge to make it bigger or smaller, pick a size in the menu, or click the button at its top right to expand it
 // to Full Height and back. The state comes from the bridge's /events stream, the same one the page listens to.
-// Build it with build.sh next to this file.
+//
+// The bridge runs in the app itself (clack-bridge.swift), so clack downloaded from the website is all there is to it:
+// opened from the download, it offers to move itself into Applications, and the first time it asks whether to connect
+// to Claude Code. Installed from Terminal, the bridge is a background program of its own (bridge/clack-bridge.py) and
+// the app listens to that one. Build it with build.sh next to this file.
 import AppKit
 import WebKit
 
 let defaults = UserDefaults.standard
 let port = Int(ProcessInfo.processInfo.environment["CLACK_PORT"] ?? "") ?? (defaults.integer(forKey: "port") > 0 ? defaults.integer(forKey: "port") : 4545)
 let base = URL(string: "http://localhost:\(port)/")!
+// the Terminal installer's bridge, which runs from login on by itself; without it, the app runs the bridge
+let terminalBridge = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/LaunchAgents/ink.clack.bridge.plist")
+let ownBridge = !FileManager.default.fileExists(atPath: terminalBridge.path)
 
 enum Phase { case idle, wait, done }
 
@@ -261,8 +268,10 @@ final class Page: NSViewController, WKNavigationDelegate, WKUIDelegate, WKScript
     p { margin: 0 } .soft { color: var(--soft); font-size: 13px } code { font: 12px ui-monospace, monospace }
   </style>
   <p>bridge offline</p>
-  <p class="soft">clack opens here once its bridge answers on localhost:\(port).
-  Installed, it starts with your Mac; to start it now, run<br><code>python3 clack-bridge.py</code></p>
+  <p class="soft">clack opens here once its bridge answers on localhost:\(port).\(ownBridge ? "" : """
+
+  Installed, it starts with your Mac; to start it now, run<br><code>python3 clack-bridge.py</code>
+  """)</p>
   """
 }
 
@@ -271,8 +280,10 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private let popover = NSPopover()
   private let page = Page()
   private let bridge = Bridge()
+  private let server = BridgeServer(port: port)
   private let menu = NSMenu()
   private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+  private let claudeItem = NSMenuItem(title: "Connect to Claude Code", action: #selector(toggleClaude), keyEquivalent: "")
   private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
   private var sizeItems: [NSMenuItem] = []
   private var cameFrom: NSRunningApplication?
@@ -285,12 +296,21 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   static let breath: CFTimeInterval = 2.8, fill: CFTimeInterval = 0.6
 
   func applicationDidFinishLaunching(_ n: Notification) {
-    // one ring is enough: a second copy (opened again from Finder, say) leaves it to the first
-    if let id = Bundle.main.bundleIdentifier,
-       NSRunningApplication.runningApplications(withBundleIdentifier: id).contains(where: { $0 != .current }) {
-      return NSApp.terminate(nil)
+    // one ring is enough: a second copy of the same app (started at login once you'd opened it, say) leaves it to the
+    // first, and another clack app (an older download, or the one the Terminal installer built) makes way for this one
+    if let id = Bundle.main.bundleIdentifier {
+      let others = NSRunningApplication.runningApplications(withBundleIdentifier: id).filter { $0 != .current }
+      if others.contains(where: { $0.bundleURL?.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL }) {
+        return NSApp.terminate(nil)
+      }
+      others.forEach { $0.terminate() }
+      let until = Date(timeIntervalSinceNow: 3)
+      while others.contains(where: { !$0.isTerminated }), Date() < until { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05)) }
+      others.forEach { if !$0.isTerminated { $0.forceTerminate() } }
     }
     NSApp.setActivationPolicy(.accessory)
+    if moveToApplications() { return }
+    if ownBridge { startBridge(10) }
 
     if let b = item.button {
       b.target = self
@@ -325,9 +345,13 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     menu.addItem(withTitle: "Open in Browser", action: #selector(openInBrowser), keyEquivalent: "").target = self
     menu.addItem(withTitle: "Reload", action: #selector(reload), keyEquivalent: "").target = self
     menu.addItem(.separator())
+    claudeItem.target = self
+    menu.addItem(claudeItem)
     loginItem.target = self
     menu.addItem(loginItem)
     menu.addItem(.separator())
+    // installed from Terminal, clack is removed from Terminal too, as that takes its background bridge with it
+    if ownBridge { menu.addItem(withTitle: "Remove clack…", action: #selector(remove), keyEquivalent: "").target = self }
     menu.addItem(withTitle: "Quit clack", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
     bridge.onOpen = { [weak self] in self?.setOnline(true) }
@@ -353,9 +377,148 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
       return nil
     }
     render()
-    if CommandLine.arguments.contains("--show") {
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.open() }
+    // the first time, and when the installer opens it, clack opens under its ring so you see where it lives; before
+    // that, the first time it runs its own bridge, it asks about Claude Code
+    let show = CommandLine.arguments.contains("--show") || !defaults.bool(forKey: "shown")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+      self?.askClaude()
+      if show {
+        defaults.set(true, forKey: "shown")
+        self?.reveal()
+      }
     }
+  }
+
+  // opening clack again (from Applications, Spotlight or Launchpad) opens it under its ring
+  func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    reveal()
+    return false
+  }
+
+  // a full menu bar puts the newest icons out of sight behind the camera at the top of the screen, and the ring with
+  // them; clack can't open under it there, so it says where it went instead
+  private func reveal() {
+    guard let w = item.button?.window, let s = w.screen, let l = s.auxiliaryTopLeftArea, let r = s.auxiliaryTopRightArea,
+          abs(w.frame.midX - s.frame.midX) < (r.minX - l.maxX) / 2 else { return open() }
+    NSApp.activate(ignoringOtherApps: true)
+    let a = NSAlert()
+    a.messageText = "clack's ring is hidden behind the camera"
+    a.informativeText = """
+    Your menu bar is full, so macOS keeps clack's ring out of sight behind the camera at the top of the screen. Hold ⌘ and drag a few icons out of the menu bar, or quit apps you don't need there, and the ring shows up at the top right.
+
+    Meanwhile, clack plays in your browser.
+    """
+    a.addButton(withTitle: "Open in Browser")
+    a.addButton(withTitle: "OK")
+    if a.runModal() == .alertFirstButtonReturn { openInBrowser() }
+  }
+
+  // a copy of clack that just made way for this one may still be letting go of the port
+  private func startBridge(_ tries: Int) {
+    if !server.start(), tries > 1 {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.startBridge(tries - 1) }
+    }
+  }
+
+  // MARK: settling in
+
+  // somewhere clack won't be at the next login: the disk image it came on, or the temporary copy macOS runs a
+  // download from until it's moved
+  static let temporary = Bundle.main.bundlePath.hasPrefix("/Volumes/") || Bundle.main.bundlePath.contains("/AppTranslocation/")
+
+  // opened from the download, clack moves itself into Applications and opens from there
+  private func moveToApplications() -> Bool {
+    let here = Bundle.main.bundleURL, fm = FileManager.default
+    guard App.temporary || here.path.hasPrefix(fm.homeDirectoryForCurrentUser.appendingPathComponent("Downloads").path + "/") else { return false }
+    NSApp.activate(ignoringOtherApps: true)
+    let a = NSAlert()
+    a.messageText = "Move clack to Applications?"
+    a.informativeText = "clack lives in your menu bar from login on, so it keeps itself in your Applications folder."
+    a.addButton(withTitle: "Move to Applications")
+    a.addButton(withTitle: "Not Now")
+    guard a.runModal() == .alertFirstButtonReturn else { return false }
+    // without an administrator's rights, the Applications folder in your home folder, where the Terminal installer
+    // puts it too (as clack.app there would be Safari's web app of it)
+    var dest = URL(fileURLWithPath: "/Applications/clack.app")
+    if !fm.isWritableFile(atPath: "/Applications") {
+      dest = fm.homeDirectoryForCurrentUser.appendingPathComponent("Applications/clack menu bar.app")
+    }
+    do {
+      try fm.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+      if fm.fileExists(atPath: dest.path) { try fm.trashItem(at: dest, resultingItemURL: nil) }
+      try fm.copyItem(at: here, to: dest)
+    } catch {
+      tell("clack couldn't move itself", "\(error.localizedDescription)\n\nDrag clack into your Applications folder instead, then open it from there.")
+      return false
+    }
+    // macOS checked it as you opened it, so the copy needn't be checked again
+    let x = Process()
+    x.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+    x.arguments = ["-dr", "com.apple.quarantine", dest.path]
+    try? x.run()
+    x.waitUntilExit()
+    // the copy opens once this one has quit, and the disk image it came on is put away
+    let volume = here.path.hasPrefix("/Volumes/") ? "/Volumes/" + here.path.split(separator: "/")[1] : ""
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/bin/sh")
+    p.arguments = ["-c", "while kill -0 \(getpid()) 2>/dev/null; do sleep 0.1; done; open \"$0\" --args --show; [ -z \"$1\" ] || hdiutil detach -quiet \"$1\"",
+                   dest.path, volume]
+    try? p.run()
+    NSApp.terminate(nil)
+    return true
+  }
+
+  // the first time clack runs its own bridge on a Mac with Claude Code, it asks once whether to connect to it
+  private func askClaude() {
+    guard ownBridge, !defaults.bool(forKey: "askedClaude"), FileManager.default.fileExists(atPath: ClaudeHooks.folder.path),
+          !ClaudeHooks.connected(port) else { return }
+    defaults.set(true, forKey: "askedClaude")
+    NSApp.activate(ignoringOtherApps: true)
+    let a = NSAlert()
+    a.messageText = "Connect clack to Claude Code?"
+    a.informativeText = """
+    clack then knows when your agent starts and finishes: it holds you while the agent works and lets go the moment it's done.
+
+    This adds five small hooks to Claude Code's settings and backs them up first. Sessions you start from now on tell clack when they finish. Turn it off any time from clack's ring.
+    """
+    a.addButton(withTitle: "Connect")
+    a.addButton(withTitle: "Not Now")
+    if a.runModal() == .alertFirstButtonReturn { connectClaude(true) }
+  }
+
+  @objc private func toggleClaude() { connectClaude(!ClaudeHooks.connected(port)) }
+
+  private func connectClaude(_ on: Bool) {
+    if let problem = on ? ClaudeHooks.connect(port) : ClaudeHooks.disconnect(port) {
+      tell("clack couldn't change Claude Code's settings", problem)
+    }
+  }
+
+  // everything clack put on the Mac goes: its hooks, its login item, what it remembers and the app itself
+  @objc private func remove() {
+    NSApp.activate(ignoringOtherApps: true)
+    let a = NSAlert()
+    a.messageText = "Remove clack?"
+    a.informativeText = "clack comes out of Claude Code's settings, stops opening at login and goes to the Trash."
+    a.addButton(withTitle: "Remove").hasDestructiveAction = true
+    a.addButton(withTitle: "Cancel")
+    guard a.runModal() == .alertFirstButtonReturn else { return }
+    _ = ClaudeHooks.disconnect(port)
+    try? FileManager.default.removeItem(at: App.agentPlist)
+    if let id = Bundle.main.bundleIdentifier {
+      defaults.removePersistentDomain(forName: id)
+      let lib = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library")
+      for d in ["WebKit", "Caches", "HTTPStorages"] { try? FileManager.default.removeItem(at: lib.appendingPathComponent("\(d)/\(id)")) }
+    }
+    NSWorkspace.shared.recycle([Bundle.main.bundleURL]) { _, _ in NSApp.terminate(nil) }
+  }
+
+  private func tell(_ title: String, _ text: String) {
+    NSApp.activate(ignoringOtherApps: true)
+    let a = NSAlert()
+    a.messageText = title
+    a.informativeText = text
+    a.runModal()
   }
 
   // MARK: the agent
@@ -495,6 +658,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     statusLine.title = status()
     let size = defaults.string(forKey: "size") ?? "small"
     for it in sizeItems { it.state = it.representedObject as? String == size ? .on : .off }
+    claudeItem.state = ClaudeHooks.connected(port) ? .on : .off
     loginItem.state = FileManager.default.fileExists(atPath: App.agentPlist.path) ? .on : .off
   }
 
@@ -600,8 +764,9 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private func setOpenAtLogin(_ on: Bool) {
     defaults.set(on, forKey: "openAtLogin")
     guard on else { try? FileManager.default.removeItem(at: App.agentPlist); return }
-    // only written, not loaded: launchd reads it at the next login, and loading it now would start a second ring
-    guard let exe = Bundle.main.executablePath else { return }
+    // only written, not loaded: launchd reads it at the next login, and loading it now would start a second ring. Not
+    // from the download either, which won't be there then
+    guard !App.temporary, let exe = Bundle.main.executablePath else { return }
     let plist: [String: Any] = [
       "Label": App.agentLabel, "ProgramArguments": [exe], "RunAtLoad": true,
       "LimitLoadToSessionType": "Aqua", "ProcessType": "Interactive",
@@ -613,7 +778,12 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 }
 
-let app = NSApplication.shared
-let delegate = App()
-app.delegate = delegate
-app.run()
+@main
+enum Main {
+  static func main() {
+    let app = NSApplication.shared
+    let delegate = App()
+    app.delegate = delegate
+    app.run()
+  }
+}
