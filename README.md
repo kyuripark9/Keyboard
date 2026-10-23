@@ -6,7 +6,7 @@ A stress-relief sound toy. Move your cursor across the screen and every step cli
 
 ## Get it on your Mac
 
-clack can sit beside your coding agent: it wakes when you hand Claude Code a task and lets go of you the moment it's done. Download [clack.dmg](https://kyuripark9.github.io/Keyboard/clack.dmg) from the website, open it and drag clack into Applications. The first time you open it, macOS stops it, as it isn't from the App Store: click Done, then in System Settings › Privacy & Security, scroll down and click Open Anyway. clack opens under its ring in your menu bar, where one click opens clack from any app and the ring itself shows whether your agent is working or done, and asks once whether to connect it to Claude Code. It's one app for Apple silicon and Intel Macs, with clack's bridge inside, so it needs nothing else; right-click its ring and choose Remove clack to take it all away again.
+clack can sit beside your coding agent: it wakes when you hand Claude Code or Codex a task (on the Mac, the ChatGPT app runs its conversations in Codex too) and lets go of you the moment it's done. Download [clack.dmg](https://kyuripark9.github.io/Keyboard/clack.dmg) from the website, open it and drag clack into Applications. The first time you open it, macOS stops it, as it isn't from the App Store: click Done, then in System Settings › Privacy & Security, scroll down and click Open Anyway. clack opens under its ring in your menu bar, where one click opens clack from any app and the ring itself shows whether your agent is working or done, and asks once whether to connect it to Claude Code and Codex. It's one app for Apple silicon and Intel Macs, with clack's bridge inside, so it needs nothing else; right-click its ring and choose Remove clack to take it all away again.
 
 Or paste this into Terminal, which builds clack on your Mac with Apple's Command Line Tools:
 
@@ -14,7 +14,7 @@ Or paste this into Terminal, which builds clack on your Mac with Apple's Command
 curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash
 ```
 
-It runs clack's bridge in the background, puts its ring in your menu bar and offers to connect it to Claude Code. Either way clack is also at http://localhost:4545, where Chrome or Safari can keep it as an app in your Dock. Everything stays on your Mac. See [bridge/README.md](bridge/README.md) for what it does, updating and removing it.
+It runs clack's bridge in the background, puts its ring in your menu bar and offers to connect it to Claude Code and Codex. Codex runs no hook until you trust it, so trust clack's once in the ChatGPT app's Settings › Hooks (or with `/hooks` in the Codex CLI). Either way clack is also at http://localhost:4545, where Chrome or Safari can keep it as an app in your Dock. Everything stays on your Mac. See [bridge/README.md](bridge/README.md) for what it does, updating and removing it.
 
 ## Add it to your browser
 

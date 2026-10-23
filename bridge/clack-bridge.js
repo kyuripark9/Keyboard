@@ -12,6 +12,15 @@
   In the Claude app's Code tab, Claude Code reports a permission prompt 6 s late, so the bridge also reads the app's log
   for the moment it shows one.
 
+  Codex (its CLI, and the ChatGPT app on the Mac, which runs its conversations in Codex) has hooks of its own, in
+  ~/.codex/hooks.json:
+    UserPromptSubmit  -> /start
+    Stop              -> /done
+    PermissionRequest -> /done   (unless the turn's approvals go to Codex's auto-reviewer, which answers by itself)
+    Interrupt         -> /end    (you stopped it with Esc)
+    SessionEnd        -> /end
+  A Codex turn that ends on an error calls no hook, so the bridge reads that from the end of its transcript.
+
   Several sessions can work at once: any one finishing calls you back, and the wait goes on while the others work.
 
   The server serves clack itself at http://localhost:4545 and pushes those
@@ -22,6 +31,7 @@
     node clack-bridge.js            start on port 4545
     node clack-bridge.js --port N   start on another port
     node clack-bridge.js --hooks    print the hooks block for ~/.claude/settings.json
+    node clack-bridge.js --codex-hooks  print the hooks block for ~/.codex/hooks.json
 */
 'use strict';
 const http = require('http');
@@ -48,17 +58,20 @@ const APP_TAGS = '<link rel="manifest" href="/manifest.webmanifest">\n<link rel=
   '<link rel="apple-touch-icon" href="/apple-touch-icon.png">\n<meta name="theme-color" content="#2c62fb">\n' +
   '<meta name="apple-mobile-web-app-title" content="clack">';
 
-function hooksBlock(port) {
+function hooksBlock(port, codex) {
   const post = route => `curl -s --max-time 1 -X POST --data-binary @- http://localhost:${port}/${route} >/dev/null 2>&1 || true`;
   const entry = route => [{ hooks: [{ type: 'command', command: post(route) }] }];
+  // Codex says when it asks for a permission and when you stop it with Esc, and has no hook for an error
+  if (codex) return { hooks: { UserPromptSubmit: entry('start'), Stop: entry('done'), PermissionRequest: entry('done'),
+    Interrupt: entry('end'), SessionEnd: entry('end') } };
   // Notification only for permission prompts: Claude Code also notifies after 60s of idle input, which isn't a call back
   return { hooks: { UserPromptSubmit: entry('start'), Stop: entry('done'), StopFailure: entry('done'),
     Notification: [{ matcher: 'permission_prompt', hooks: [{ type: 'command', command: post('done') }] }],
     SessionEnd: entry('end') } };
 }
 
-if (args.includes('--hooks')) {
-  process.stdout.write(JSON.stringify(hooksBlock(PORT), null, 2) + '\n');
+if (args.includes('--hooks') || args.includes('--codex-hooks')) {
+  process.stdout.write(JSON.stringify(hooksBlock(PORT, args.includes('--codex-hooks')), null, 2) + '\n');
   process.exit(0);
 }
 
@@ -90,11 +103,11 @@ function settle(at, type) {
 const tagged = event => ({ ...event, working: state.working, since: state.since, prompted: state.prompted });
 
 // the last lines of a session's transcript
-function tail(w) {
+function tail(w, most = 65536) {
   try {
     const fd = fs.openSync(w.transcript, 'r');
     try {
-      const size = fs.fstatSync(fd).size, n = Math.min(size, 65536), buf = Buffer.alloc(n);
+      const size = fs.fstatSync(fd).size, n = Math.min(size, most), buf = Buffer.alloc(n);
       fs.readSync(fd, buf, 0, n, size - n);
       return buf.toString('utf8').split('\n');
     } finally { fs.closeSync(fd); }
@@ -115,6 +128,32 @@ function interrupted(w) {
   return false;
 }
 
+// Codex: how the turn you last handed it ended, from its transcript. An error calls no hook, so this is how clack
+// hears of one ('StopFailure'); 'Stop' and 'interrupt' are for an end whose hook never came. null while it's going
+function codexEnded(w) {
+  // only Codex says which turn a prompt starts
+  if (!w.turn) return null;
+  const es = entries(w);
+  for (let i = es.length - 1; i >= 0; i--) {
+    const p = es[i].payload;
+    if (es[i].type !== 'event_msg' || !p || typeof p !== 'object' || p.turn_id !== w.turn) continue;
+    if (p.type === 'task_complete') return p.error ? 'StopFailure' : 'Stop';
+    // a turn replaced by the next one you sent goes on in that one
+    if (p.type === 'turn_aborted' && p.reason !== 'replaced') return p.reason === 'interrupted' ? 'interrupt' : 'Stop';
+  }
+  return null;
+}
+
+// Codex: whether the turn's approvals go to its auto-reviewer, which answers them without you, rather than to you.
+// Each turn writes who reviews into its transcript as it starts
+function autoReviewed(w) {
+  const es = entries(w, 1 << 22);
+  for (let i = es.length - 1; i >= 0; i--) {
+    if (es[i].type === 'turn_context') return ((es[i].payload || {}).approvals_reviewer || 'user') !== 'user';
+  }
+  return false;
+}
+
 // no hook reports Esc, so every few seconds the transcripts show which sessions were stopped that way
 setInterval(() => {
   const now = Date.now();
@@ -124,6 +163,17 @@ setInterval(() => {
     working.delete(s);
     settle(now, 'done');
     const event = tagged({ type: 'done', at: now, session: s, reason: 'Stop', held: true });
+    broadcast(event);
+    log(event);
+  }
+  // and which Codex turns ended without a hook saying so
+  for (const [s, w] of working) {
+    const how = codexEnded(w);
+    if (!how) continue;
+    working.delete(s);
+    settle(now, how === 'interrupt' ? 'end' : 'done');
+    const event = tagged(how === 'interrupt' ? { type: 'tally', at: now, session: s, reason: how }
+      : { type: 'done', at: now, session: s, reason: how, auto: false });
     broadcast(event);
     log(event);
   }
@@ -141,8 +191,8 @@ setInterval(() => {
 const APP_LOG = path.join(os.homedir(), 'Library', 'Logs', 'Claude', 'main.log');
 const APP_ASK = /Emitted tool permission request \S+ for (\S+) in session /;
 
-function entries(w) {
-  return tail(w).map(line => { try { return JSON.parse(line); } catch (e) { return null; } }).filter(e => e && typeof e === 'object');
+function entries(w, most) {
+  return tail(w, most).map(line => { try { return JSON.parse(line); } catch (e) { return null; } }).filter(e => e && typeof e === 'object');
 }
 
 // Claude Code writes where it was started from into every transcript line
@@ -268,16 +318,17 @@ const server = http.createServer(async (req, res) => {
     const session = String(hook.session_id || 'default');
     const type = url.pathname.slice(1);
     const now = Date.now();
-    // Claude resuming on its own when a background task finishes isn't you handing off something new
-    const auto = type === 'start' && String(hook.prompt || '').trimStart().startsWith('<task-notification>');
+    // Claude resuming on its own when a background task finishes, or a Codex subagent handed its task, isn't you
+    // handing off something new
+    const auto = type === 'start' && (String(hook.prompt || '').trimStart().startsWith('<task-notification>') || !!hook.agent_id);
     // Claude ending its turn with its own background work still running isn't done: it will wake again by itself
     const bg = (hook.background_tasks || []).filter(t => t && (t.status === 'running' || t.status === 'pending') && AGENT_WORK.includes(t.type));
     const skip = () => { res.writeHead(204, CORS); res.end(); };
     if (type === 'end') {
-      // a session closed (or cleared) mid-turn: you're already at it, so its wait just ends
+      // a session closed (or cleared) mid-turn, or Codex stopped with Esc: you're already at it, so its wait just ends
       if (!working.delete(session)) return skip();
       settle(now, type);
-      const event = tagged({ type: 'tally', at: now, session, reason: 'SessionEnd' });
+      const event = tagged({ type: 'tally', at: now, session, reason: hook.hook_event_name === 'Interrupt' ? 'interrupt' : 'SessionEnd' });
       broadcast(event);
       log(event);
       return skip();
@@ -292,7 +343,9 @@ const server = http.createServer(async (req, res) => {
     if (auto && working.has(session)) { working.get(session).held = 0; return skip(); }
     const w = working.get(session) || { since: now, prompted: now };
     w.transcript = hook.transcript_path || w.transcript;
-    if (type === 'start' && !auto) w.prompted = now;
+    // Codex asks its auto-reviewer before it would ask you, and that one answers by itself
+    if (hook.hook_event_name === 'PermissionRequest' && autoReviewed(w)) return skip();
+    if (type === 'start' && !auto) { w.prompted = now; w.turn = hook.turn_id; }
     w.held = type === 'done' && bg.length && bg.every(t => t.type === 'shell') ? now : 0;
     working.set(session, w);
     settle(now, 'start');
@@ -318,7 +371,7 @@ function log(e) {
   const what = e.type === 'hold' ? `agent still running: ${e.reason}`
     : e.type === 'tally' ? (e.reason === 'interrupt' ? 'agent stopped with Esc' : 'agent closed')
     : e.type === 'start' ? 'agent working'
-    : ({ Notification: 'agent needs you', StopFailure: 'agent stopped on an error' })[e.reason]
+    : ({ Notification: 'agent needs you', PermissionRequest: 'agent needs you', StopFailure: 'agent stopped on an error' })[e.reason]
       || (e.held ? 'agent done (its shell still running)' : 'agent done');
   const busy = state.working ? `${state.working} working · ` : '';
   console.log(`${t}  ${what}  (${busy}${clients.size} clack tab${clients.size === 1 ? '' : 's'} listening)`);

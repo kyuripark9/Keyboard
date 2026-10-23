@@ -12,7 +12,7 @@
 //
 // The bridge runs in the app itself (clack-bridge.swift), so clack downloaded from the website is all there is to it:
 // opened from the download, it offers to move itself into Applications, and the first time it asks whether to connect
-// to Claude Code. Installed from Terminal, the bridge is a background program of its own (bridge/clack-bridge.py) and
+// to Claude Code and Codex. Installed from Terminal, the bridge is a background program of its own (bridge/clack-bridge.py) and
 // the app listens to that one. Build it with build.sh next to this file.
 import AppKit
 import WebKit
@@ -284,6 +284,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private let menu = NSMenu()
   private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
   private let claudeItem = NSMenuItem(title: "Connect to Claude Code", action: #selector(toggleClaude), keyEquivalent: "")
+  private let codexItem = NSMenuItem(title: "Connect to Codex", action: #selector(toggleCodex), keyEquivalent: "")
   private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
   private var sizeItems: [NSMenuItem] = []
   private var cameFrom: NSRunningApplication?
@@ -347,6 +348,8 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     menu.addItem(.separator())
     claudeItem.target = self
     menu.addItem(claudeItem)
+    codexItem.target = self
+    menu.addItem(codexItem)
     loginItem.target = self
     menu.addItem(loginItem)
     menu.addItem(.separator())
@@ -378,10 +381,10 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     render()
     // the first time, and when the installer opens it, clack opens under its ring so you see where it lives; before
-    // that, the first time it runs its own bridge, it asks about Claude Code
+    // that, the first time it runs its own bridge, it asks about Claude Code and Codex
     let show = CommandLine.arguments.contains("--show") || !defaults.bool(forKey: "shown")
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-      self?.askClaude()
+      self?.askAgents()
       if show {
         defaults.set(true, forKey: "shown")
         self?.reveal()
@@ -468,29 +471,36 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     return true
   }
 
-  // the first time clack runs its own bridge on a Mac with Claude Code, it asks once whether to connect to it
-  private func askClaude() {
-    guard ownBridge, !defaults.bool(forKey: "askedClaude"), FileManager.default.fileExists(atPath: ClaudeHooks.folder.path),
-          !ClaudeHooks.connected(port) else { return }
-    defaults.set(true, forKey: "askedClaude")
+  // the first time clack runs its own bridge on a Mac with Claude Code or Codex (which the ChatGPT app runs), it asks
+  // once whether to connect to them; a Codex found later is asked about once too
+  private func askAgents() {
+    guard ownBridge else { return }
+    let ask = [(AgentHooks.claude, "askedClaude"), (AgentHooks.codex, "askedCodex")].filter { agent, key in
+      !defaults.bool(forKey: key) && FileManager.default.fileExists(atPath: agent.folder.path) && !agent.connected(port)
+    }
+    guard !ask.isEmpty else { return }
+    for (_, key) in ask { defaults.set(true, forKey: key) }
     NSApp.activate(ignoringOtherApps: true)
     let a = NSAlert()
-    a.messageText = "Connect clack to Claude Code?"
+    a.messageText = "Connect clack to \(ask.map(\.0.name).joined(separator: " and "))?"
     a.informativeText = """
     clack then knows when your agent starts and finishes: it holds you while the agent works and lets go the moment it's done.
 
-    This adds five small hooks to Claude Code's settings and backs them up first. Sessions you start from now on tell clack when they finish. Turn it off any time from clack's ring.
-    """
+    This adds five small hooks to \(ask.count > 1 ? "their settings" : "its settings") and backs them up first. Sessions you start from now on tell clack when they finish. Turn it off any time from clack's ring.
+    """ + (ask.contains { $0.0.codex } ? "\n\nCodex runs them once you trust them: in the ChatGPT app, under Settings › Hooks; in the Codex CLI, with /hooks." : "")
     a.addButton(withTitle: "Connect")
     a.addButton(withTitle: "Not Now")
-    if a.runModal() == .alertFirstButtonReturn { connectClaude(true) }
+    if a.runModal() == .alertFirstButtonReturn { for (agent, _) in ask { connect(agent, true) } }
   }
 
-  @objc private func toggleClaude() { connectClaude(!ClaudeHooks.connected(port)) }
+  @objc private func toggleClaude() { connect(.claude, !AgentHooks.claude.connected(port)) }
+  @objc private func toggleCodex() { connect(.codex, !AgentHooks.codex.connected(port)) }
 
-  private func connectClaude(_ on: Bool) {
-    if let problem = on ? ClaudeHooks.connect(port) : ClaudeHooks.disconnect(port) {
-      tell("clack couldn't change Claude Code's settings", problem)
+  private func connect(_ agent: AgentHooks, _ on: Bool) {
+    if let problem = on ? agent.connect(port) : agent.disconnect(port) {
+      tell("clack couldn't change \(agent.name)'s settings", problem)
+    } else if on && agent.codex {
+      tell("Now trust clack's hooks in Codex", "Codex runs no hook you haven't looked at. In the ChatGPT app, open Settings › Hooks and trust clack's five; in the Codex CLI, type /hooks.")
     }
   }
 
@@ -499,11 +509,12 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     NSApp.activate(ignoringOtherApps: true)
     let a = NSAlert()
     a.messageText = "Remove clack?"
-    a.informativeText = "clack comes out of Claude Code's settings, stops opening at login and goes to the Trash."
+    a.informativeText = "clack comes out of Claude Code's and Codex's settings, stops opening at login and goes to the Trash."
     a.addButton(withTitle: "Remove").hasDestructiveAction = true
     a.addButton(withTitle: "Cancel")
     guard a.runModal() == .alertFirstButtonReturn else { return }
-    _ = ClaudeHooks.disconnect(port)
+    _ = AgentHooks.claude.disconnect(port)
+    _ = AgentHooks.codex.disconnect(port)
     try? FileManager.default.removeItem(at: App.agentPlist)
     if let id = Bundle.main.bundleIdentifier {
       defaults.removePersistentDomain(forName: id)
@@ -613,7 +624,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
       let s = max(0, Int(Date().timeIntervalSince(promptedAt ?? waitAt)))
       return (busy > 1 ? "\(busy) agents" : "agent") + String(format: " working · %d:%02d", s / 60, s % 60)
     case .done:
-      let word = ["Notification": "agent needs you", "StopFailure": "agent stopped"][reason] ?? "agent done"
+      let word = ["Notification": "agent needs you", "PermissionRequest": "agent needs you", "StopFailure": "agent stopped"][reason] ?? "agent done"
       return busy > 0 ? "\(word) · \(busy) still working" : word
     }
   }
@@ -658,7 +669,8 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     statusLine.title = status()
     let size = defaults.string(forKey: "size") ?? "small"
     for it in sizeItems { it.state = it.representedObject as? String == size ? .on : .off }
-    claudeItem.state = ClaudeHooks.connected(port) ? .on : .off
+    claudeItem.state = AgentHooks.claude.connected(port) ? .on : .off
+    codexItem.state = AgentHooks.codex.connected(port) ? .on : .off
     loginItem.state = FileManager.default.fileExists(atPath: App.agentPlist.path) ? .on : .off
   }
 

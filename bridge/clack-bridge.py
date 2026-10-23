@@ -13,16 +13,27 @@ Claude Code hooks POST to this server:
 In the Claude app's Code tab, Claude Code reports a permission prompt 6 s late, so the bridge also reads the app's log
 for the moment it shows one.
 
+Codex (its CLI, and the ChatGPT app on the Mac, which runs its conversations in Codex) has hooks of its own, in
+~/.codex/hooks.json:
+  UserPromptSubmit  -> /start
+  Stop              -> /done
+  PermissionRequest -> /done   (unless the turn's approvals go to Codex's auto-reviewer, which answers by itself)
+  Interrupt         -> /end    (you stopped it with Esc)
+  SessionEnd        -> /end
+A Codex turn that ends on an error calls no hook, so the bridge reads that from the end of its transcript.
+
 Several sessions can work at once: any one finishing calls you back, and the wait goes on while the others work.
 
 Usage:
   python3 clack-bridge.py            start on port 4545
   python3 clack-bridge.py --port N   start on another port
   python3 clack-bridge.py --hooks    print the hooks block for ~/.claude/settings.json
+  python3 clack-bridge.py --codex-hooks  print the hooks block for ~/.codex/hooks.json
   python3 clack-bridge.py --install  add the hooks to ~/.claude/settings.json for every session
+  python3 clack-bridge.py --install-codex  add the hooks to ~/.codex/hooks.json for every Codex session
   python3 clack-bridge.py --autostart     macOS: run in the background and start at login
   python3 clack-bridge.py --no-autostart  macOS: undo --autostart
-  python3 clack-bridge.py --uninstall-hooks  take the hooks back out of ~/.claude/settings.json
+  python3 clack-bridge.py --uninstall-hooks  take the hooks back out of ~/.claude/settings.json and ~/.codex/hooks.json
 """
 import json, os, queue, re, sys, threading, time
 from datetime import datetime
@@ -48,18 +59,26 @@ APP_TAGS = (b'<link rel="manifest" href="/manifest.webmanifest">\n<link rel="ico
             b'<meta name="apple-mobile-web-app-title" content="clack">')
 
 
-def hooks_block(port):
+def hooks_block(port, codex=False):
     def entry(route):
         cmd = f'curl -s --max-time 1 -X POST --data-binary @- http://localhost:{port}/{route} >/dev/null 2>&1 || true'
         return [{'hooks': [{'type': 'command', 'command': cmd}]}]
+    if codex:
+        # Codex says when it asks for a permission and when you stop it with Esc, and has no hook for an error
+        return {'hooks': {'UserPromptSubmit': entry('start'), 'Stop': entry('done'), 'PermissionRequest': entry('done'),
+                          'Interrupt': entry('end'), 'SessionEnd': entry('end')}}
     # Notification only for permission prompts: Claude Code also notifies after 60s of idle input, which isn't a call back
     notify = [{'matcher': 'permission_prompt', 'hooks': entry('done')[0]['hooks']}]
     return {'hooks': {'UserPromptSubmit': entry('start'), 'Stop': entry('done'), 'StopFailure': entry('done'),
                       'Notification': notify, 'SessionEnd': entry('end')}}
 
 
-if '--hooks' in args:
-    print(json.dumps(hooks_block(PORT), indent=2))
+CLAUDE_SETTINGS = os.path.expanduser('~/.claude/settings.json')
+# Codex reads hooks.json next to its config, in CODEX_HOME when that's set
+CODEX_HOOKS = os.path.join(os.environ.get('CODEX_HOME') or os.path.expanduser('~/.codex'), 'hooks.json')
+
+if '--hooks' in args or '--codex-hooks' in args:
+    print(json.dumps(hooks_block(PORT, '--codex-hooks' in args), indent=2))
     sys.exit(0)
 
 AGENT_LABEL = 'ink.clack.bridge'
@@ -125,39 +144,43 @@ def is_clack_hook(h):
 
 
 if '--uninstall-hooks' in args:
-    # takes clack's hooks back out of ~/.claude/settings.json and leaves every other setting as it was
-    path = os.path.expanduser('~/.claude/settings.json')
-    try:
-        with open(path) as f:
-            settings = json.load(f)
-    except (FileNotFoundError, ValueError):
+    # takes clack's hooks back out of Claude Code's settings and Codex's hooks and leaves everything else as it was
+    told = False
+    for path in (CLAUDE_SETTINGS, CODEX_HOOKS):
+        try:
+            with open(path) as f:
+                settings = json.load(f)
+        except (FileNotFoundError, ValueError):
+            continue
+        hooks, removed = settings.get('hooks') or {}, 0
+        for event in list(hooks):
+            kept = []
+            for e in hooks[event]:
+                inner = [h for h in e.get('hooks', []) if not is_clack_hook(h)]
+                removed += len(e.get('hooks', [])) - len(inner)
+                if inner:
+                    kept.append({**e, 'hooks': inner})
+            if kept:
+                hooks[event] = kept
+            else:
+                del hooks[event]
+        if not hooks:
+            settings.pop('hooks', None)
+        if removed:
+            with open(path, 'w') as f:
+                json.dump(settings, f, indent=2, ensure_ascii=False)
+                f.write('\n')
+            print(f'removed {removed} clack hooks from {path}')
+            told = True
+    if not told:
         print('no clack hooks to remove')
-        sys.exit(0)
-    hooks, removed = settings.get('hooks') or {}, 0
-    for event in list(hooks):
-        kept = []
-        for e in hooks[event]:
-            inner = [h for h in e.get('hooks', []) if not is_clack_hook(h)]
-            removed += len(e.get('hooks', [])) - len(inner)
-            if inner:
-                kept.append({**e, 'hooks': inner})
-        if kept:
-            hooks[event] = kept
-        else:
-            del hooks[event]
-    if not hooks:
-        settings.pop('hooks', None)
-    if removed:
-        with open(path, 'w') as f:
-            json.dump(settings, f, indent=2, ensure_ascii=False)
-            f.write('\n')
-    print(f'removed {removed} clack hooks from {path}' if removed else 'no clack hooks to remove')
     sys.exit(0)
 
-if '--install' in args:
-    # merges clack's hooks into ~/.claude/settings.json for every Claude Code session, keeping everything else there
-    # and backing the file up first; running it again changes nothing
-    path = os.path.expanduser('~/.claude/settings.json')
+if '--install' in args or '--install-codex' in args:
+    # merges clack's hooks into ~/.claude/settings.json for every Claude Code session (or into ~/.codex/hooks.json for
+    # every Codex one), keeping everything else there and backing the file up first; running it again changes nothing
+    codex = '--install-codex' in args
+    path = CODEX_HOOKS if codex else CLAUDE_SETTINGS
     try:
         with open(path) as f:
             text = f.read()
@@ -169,7 +192,7 @@ if '--install' in args:
         sys.exit(1)
     hooks = settings.setdefault('hooks', {})
     added = 0
-    for event, entries in hooks_block(PORT)['hooks'].items():
+    for event, entries in hooks_block(PORT, codex)['hooks'].items():
         have = hooks.setdefault(event, [])
         for entry in entries:
             cmd = entry['hooks'][0]['command']
@@ -189,6 +212,9 @@ if '--install' in args:
         json.dump(settings, f, indent=2, ensure_ascii=False)
         f.write('\n')
     print(f'added {added} clack hooks to {path}' + (f' (backup: {path}.before-clack)' if text is not None else ''))
+    if codex:
+        # Codex runs no hook it hasn't been shown, so they wait for your yes
+        print('Codex runs them once you trust them: in the ChatGPT app, Settings > Hooks; in the Codex CLI, /hooks')
     sys.exit(0)
 
 lock = threading.RLock()  # re-entrant: broadcast() runs inside handlers that already hold it
@@ -216,12 +242,12 @@ def tagged(event):
     return {**event, 'working': state['working'], 'since': state['since'], 'prompted': state['prompted']}
 
 
-def tail(w):
+def tail(w, size=65536):
     """the last lines of a session's transcript"""
     try:
         with open(w['transcript'], 'rb') as f:
             f.seek(0, 2)
-            f.seek(max(0, f.tell() - 65536))
+            f.seek(max(0, f.tell() - size))
             return f.read().decode('utf-8', 'replace').splitlines()
     except (OSError, TypeError, KeyError):
         return []
@@ -248,6 +274,33 @@ def interrupted(w):
     return False
 
 
+def codex_ended(w):
+    """Codex: how the turn you last handed it ended, from its transcript. An error calls no hook, so this is how clack
+    hears of one ('StopFailure'); 'Stop' and 'interrupt' are for an end whose hook never came. None while it's going"""
+    # only Codex says which turn a prompt starts
+    if not w.get('turn'):
+        return None
+    for e in reversed(list(entries(w))):
+        p = e.get('payload')
+        if e.get('type') != 'event_msg' or not isinstance(p, dict) or p.get('turn_id') != w['turn']:
+            continue
+        if p.get('type') == 'task_complete':
+            return 'StopFailure' if p.get('error') else 'Stop'
+        # a turn replaced by the next one you sent goes on in that one
+        if p.get('type') == 'turn_aborted' and p.get('reason') != 'replaced':
+            return 'interrupt' if p.get('reason') == 'interrupted' else 'Stop'
+    return None
+
+
+def auto_reviewed(w):
+    """Codex: whether the turn's approvals go to its auto-reviewer, which answers them without you, rather than to
+    you. Each turn writes who reviews into its transcript as it starts"""
+    for e in reversed(list(entries(w, 1 << 22))):
+        if e.get('type') == 'turn_context':
+            return (e.get('payload') or {}).get('approvals_reviewer', 'user') != 'user'
+    return False
+
+
 def watch():
     # no hook reports Esc, so every few seconds the transcripts show which sessions were stopped that way
     while True:
@@ -259,6 +312,16 @@ def watch():
                 del working[s]
                 settle(now, 'done')
                 event = tagged({'type': 'done', 'at': now, 'session': s, 'reason': 'Stop', 'held': True})
+                broadcast(event)
+                log(event, len(clients))
+            # and which Codex turns ended without a hook saying so
+            for s, how in [(s, codex_ended(w)) for s, w in working.items()]:
+                if not how:
+                    continue
+                del working[s]
+                settle(now, 'end' if how == 'interrupt' else 'done')
+                event = tagged({'type': 'tally', 'at': now, 'session': s, 'reason': how} if how == 'interrupt' else
+                               {'type': 'done', 'at': now, 'session': s, 'reason': how, 'auto': False})
                 broadcast(event)
                 log(event, len(clients))
             gone = [s for s, w in working.items() if interrupted(w)]
@@ -277,8 +340,8 @@ APP_LOG = os.path.expanduser('~/Library/Logs/Claude/main.log')
 APP_ASK = re.compile(r'Emitted tool permission request \S+ for (\S+) in session ')
 
 
-def entries(w):
-    for line in tail(w):
+def entries(w, size=65536):
+    for line in tail(w, size):
         try:
             e = json.loads(line)
         except ValueError:
@@ -373,7 +436,8 @@ def log(e, n):
     elif e['type'] == 'start':
         what = 'agent working'
     else:
-        what = {'Notification': 'agent needs you', 'StopFailure': 'agent stopped on an error'}.get(
+        what = {'Notification': 'agent needs you', 'PermissionRequest': 'agent needs you',
+                'StopFailure': 'agent stopped on an error'}.get(
             e['reason'], 'agent done (its shell still running)' if e.get('held') else 'agent done')
     busy = f"{state['working']} working · " if state['working'] else ''
     print(f"{time.strftime('%I:%M:%S %p')}  {what}  ({busy}{n} clack tab{'' if n == 1 else 's'} listening)", flush=True)
@@ -464,18 +528,22 @@ class Handler(BaseHTTPRequestHandler):
         now = int(time.time() * 1000)
         if DEBUG:
             record(kind, hook)
-        # Claude resuming on its own when a background task finishes isn't you handing off something new
-        auto = kind == 'start' and str(hook.get('prompt', '')).lstrip().startswith('<task-notification>')
+        # Claude resuming on its own when a background task finishes, or a Codex subagent handed its task, isn't you
+        # handing off something new
+        auto = kind == 'start' and (str(hook.get('prompt', '')).lstrip().startswith('<task-notification>')
+                                    or bool(hook.get('agent_id')))
         # Claude ending its turn with its own background work still running isn't done: it will wake again by itself
         bg = [t for t in hook.get('background_tasks') or []
               if t.get('status') in ('running', 'pending') and t.get('type') in AGENT_WORK]
         with lock:
             if kind == 'end':
-                # a session closed (or cleared) mid-turn: you're already at it, so its wait just ends
+                # a session closed (or cleared) mid-turn, or Codex stopped with Esc: you're already at it, so its wait
+                # just ends
                 if working.pop(session, None) is None:
                     return self.send(204)
                 settle(now, kind)
-                event = tagged({'type': 'tally', 'at': now, 'session': session, 'reason': 'SessionEnd'})
+                why = 'interrupt' if hook.get('hook_event_name') == 'Interrupt' else 'SessionEnd'
+                event = tagged({'type': 'tally', 'at': now, 'session': session, 'reason': why})
                 broadcast(event)
                 log(event, len(clients))
                 return self.send(204)
@@ -492,8 +560,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(204)
             w = working.get(session) or {'since': now, 'prompted': now}
             w['transcript'] = hook.get('transcript_path') or w.get('transcript')
+            # Codex asks its auto-reviewer before it would ask you, and that one answers by itself
+            if hook.get('hook_event_name') == 'PermissionRequest' and auto_reviewed(w):
+                return self.send(204)
             if kind == 'start' and not auto:
                 w['prompted'] = now
+                w['turn'] = hook.get('turn_id')
             w['held'] = now if kind == 'done' and bg and all(t.get('type') == 'shell' for t in bg) else 0
             working[session] = w
             settle(now, 'start')

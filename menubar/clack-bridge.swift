@@ -10,8 +10,19 @@
 //   SessionEnd       -> /end     (the session closed: its wait is over, with nothing to go back to)
 //
 // In the Claude app's Code tab, Claude Code reports a permission prompt 6 s late, so it also reads the app's log for
-// the moment it shows one. Several sessions can work at once: any one finishing calls you back, and the wait goes on
-// while the others work.
+// the moment it shows one.
+//
+// Codex (its CLI, and the ChatGPT app on the Mac, which runs its conversations in Codex) has hooks of its own, in
+// ~/.codex/hooks.json:
+//
+//   UserPromptSubmit  -> /start
+//   Stop              -> /done
+//   PermissionRequest -> /done   (unless the turn's approvals go to Codex's auto-reviewer, which answers by itself)
+//   Interrupt         -> /end    (you stopped it with Esc)
+//   SessionEnd        -> /end
+//
+// A Codex turn that ends on an error calls no hook, so the bridge reads that from the end of its transcript. Several
+// sessions can work at once: any one finishing calls you back, and the wait goes on while the others work.
 import Foundation
 import JavaScriptCore
 
@@ -50,8 +61,8 @@ final class BridgeServer {
   static let holdMs: Int64 = 10 * 60 * 1000
 
   // each session the agent is working in: since when, when you last prompted it, its transcript, since when only a
-  // shell of its own has kept it going, and whether it runs in the Claude app
-  struct Work { var since, prompted: Int64; var transcript: String?; var held: Int64 = 0; var app: Bool? }
+  // shell of its own has kept it going, whether it runs in the Claude app, and the turn your prompt started (Codex)
+  struct Work { var since, prompted: Int64; var transcript: String?; var held: Int64 = 0; var app: Bool?; var turn: String? }
 
   // an open clack: the events still to send it, and a signal for each
   private final class Client { var queue: [Data] = []; let ready = DispatchSemaphore(value: 0) }
@@ -252,17 +263,20 @@ final class BridgeServer {
   private func heard(_ kind: String, _ hook: [String: Any]) {
     let session = (hook["session_id"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "default"
     let now = BridgeServer.now()
-    // Claude resuming on its own when a background task finishes isn't you handing off something new
-    let auto = kind == "start" && (hook["prompt"] as? String ?? "").drop(while: \.isWhitespace).hasPrefix("<task-notification>")
+    // Claude resuming on its own when a background task finishes, or a Codex subagent handed its task, isn't you
+    // handing off something new
+    let auto = kind == "start" && ((hook["prompt"] as? String ?? "").drop(while: \.isWhitespace).hasPrefix("<task-notification>")
+      || !(hook["agent_id"] as? String ?? "").isEmpty)
     // Claude ending its turn with its own background work still running isn't done: it will wake again by itself
     let bg = (hook["background_tasks"] as? [[String: Any]] ?? []).filter {
       ["running", "pending"].contains($0["status"] as? String) && BridgeServer.agentWork.contains($0["type"] as? String ?? "")
     }
     if kind == "end" {
-      // a session closed (or cleared) mid-turn: you're already at it, so its wait just ends
+      // a session closed (or cleared) mid-turn, or Codex stopped with Esc: you're already at it, so its wait just ends
       guard working.removeValue(forKey: session) != nil else { return }
       settle(now, kind)
-      return emit(["type": "tally", "at": now, "session": session, "reason": "SessionEnd"])
+      let why = hook["hook_event_name"] as? String == "Interrupt" ? "interrupt" : "SessionEnd"
+      return emit(["type": "tally", "at": now, "session": session, "reason": why])
     }
     // a session already running when the bridge started (or when its hooks were added) was never seen to start: its
     // first Stop shows it was working all along, so it's taken up from there
@@ -276,7 +290,12 @@ final class BridgeServer {
     }
     var w = working[session] ?? Work(since: now, prompted: now)
     if let t = hook["transcript_path"] as? String, !t.isEmpty { w.transcript = t }
-    if kind == "start" && !auto { w.prompted = now }
+    // Codex asks its auto-reviewer before it would ask you, and that one answers by itself
+    if hook["hook_event_name"] as? String == "PermissionRequest" && autoReviewed(w) { return }
+    if kind == "start" && !auto {
+      w.prompted = now
+      w.turn = hook["turn_id"] as? String
+    }
     w.held = kind == "done" && !bg.isEmpty && bg.allSatisfy({ $0["type"] as? String == "shell" }) ? now : 0
     working[session] = w
     settle(now, "start")
@@ -290,10 +309,10 @@ final class BridgeServer {
   }
 
   // the last lines of a session's transcript, each that reads as an object
-  private func entries(_ w: Work) -> [[String: Any]] {
+  private func entries(_ w: Work, _ size: UInt64 = 65536) -> [[String: Any]] {
     guard let path = w.transcript, let f = FileHandle(forReadingAtPath: path) else { return [] }
     defer { try? f.close() }
-    guard let end = try? f.seekToEnd(), (try? f.seek(toOffset: end > 65536 ? end - 65536 : 0)) != nil,
+    guard let end = try? f.seekToEnd(), (try? f.seek(toOffset: end > size ? end - size : 0)) != nil,
           let data = try? f.readToEnd() else { return [] }
     return data.split(separator: UInt8(ascii: "\n")).compactMap { (try? JSONSerialization.jsonObject(with: Data($0))) as? [String: Any] }
   }
@@ -318,6 +337,29 @@ final class BridgeServer {
     return false
   }
 
+  // Codex: how the turn you last handed it ended, from its transcript. An error calls no hook, so this is how clack
+  // hears of one ("StopFailure"); "Stop" and "interrupt" are for an end whose hook never came. nil while it's going
+  private func codexEnded(_ w: Work) -> String? {
+    // only Codex says which turn a prompt starts
+    guard let turn = w.turn, !turn.isEmpty else { return nil }
+    for e in entries(w).reversed() {
+      guard e["type"] as? String == "event_msg", let p = e["payload"] as? [String: Any], p["turn_id"] as? String == turn else { continue }
+      if p["type"] as? String == "task_complete" { return p["error"] is [String: Any] ? "StopFailure" : "Stop" }
+      // a turn replaced by the next one you sent goes on in that one
+      if p["type"] as? String == "turn_aborted", p["reason"] as? String != "replaced" {
+        return p["reason"] as? String == "interrupted" ? "interrupt" : "Stop"
+      }
+    }
+    return nil
+  }
+
+  // Codex: whether the turn's approvals go to its auto-reviewer, which answers them without you, rather than to you.
+  // Each turn writes who reviews into its transcript as it starts
+  private func autoReviewed(_ w: Work) -> Bool {
+    guard let e = entries(w, 1 << 22).last(where: { $0["type"] as? String == "turn_context" }) else { return false }
+    return ((e["payload"] as? [String: Any])?["approvals_reviewer"] as? String ?? "user") != "user"
+  }
+
   private func watch() {
     // no hook reports Esc, so every few seconds the transcripts show which sessions were stopped that way
     while true {
@@ -329,6 +371,14 @@ final class BridgeServer {
           working[s] = nil
           settle(now, "done")
           emit(["type": "done", "at": now, "session": s, "reason": "Stop", "held": true])
+        }
+        // and which Codex turns ended without a hook saying so
+        for (s, w) in working {
+          guard let how = codexEnded(w) else { continue }
+          working[s] = nil
+          settle(now, how == "interrupt" ? "end" : "done")
+          emit(how == "interrupt" ? ["type": "tally", "at": now, "session": s, "reason": how]
+            : ["type": "done", "at": now, "session": s, "reason": how, "auto": false])
         }
         let gone = working.filter { interrupted($0.value) }.map(\.key)
         guard let first = gone.first else { return }
@@ -409,21 +459,33 @@ final class BridgeServer {
   }
 }
 
-// MARK: Claude Code's settings
+// MARK: Claude Code's settings and Codex's hooks
 
-// clack's hooks in ~/.claude/settings.json, as clack-bridge.py --install and --uninstall-hooks put them in and take them
-// out. JavaScript does the editing, since its JSON keeps the order of everything else in the file, which Foundation's
-// doesn't; the file is backed up before clack first changes it
-enum ClaudeHooks {
-  static let folder = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".claude")
-  static let settings = folder.appendingPathComponent("settings.json")
+// clack's hooks in ~/.claude/settings.json or ~/.codex/hooks.json, as clack-bridge.py --install, --install-codex and
+// --uninstall-hooks put them in and take them out. JavaScript does the editing, since its JSON keeps the order of
+// everything else in the file, which Foundation's doesn't; the file is backed up before clack first changes it
+struct AgentHooks {
+  let name: String, folder: URL, file: URL, codex: Bool
+
+  static let claude: AgentHooks = {
+    let folder = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".claude")
+    return AgentHooks(name: "Claude Code", folder: folder, file: folder.appendingPathComponent("settings.json"), codex: false)
+  }()
+  // Codex reads hooks.json next to its config, in CODEX_HOME when that's set
+  static let codex: AgentHooks = {
+    let home = ProcessInfo.processInfo.environment["CODEX_HOME"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
+    let folder = home ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".codex")
+    return AgentHooks(name: "Codex", folder: folder, file: folder.appendingPathComponent("hooks.json"), codex: true)
+  }()
 
   private static let script = """
-  (text, port, mode) => {
+  (text, port, mode, codex) => {
     const post = route => `curl -s --max-time 1 -X POST --data-binary @- http://localhost:${port}/${route} >/dev/null 2>&1 || true`;
     const entry = route => [{ hooks: [{ type: 'command', command: post(route) }] }];
+    // Codex says when it asks for a permission and when you stop it with Esc, and has no hook for an error.
     // Notification only for permission prompts: Claude Code also notifies after 60s of idle input, which isn't a call back
-    const block = { UserPromptSubmit: entry('start'), Stop: entry('done'), StopFailure: entry('done'),
+    const block = codex ? { UserPromptSubmit: entry('start'), Stop: entry('done'), PermissionRequest: entry('done'),
+      Interrupt: entry('end'), SessionEnd: entry('end') } : { UserPromptSubmit: entry('start'), Stop: entry('done'), StopFailure: entry('done'),
       Notification: [{ matcher: 'permission_prompt', hooks: [{ type: 'command', command: post('done') }] }], SessionEnd: entry('end') };
     let settings;
     try { settings = text && text.trim() ? JSON.parse(text) : {}; } catch (e) { return { error: String(e.message || e) }; }
@@ -457,23 +519,23 @@ enum ClaudeHooks {
   }
   """
 
-  private static func run(_ mode: String, _ port: Int, _ file: URL) -> [String: Any] {
+  private func run(_ mode: String, _ port: Int) -> [String: Any] {
     let text = try? String(contentsOf: file, encoding: .utf8)
-    guard let ctx = JSContext(), let fn = ctx.evaluateScript(script),
-          let r = fn.call(withArguments: [text.map { $0 as Any } ?? NSNull(), port, mode])?.toDictionary() as? [String: Any] else {
+    guard let ctx = JSContext(), let fn = ctx.evaluateScript(AgentHooks.script),
+          let r = fn.call(withArguments: [text.map { $0 as Any } ?? NSNull(), port, mode, codex])?.toDictionary() as? [String: Any] else {
       return ["error": "clack could not read it"]
     }
     return r
   }
 
-  static func connected(_ port: Int, _ file: URL = settings) -> Bool { run("check", port, file)["connected"] as? Bool ?? false }
+  func connected(_ port: Int) -> Bool { run("check", port)["connected"] as? Bool ?? false }
 
   // nil when it's done, otherwise what went wrong
-  static func connect(_ port: Int, _ file: URL = settings) -> String? { change("install", port, file) }
-  static func disconnect(_ port: Int, _ file: URL = settings) -> String? { change("uninstall", port, file) }
+  func connect(_ port: Int) -> String? { change("install", port) }
+  func disconnect(_ port: Int) -> String? { change("uninstall", port) }
 
-  private static func change(_ mode: String, _ port: Int, _ file: URL) -> String? {
-    let r = run(mode, port, file)
+  private func change(_ mode: String, _ port: Int) -> String? {
+    let r = run(mode, port)
     if let error = r["error"] as? String { return "\(file.path) can't be read as settings (\(error)), so clack left it as it was." }
     guard let text = r["text"] as? String else { return nil }
     let fm = FileManager.default, backup = URL(fileURLWithPath: file.path + ".before-clack")

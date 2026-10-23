@@ -4,7 +4,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash
 #
 # Puts clack in ~/Library/Application Support/clack, runs it in the background from login on, puts its ring in the menu
-# bar, offers to connect it to Claude Code, and opens it. Running it again updates clack to the latest version. Nothing
+# bar, offers to connect it to Claude Code and Codex, and opens it. Running it again updates clack to the latest version. Nothing
 # leaves your Mac: clack and its bridge only listen on localhost.
 set -euo pipefail
 
@@ -59,21 +59,34 @@ else
   MENUBAR=""
 fi
 
-# Claude Code: only with the user's yes, read from the keyboard even though this script came in through a pipe
-if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
-  # with nobody at the keyboard to say yes, Claude Code's settings are left alone
-  answer="n"
+# Claude Code and Codex: only with the user's yes, read from the keyboard even though this script came in through a
+# pipe; with nobody at the keyboard to say yes, their settings are left alone
+yes_to() {
+  local answer="n"
   if { exec 3</dev/tty; } 2>/dev/null; then
-    printf '\n  Connect clack to Claude Code, so it knows when your agent starts and finishes?\n'
-    printf '  This adds five small hooks to ~/.claude/settings.json and backs it up first. [Y/n] '
+    printf '\n  %s\n  %s [Y/n] ' "$1" "$2"
     read -r answer <&3 || answer="n"
     exec 3<&-
   fi
-  case "$answer" in
-    n|N|no|No) say "Skipped. Connect it later with: python3 \"$DIR/clack-bridge.py\" --install" ;;
-    *) "$PY" "$DIR/clack-bridge.py" --install --port "$PORT" | sed 's/^/  /'
-       say "Claude Code sessions you start from now on will tell clack when they finish." ;;
-  esac
+  case "$answer" in n|N|no|No) return 1 ;; esac
+}
+if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
+  if yes_to "Connect clack to Claude Code, so it knows when your agent starts and finishes?" \
+    "This adds five small hooks to ~/.claude/settings.json and backs it up first."; then
+    "$PY" "$DIR/clack-bridge.py" --install --port "$PORT" | sed 's/^/  /'
+    say "Claude Code sessions you start from now on will tell clack when they finish."
+  else
+    say "Skipped. Connect it later with: python3 \"$DIR/clack-bridge.py\" --install"
+  fi
+fi
+# the ChatGPT app on the Mac runs its conversations in Codex, and keeps Codex's settings in ~/.codex too
+if [ -d "${CODEX_HOME:-$HOME/.codex}" ] || command -v codex >/dev/null 2>&1; then
+  if yes_to "Connect clack to Codex and the ChatGPT app, so it knows when your agent starts and finishes?" \
+    "This adds five small hooks to ~/.codex/hooks.json and backs it up first."; then
+    "$PY" "$DIR/clack-bridge.py" --install-codex --port "$PORT" | sed 's/^/  /'
+  else
+    say "Skipped. Connect it later with: python3 \"$DIR/clack-bridge.py\" --install-codex"
+  fi
 fi
 
 if [ -n "$MENUBAR" ]; then

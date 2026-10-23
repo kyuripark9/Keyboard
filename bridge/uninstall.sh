@@ -1,6 +1,6 @@
 #!/bin/bash
 # removes clack: quits its menu bar app, stops the background bridge, takes its hooks out of Claude Code's settings and
-# deletes its files
+# Codex's hooks.json and deletes its files
 #
 #   curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash
 set -uo pipefail

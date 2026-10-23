@@ -2919,8 +2919,8 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
 
 /* ---------- the agent: clack wakes when your agent starts working and lets go of you when it's done ----------
    Where the signal comes from:
-   - served by clack-bridge on localhost (or opened with ?bridge=http://localhost:4545): Claude Code hooks tell the
-     bridge when you hand off a prompt (start) and when the agent stops or needs you (done), and it streams that here
+   - served by clack-bridge on localhost (or opened with ?bridge=http://localhost:4545): Claude Code's or Codex's hooks
+     tell the bridge when you hand off a prompt (start) and when the agent stops or needs you (done), and it streams that here
    - anywhere else, such as the hosted portfolio copy: a demo agent you start yourself, so a visitor can feel the release
    With several sessions at once, the first to finish lets go of you, as it's waiting for you whatever the others do; once
    you've gone back, clack holds you again while any of them is still working, and the next to finish lets go again.
@@ -3010,7 +3010,7 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
       const who = AG.mode === 'demo' ? 'demo agent' : AG.busy > 1 ? AG.busy + ' agents' : 'agent';
       html = `<i class="dot"></i><span>${who} · ${clock(now - (AG.prompted || AG.startAt))}</span>`;
     } else if (s === 'done') {
-      const gone = AG.grip <= 0.02, word = { Notification: 'agent needs you', StopFailure: 'agent stopped' }[AG.reason] || 'agent done';
+      const gone = AG.grip <= 0.02, word = { Notification: 'agent needs you', PermissionRequest: 'agent needs you', StopFailure: 'agent stopped' }[AG.reason] || 'agent done';
       if (!gone) html = `<i class="dot"></i><span>${word} · go back</span>`;
       else if (now - AG.doneAt < RELEASE_MS + 9000) html = `<span>clack let go · ${AG.mode === 'demo' ? 'tab away to go back' : 'your agent is waiting'}</span>`;
       else if (AG.mode === 'demo') html = `<span>still here?</span><button type="button" data-a="again">try again</button>${OWN}`;
