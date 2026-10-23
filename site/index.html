@@ -55,7 +55,7 @@ img { display: block; }
 .sh .idx { color: var(--ink-3); font-weight: 400; }
 /* under it, a big line on the left and what it means on the right */
 .intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 64px; align-items: end; margin-bottom: 72px; }
-.intro h2 { margin: 0; font: 500 clamp(36px, 4.4vw, 60px)/1.02 var(--font-ui); letter-spacing: -.045em; text-wrap: balance; }
+.intro h1, .intro h2 { margin: 0; font: 500 clamp(36px, 4.4vw, 60px)/1.02 var(--font-ui); letter-spacing: -.045em; text-wrap: balance; }
 .intro p { margin: 0; max-width: 31em; font-size: 18px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
 /* buttons: a black pill for the way in, an outlined one beside it; both turn cobalt under the pointer */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 22px; border-radius: 999px;
@@ -140,14 +140,6 @@ section { padding-block: var(--sec); }
   .agent, .again { justify-self: start; }
   .agent { margin-top: 8px; }
 }
-
-/* ---------- under it, a rule down and what clack is ---------- */
-.hero { padding-block: clamp(32px, 4vw, 56px) 0; text-align: center; }
-.rule { width: 1px; height: clamp(40px, 5vw, 72px); margin: 0 auto clamp(28px, 3vw, 40px); background: var(--ink); }
-.lede { max-width: 25em; margin: 0 auto; font: 500 clamp(21px, 2vw, 27px)/1.28 var(--font-ui); letter-spacing: -.025em; text-wrap: balance; }
-.meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 24px 0 0; color: var(--ink-3); }
-.meta i { font-style: normal; color: var(--line-2); }
-.ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 32px; }
 
 /* ---------- white chips that read over every picture: the sound, which shows whether clack is heard and mutes or
    unmutes it, and the way to a bigger clack or out of it ---------- */
@@ -374,22 +366,12 @@ footer .mono { color: var(--ink-3); }
     </div></div>
   </section>
 
-  <div class="wrap hero">
-    <div class="rule" aria-hidden="true"></div>
-    <h1 class="lede">Something to clack instead of scrolling. Back to work the moment your agent is done.</h1>
-    <p class="meta mono"><span>Web version</span><i>·</i><span>Browser extension</span></p>
-    <div class="ctas">
-      <a class="btn" href="#get">Get clack</a>
-      <a class="btn ghost" href="#how">How it works ↓</a>
-    </div>
-  </div>
-
   <section id="how" class="how">
     <div class="wrap">
       <div class="sh"><span>How it works</span><span class="idx">[01]</span></div>
       <div class="intro">
-        <h2>It lets go the moment your agent is done.</h2>
-        <p>Something for your hands while you wait, then a clear sign to go back. Here a demo agent does the waiting, so you can try it now.</p>
+        <h1>Something to clack instead of scrolling.</h1>
+        <p>Back to work the moment your agent is done: something for your hands while you wait, then a clear sign to go back. Here a demo agent does the waiting, so you can try it now.</p>
       </div>
       <ol class="rows">
         <li class="row work">
