@@ -14,13 +14,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500&family=Figtree:wght@800&family=Xanh+Mono&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500&family=Figtree:wght@800&display=swap">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap">
 <style>
 /* The clack website: one page with the ten materials, each opening clack itself to play in a window over the page, how
    it lets go of you, the three ways to have it (the browser, the Mac's menu bar, a browser extension) and what it keeps. The design
    system is quiet so the materials carry the colour: white paper, black type, grey for everything secondary, one
-   cobalt accent, hairlines between rows, mono capitals for labels and a monospaced serif for the big words */
+   cobalt accent, hairlines between rows, mono capitals for labels and clack's own heavy wordmark for its name */
 :root {
   /* colour */
   --bg: #ffffff; --bg-2: #f2f2f2; --bg-3: #e8ebe8; --inv: #0a0a0a;
@@ -30,7 +30,6 @@
   /* type */
   --font-ui: "Switzer", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Chivo Mono", ui-monospace, "SF Mono", monospace;
-  --font-display: "Xanh Mono", "Courier New", serif;
   --font-brand: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   /* space */
   --wrap: 1248px; --gut: max(24px, env(safe-area-inset-left, 0px)); --sec: 112px; --bar-h: 68px;
@@ -221,12 +220,20 @@ html:has(.dlg[open]) { overflow: hidden; }
 .keeps ul:last-child { margin-bottom: 0; }
 .keeps li { padding: 13px 0; border-top: 1px solid rgba(255,255,255,.16); font: 500 13px/1.3 var(--font-mono); text-transform: uppercase; }
 
-/* ---------- the end: clack in big letters to go and play, and the ways on from here ---------- */
-.big { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: clamp(20px, 3vw, 36px) clamp(20px, 3vw, 40px); background: var(--bg-2);
-  font: 400 clamp(52px, 10.6vw, 152px)/.9 var(--font-display); text-decoration: none; transition: background-color .2s; }
-.big span { font: 400 .5em/1 var(--font-ui); transition: transform .2s; }
+/* ---------- the end: PLAY CLACK in clack's own wordmark to go and play it on the web, and the ways on from here ---------- */
+.big { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 24px; padding: clamp(24px, 3vw, 40px) clamp(20px, 3vw, 40px);
+  background: var(--bg-2); text-decoration: none; transition: background-color .2s; }
+.big b { font: 800 clamp(48px, 10.6vw, 152px)/.82 var(--font-brand); letter-spacing: -.04em; white-space: nowrap; }
+/* the Ls get the same room before their A as in CLACK at the top */
+.big b i { font-style: normal; margin-right: .035em; }
+/* where it goes: a pill with the globe of Play on the web under Get clack, turning cobalt under the pointer */
+.big span { display: inline-flex; align-items: center; gap: 10px; padding: 14px 20px 13px; border-radius: 999px; background: #fff;
+  font: 500 14px/1 var(--font-mono); text-transform: uppercase; white-space: nowrap; transition: background-color .2s, color .2s; }
+.big span svg { width: 20px; height: 20px; flex: none; }
+.big span i { font-style: normal; transition: transform .2s; }
 .big:hover { background: var(--bg-3); }
-.big:hover span { transform: translate(4px, -4px); }
+.big:hover span { background: var(--accent); color: #fff; }
+.big:hover span i { transform: translate(3px, -3px); }
 .after { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 24px 64px; margin-top: 28px; }
 .after > p { margin: 0; max-width: 20em; font-size: 16px; color: var(--ink-2); }
 .links { margin: 0; padding: 0; list-style: none; }
@@ -283,7 +290,6 @@ footer .mono { color: var(--ink-3); }
   .cmd { flex-direction: column; align-items: stretch; padding: 14px; }
   .cmd button { align-self: flex-start; }
   .cmd.small { flex-direction: row; align-items: center; padding: 2px 2px 2px 8px; }
-  .big span { display: none; }
 }
 @media (max-width: 420px) {
   .bar > .wrap > .btn { display: none; }
@@ -452,7 +458,7 @@ footer .mono { color: var(--ink-3); }
 
   <section class="end">
     <div class="wrap">
-      <a class="big" href="play/" aria-label="Play clack full screen">PLAY CLACK<span aria-hidden="true">↗</span></a>
+      <a class="big" href="play/" aria-label="Play clack, web version"><b>P<i>L</i>AY C<i>L</i>ACK</b><span aria-hidden="true"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="14" cy="14" r="11"/><path d="M3 14h22M14 3c3 3.2 4.5 6.8 4.5 11S17 21.8 14 25M14 3c-3 3.2-4.5 6.8-4.5 11S11 21.8 14 25"/></svg>Web version<i>↗</i></span></a>
       <div class="after">
         <p>Nothing to sign up for. Press something while you wait.</p>
         <ul class="links">
