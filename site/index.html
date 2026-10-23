@@ -18,12 +18,12 @@
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap">
 <style>
 /* The clack website: one page with the ten materials, each opening clack itself to play in a window over the page, how
-   it lets go of you, what it hears and never does, and the two ways to have it (a browser extension and the browser). The design
+   it lets go of you and the two ways to have it (a browser extension and the browser). The design
    system is quiet so the materials carry the colour: white paper, black type, grey for everything secondary, one
    cobalt accent, hairlines between rows, mono capitals for labels and clack's own heavy wordmark for its name */
 :root {
   /* colour */
-  --bg: #ffffff; --bg-2: #f2f2f2; --bg-3: #e8ebe8; --inv: #0a0a0a;
+  --bg: #ffffff; --bg-2: #f2f2f2; --bg-3: #e8ebe8;
   --ink: #0a0a0a; --ink-2: #525252; --ink-3: #8a8a8a;
   --line: #e3e3e3; --line-2: #cfcfcf;
   --accent: #2c62fb;
@@ -232,45 +232,7 @@ html:has(.dlg[open]) { overflow: hidden; }
 .aside { max-width: 46em; margin: 32px 0 0; font-size: 15px; color: var(--ink-3); }
 .aside b { color: var(--ink-2); font-weight: 500; }
 
-/* ---------- [03] privacy, the one dark section: clack only needs to know when your agent starts and stops, so it
-   shows the four moments it hears and what it does at each, three promises, and the fine print folded away ---------- */
-.dark { --hair: rgba(255,255,255,.16); --dim: rgba(255,255,255,.64); --faint: rgba(255,255,255,.42); background: var(--inv); color: #fff; }
-.dark .sh { border-bottom-color: var(--hair); }
-.dark .sh .idx { color: rgba(255,255,255,.5); }
-.dark .intro p { color: var(--dim); }
-/* the four moments, each with a dot for clack then: awake, faded to grey, or done waiting */
-.hears { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px 24px; margin: 0; padding: 0; list-style: none; }
-.hears li { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding-top: 22px; border-top: 1px solid var(--hair); }
-.hears i { width: 10px; height: 10px; margin-bottom: 6px; border-radius: 50%; background: var(--faint); }
-.hears .on i { background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
-.hears .off i { background: none; box-shadow: inset 0 0 0 1.5px var(--faint); }
-.hears b { font: 500 clamp(20px, 1.9vw, 25px)/1.15 var(--font-ui); letter-spacing: -.03em; }
-.hears li > span { font: 500 12px/1.2 var(--font-mono); text-transform: uppercase; color: var(--dim); }
-.hears li > span::before { content: "→ "; content: "→ " / ""; }
-/* what it never does, said as plainly as it can be */
-.vows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 24px; margin: 96px 0 0; padding: 0; list-style: none; }
-.vows li { display: flex; flex-direction: column; gap: 10px; padding-top: 22px; border-top: 1px solid #fff; }
-.vows b { font: 500 clamp(26px, 2.6vw, 36px)/1.05 var(--font-ui); letter-spacing: -.04em; }
-.vows span { font-size: 16px; line-height: 1.45; color: var(--dim); }
-@media (prefers-reduced-motion: reduce) { .hears .on i { animation: none; } }
-/* the fine print, folded away: exactly what it reads and writes, for anyone who wants to check */
-.more { margin-top: 72px; border-block: 1px solid var(--hair); }
-.more summary { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; cursor: pointer; list-style: none;
-  font: 500 12.5px/1 var(--font-mono); text-transform: uppercase; color: var(--dim); transition: color .15s; }
-.more summary:hover { color: #fff; }
-.more summary::-webkit-details-marker { display: none; }
-.more summary::after { content: "+"; font-size: 16px; }
-.more[open] summary::after { content: "−"; }
-.more dl { margin: 0; }
-.more dl div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: baseline; gap: 4px 64px; padding: 14px 0; border-top: 1px solid var(--hair); }
-.more dt { font: 500 12px/1.5 var(--font-mono); text-transform: uppercase; color: var(--faint); }
-.more dd { margin: 0; max-width: 34em; font-size: 15px; line-height: 1.55; color: var(--dim); text-wrap: pretty; }
-.more code { font: 400 13px/1 var(--font-mono); color: #fff; }
-.more p { margin: 0; padding: 16px 0 20px; border-top: 1px solid var(--hair); font: 500 12.5px/1 var(--font-mono); text-transform: uppercase; }
-.more a { text-decoration: none; color: var(--dim); transition: color .15s; }
-.more a:hover { color: #fff; }
-
-/* [04] get it, the last section: one row per way, the side panel and then nothing to install */
+/* [03] get it, the last section: one row per way, the side panel and then nothing to install */
 .way .ico { width: 28px; height: 28px; color: var(--ink); }
 .way .go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 /* a line of Terminal or an address to copy: selectable whole, with a copy button at its end */
@@ -317,9 +279,7 @@ footer .mono { color: var(--ink-3); }
 }
 @media (max-width: 900px) {
   :root { --sec: 96px; }
-  .intro, .row, .how .row, .vows, .more dl div { grid-template-columns: minmax(0, 1fr); }
-  .hears { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .vows { margin-top: 64px; }
+  .intro, .row, .how .row { grid-template-columns: minmax(0, 1fr); }
   .intro { margin-bottom: 48px; }
   .how .row { grid-template-rows: none; }
   .how .row .scr { grid-column: auto; grid-row: auto; max-width: 520px; }
@@ -476,43 +436,9 @@ footer .mono { color: var(--ink-3); }
     </div>
   </section>
 
-  <section class="dark" id="privacy">
-    <div class="wrap">
-      <div class="sh"><span>Privacy</span><span class="idx">[03]</span></div>
-      <div class="intro">
-        <h2>It only needs to know when.</h2>
-        <p>clack listens for four moments from your agent, and that's all.</p>
-      </div>
-      <ol class="hears" aria-label="The four moments clack hears, and what it does at each">
-        <li class="on"><i></i><b>You send a prompt</b><span><span class="sr">clack </span>wakes up</span></li>
-        <li><i></i><b>Your agent is done</b><span><span class="sr">clack </span>lets go</span></li>
-        <li><i></i><b>Your agent needs you</b><span><span class="sr">clack </span>lets go</span></li>
-        <li class="off"><i></i><b>A session closes</b><span><span class="sr">clack </span>stops waiting</span></li>
-      </ol>
-      <ul class="vows">
-        <li><b>Stays on your Mac</b><span>Nothing is sent anywhere.</span></li>
-        <li><b>Your work isn't kept</b><span>Not your prompts, code or replies.</span></li>
-        <li><b>No account, no tracking</b><span>Nothing to sign up for.</span></li>
-      </ul>
-      <details class="more">
-        <summary>Exactly what it reads and writes</summary>
-        <dl>
-          <div><dt>Hooks</dt><dd>Five in Claude Code's settings, backed up first and taken out with clack: <code>UserPromptSubmit</code>, <code>Stop</code>, <code>StopFailure</code>, <code>Notification</code> (permission prompts only), <code>SessionEnd</code>.</dd></div>
-          <div><dt>Prompts</dt><dd>Only how each begins, to tell yours from Claude waking itself up.</dd></div>
-          <div><dt>Transcripts</dt><dd>Only a working session's last lines, to catch Esc, which no hook reports.</dd></div>
-          <div><dt>The Claude app's log</dt><dd>Only to catch a permission prompt in its Code tab the moment it shows.</dd></div>
-          <div><dt>clack's own log</dt><dd>When an agent started and stopped, and the name of anything left running.</dd></div>
-          <div><dt>Your browser</dt><dd>Your sound settings, and how fast you went back, shown only as your last and typical time.</dd></div>
-          <div><dt>On the web</dt><dd>Nothing to hear. A demo agent stands in.</dd></div>
-        </dl>
-        <p><a href="https://github.com/kyuripark9/Keyboard/blob/main/bridge/README.md#what-it-knows-and-what-it-keeps" target="_blank" rel="noopener">More in the README ↗</a></p>
-      </details>
-    </div>
-  </section>
-
   <section id="get">
     <div class="wrap">
-      <div class="sh"><span>Get clack</span><span class="idx">[04]</span></div>
+      <div class="sh"><span>Get clack</span><span class="idx">[03]</span></div>
       <div class="intro">
         <h2>Two ways to have it.</h2>
         <p>Open it in your browser's side panel next to Claude or ChatGPT, or play it with nothing to install. A demo agent stands in for yours, so you can feel clack let go.</p>
@@ -675,7 +601,7 @@ const spy = new IntersectionObserver(entries => {
   for (const en of entries) if (en.isIntersecting)
     for (const a of links) a.setAttribute('aria-current', String(a.getAttribute('href') === '#' + en.target.id));
 }, { rootMargin: '-45% 0px -50% 0px' });
-for (const id of ['materials', 'how', 'get', 'privacy']) spy.observe($(id));
+for (const id of ['materials', 'how', 'get']) spy.observe($(id));
 
 // CLACK at the top comes apart into dots under the pointer the way the name does on the Soren template (its Particle
 // Text, set as Soren Vale has it: round dots a couple of pixels apart, pushed away from the pointer and eased back home).
