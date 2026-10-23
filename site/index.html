@@ -95,12 +95,11 @@ section { padding-block: var(--sec); }
 .word { margin: 0; font: 800 clamp(80px, 21vw, 272px)/.78 var(--font-brand); letter-spacing: -.04em; }
 /* the L's foot would touch the A's leg at that spacing, so the pair gets a little more room */
 .word span:nth-child(2) { margin-right: .035em; }
-/* the pointer shaves paths through it like clack's Soap Cutting [08]. The name is drawn again on a canvas laid over the
-   letters, which stay underneath for reading and selecting, see-through once the canvas shows them; the loose dots fall
-   on a second canvas that fades out below the letters. A sideways swipe on a phone shaves too */
+/* the pointer presses into it like clack's Wax Ball [04]. The name is drawn again on a canvas laid over the letters,
+   which stay underneath for reading and selecting, see-through once the canvas shows them. A sideways swipe on a phone
+   presses too */
 .word { position: relative; touch-action: pan-y; }
 .word canvas { position: absolute; pointer-events: none; }
-.word canvas + canvas { -webkit-mask-image: linear-gradient(#000 var(--fade), transparent); mask-image: linear-gradient(#000 var(--fade), transparent); }
 .word.live span { color: transparent; }
 .rule { width: 1px; height: clamp(40px, 5vw, 72px); margin: clamp(28px, 3vw, 40px) auto; background: var(--ink); }
 .lede { max-width: 25em; margin: 0 auto; font: 500 clamp(21px, 2vw, 27px)/1.28 var(--font-ui); letter-spacing: -.025em; text-wrap: balance; }
@@ -282,8 +281,8 @@ footer .mono { color: var(--ink-3); }
   .band li { flex: 0 0 22%; }
   .band li:hover, .band li:focus-within { flex-grow: 0; }
   .sh { margin-bottom: 40px; }
-  .web { margin-top: 32px; }
   .row { padding: 32px 0; }
+  .web { margin-top: 32px; }
   .cmd { flex-direction: column; align-items: stretch; padding: 14px; }
   .cmd button { align-self: flex-start; }
   .cmd.small { flex-direction: row; align-items: center; padding: 2px 2px 2px 8px; }
@@ -371,6 +370,7 @@ footer .mono { color: var(--ink-3); }
       <p class="aside">Running several sessions? clack lets go when the first one finishes.</p>
     </div>
   </section>
+
   <section class="dark" id="privacy">
     <div class="wrap">
       <div class="sh"><span>Privacy</span><span class="idx">[03]</span></div>
@@ -388,7 +388,6 @@ footer .mono { color: var(--ink-3); }
       </div>
     </div>
   </section>
-
 
   <section id="get">
     <div class="wrap">
@@ -574,233 +573,169 @@ const spy = new IntersectionObserver(entries => {
 }, { rootMargin: '-45% 0px -50% 0px' });
 for (const id of ['materials', 'how', 'get', 'privacy']) spy.observe($(id));
 
-// CLACK at the top plays clack's Soap Cutting [08] (SCENES.soap in play/): moving over it shaves a path through the
-// letters as if they were a block of soap. The path opens fast with a ragged edge that breaks up into halftone dots, the
-// shaved soap heaps up beside it where it runs past a letter's edge, some of the dots it cuts away come loose and tumble
-// down, and after a moment the path narrows shut again. The letters are drawn with WebGL2 on a canvas over the real
-// ones, in the same dot screen as clack's; without WebGL2, or with reduced motion, the name stays as it is
+// CLACK at the top plays clack's Wax Ball [04] (SCENES.wax in play/), paced like the name that breaks into dots on the
+// Soren template: the letters are its shell, a grid of small squares packed so close that they run together into solid
+// black. Wherever the pointer is, the shell gives way at once in a wide, ragged patch: the squares snap down and spin
+// as they shrink, almost to nothing right under it and less toward the patch's edge, scattering a little off their
+// grid, and the grid leans out from the middle so they bunch up around it; each step of travel cracks the chips around
+// it so they twist and wobble back into line. The patch holds while the pointer rests on it, and once the pointer moves
+// on the squares spring back into solid letters within a second or two, patch by patch. The squares are cut to the
+// letters, so their outline never changes. It is drawn on a canvas over the real letters; with reduced motion the name
+// stays as it is
 (() => {
   const word = document.querySelector('.word');
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const cv = document.createElement('canvas'), bv = document.createElement('canvas');
-  const gl = cv.getContext('webgl2', { antialias: false, depth: false, preserveDrawingBuffer: true });
-  if (!gl) return;
-  // a pixel is the letter as drawn where nothing is shaved (uG), and the dot screen where something is: the field (uF)
-  // holds each grid cell's threshold and how far to show the screen there
-  const pr = gl.createProgram();
-  for (const [t, s] of [[gl.VERTEX_SHADER, 'in vec2 v; void main() { gl_Position = vec4(v, 0., 1.); }'], [gl.FRAGMENT_SHADER, `precision highp float;
-uniform vec2 uDev; uniform float uDpr; uniform vec3 uGrid; uniform sampler2D uF, uG; out vec4 o;
-void main() {
-  vec2 d = vec2(gl_FragCoord.x, uDev.y - gl_FragCoord.y), p = d / uDpr, f = texture(uF, (p / uGrid.x + .5) / uGrid.yz).rg;
-  float s = cos(3.14159265 * p.x / uGrid.x) * cos(3.14159265 * p.y / uGrid.x), k = clamp((s - f.r) / max(fwidth(s), .04) + .5, 0., 1.);
-  float a = mix(texture(uG, d / uDev).r, k, f.g);
-  o = vec4(vec3(.039) * a, a);
-}`]]) {
-    const sh = gl.createShader(t); gl.shaderSource(sh, '#version 300 es\n' + s); gl.compileShader(sh); gl.attachShader(pr, sh);
-  }
-  gl.bindAttribLocation(pr, 0, 'v'); gl.linkProgram(pr);
-  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
-  gl.useProgram(pr);
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  const U = n => gl.getUniformLocation(pr, n);
-  const tex = (unit, f) => {
-    gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, f], [gl.TEXTURE_MAG_FILTER, f], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
-  };
-  tex(1, gl.NEAREST); tex(0, gl.LINEAR); // the field's unit is left active, for its upload every frame
-  gl.uniform1i(U('uF'), 0); gl.uniform1i(U('uG'), 1);
-  // the dot screen is cos(πx/c)·cos(πy/c), inked wherever it rises above a threshold; TH turns a tone (0 paper to 1
-  // solid, in 256 steps) into the threshold that inks that share of it. Its dots are smaller than clack's, so the ends
-  // sit well past the screen's peaks, or the smoothing would leave a faint dot on each peak of bare paper
-  const sv = new Float32Array(128 * 128);
-  for (let j = 0; j < 128; j++) for (let i = 0; i < 128; i++) sv[j * 128 + i] = Math.cos(Math.PI * (i + .5) / 128) * Math.cos(Math.PI * (j + .5) / 128);
-  sv.sort();
-  const TH = Float32Array.from({ length: 256 }, (_, k) => k === 0 ? 1.6 : k === 255 ? -1.6 : sv[Math.round((1 - k / 255) * (sv.length - 1))]);
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rand = (a, b) => a + Math.random() * (b - a);
-
-  // a path opens over OPEN ms, holds for HOLD and narrows shut over CLOSE
-  const OPEN = 160, HOLD = 1600, CLOSE = 2600, gx = document.createElement('canvas'), bx = bv.getContext('2d');
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d'), lc = document.createElement('canvas');
   // the baseline, read off an empty box sitting on it
   const probe = document.createElement('i');
   probe.style.cssText = 'display:inline-block;width:0;height:0';
-  for (const e of [probe, cv, bv]) { e.setAttribute('aria-hidden', 'true'); word.append(e); }
-  let W = 0, H = 0, base = 0, c = 4, nx = 0, ny = 0, N = 0, w0 = 0, R1 = 0, R2 = 0, step = 0;
-  let GG, GN, E, RW, pap, DP, CV, HP, M, TO, GONE, F, cuts = [], beads = [], last = null, lp = null, dir = [1, 0], raf = 0, lastT = 0, dirty = false, drawn = false;
+  for (const e of [probe, cv]) { e.setAttribute('aria-hidden', 'true'); word.append(e); }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rand = (a, b) => a + Math.random() * (b - a);
+  let W = 0, H = 0, fs = 100, p = 6, RL = 60, step = 30, cols = 0, rows = 0, x0 = 0, y0 = 0, raf = 0, lastT = 0, lp = null, trav = 0;
+  let E, A, V, F, S, SV, RT, JX, JY, NE, TAU;
 
-  // the canvases cover the letters with room around them for the heaps, and below for the dots to fall through. The
-  // letters are drawn once, white on black so a texture's red is how much of a pixel is letter, and again on the grid
-  // of c the tones live on (GG). GN spreads them a few cells out, so a heap only shows next to a letter
+  // the canvas covers the letters with a little room for the squares to lean past them. The letters are drawn once in
+  // their black (lc), which cuts the squares to their shape. The squares sit on a grid of p, about thirty-eight to the
+  // em, the size of the template's dots, with a ring of spare ones past every edge so the grid can lean in without
+  // leaving a gap; RL is how far from the pointer the shell gives, about a fifth of the em
   function layout() {
     cancelAnimationFrame(raf); raf = lastT = 0;
-    const cs = getComputedStyle(word), fs = parseFloat(cs.fontSize), spans = [...word.querySelectorAll('span')], rs = spans.map(s => s.getBoundingClientRect());
-    const r0 = word.getBoundingClientRect(), bl = probe.getBoundingClientRect().bottom, vw = document.documentElement.clientWidth;
-    const L = Math.max(0, Math.floor(rs[0].left - fs * .16)), R = Math.min(vw, Math.ceil(rs[rs.length - 1].right + fs * .16));
-    const T = Math.floor(bl - fs * .88), dpr = Math.min(2, devicePixelRatio || 1);
-    W = R - L; H = Math.ceil(bl + fs * .5) - T; base = bl - T;
-    for (const v of [cv, bv]) Object.assign(v.style, { left: L - r0.left + 'px', top: T - r0.top + 'px', width: W + 'px', height: H + 'px' });
-    cv.width = bv.width = gx.width = Math.round(W * dpr); cv.height = bv.height = gx.height = Math.round(H * dpr);
-    bv.style.setProperty('--fade', (base + fs * .06) / H * 100 + '%');
-    bx.setTransform(bv.width / W, 0, 0, bv.height / H, 0, 0);
-    const g = gx.getContext('2d');
-    g.fillStyle = '#000'; g.fillRect(0, 0, gx.width, gx.height);
-    g.setTransform(gx.width / W, 0, 0, gx.height / H, 0, 0);
-    g.fillStyle = '#fff'; g.font = `800 ${fs}px ${cs.fontFamily}`; g.textBaseline = 'alphabetic';
-    spans.forEach((s, i) => g.fillText(s.textContent, rs[i].left - L, base));
-    // w0 is about half a path's width, R1 how far its heap reaches solid past its edge and R2 how far that then takes to
-    // fade back out; the pointer strikes every step of travel
-    c = clamp(fs / 64, 2, 5); w0 = fs * .115; R1 = w0 * .33; R2 = w0 * .38; step = w0 * .75;
-    nx = Math.ceil(W / c) + 2; ny = Math.ceil(H / c) + 2; N = nx * ny;
-    const sm = document.createElement('canvas'); sm.width = nx; sm.height = ny;
-    const sx = sm.getContext('2d', { willReadFrequently: true }); sx.imageSmoothingQuality = 'high';
-    sx.drawImage(gx, .5, .5, W / c, H / c);
-    const px = sx.getImageData(0, 0, nx, ny).data;
-    GG = Float32Array.from({ length: N }, (_, q) => px[q * 4] / 255);
-    const spread = A => {
-      const B = new Float32Array(N), C = new Float32Array(N);
-      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { let s = 0; for (let d = -2; d <= 2; d++) s += A[j * nx + clamp(i + d, 0, nx - 1)]; B[j * nx + i] = s / 5; }
-      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { let s = 0; for (let d = -2; d <= 2; d++) s += B[clamp(j + d, 0, ny - 1) * nx + i]; C[j * nx + i] = s / 5; }
-      return C;
-    };
-    GN = spread(spread(GG)).map(v => Math.min(1, v * 2));
-    // smooth value noise over the grid, its features about S cells across. E wobbles a path's edges in and out like a
-    // coastline, RW makes its heap thicker in places and thinner in others, and pap leaves a sprinkle of tiny dots in a
-    // few places on the bottom of a path
-    const vn = S => {
-      const gw = Math.ceil(nx / S) + 2, Rn = Float32Array.from({ length: gw * (Math.ceil(ny / S) + 2) }, () => rand(-1, 1));
+    const cs = getComputedStyle(word), spans = [...word.querySelectorAll('span')], rs = spans.map(e => e.getBoundingClientRect());
+    const rw = word.getBoundingClientRect(), bl = probe.getBoundingClientRect().bottom, vw = document.documentElement.clientWidth;
+    fs = parseFloat(cs.fontSize);
+    const L = Math.max(0, Math.floor(rs[0].left - fs * .08)), R = Math.min(vw, Math.ceil(rs[rs.length - 1].right + fs * .08));
+    const top = Math.floor(bl - fs * .85), dpr = Math.min(2, devicePixelRatio || 1), base = bl - top;
+    W = R - L; H = Math.ceil(bl + fs * .1) - top;
+    Object.assign(cv.style, { left: L - rw.left + 'px', top: top - rw.top + 'px', width: W + 'px', height: H + 'px' });
+    cv.width = lc.width = Math.round(W * dpr); cv.height = lc.height = Math.round(H * dpr);
+    const lx = lc.getContext('2d');
+    lx.setTransform(lc.width / W, 0, 0, lc.height / H, 0, 0);
+    lx.fillStyle = '#0a0a0a'; lx.font = `800 ${fs}px ${cs.fontFamily}`; lx.textBaseline = 'alphabetic';
+    spans.forEach((e, i) => lx.fillText(e.textContent, rs[i].left - L, base));
+    ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+    p = clamp(fs / 38, 2.5, 8); RL = fs * .19; step = fs * .1;
+    cols = Math.ceil(W / p) + 9; rows = Math.ceil(H / p) + 9; const n = cols * rows;
+    x0 = (W - (cols - 1) * p) / 2; y0 = (H - (rows - 1) * p) / 2;
+    // E: how far the shell is pressed in under each square; A and V: how far a cracked chip is turned, and how fast;
+    // F: the size the square is headed for, 1 where it is whole, and S and SV the size it has now and how fast that
+    // is changing, so it springs there; RT: which way and how far it spins as it shrinks; JX and JY: where it scatters
+    // to as it does
+    E = new Float32Array(n); A = new Float32Array(n); V = new Float32Array(n); F = new Float32Array(n).fill(1);
+    S = new Float32Array(n).fill(1); SV = new Float32Array(n);
+    RT = Float32Array.from({ length: n }, () => (Math.random() < .5 ? -1 : 1) * rand(.6, 1.6));
+    JX = Float32Array.from({ length: n }, () => rand(-.45, .45) * p); JY = Float32Array.from({ length: n }, () => rand(-.45, .45) * p);
+    // smooth value noise over the grid, its blotches about S squares across: NE makes the patch's edge ragged, and TAU
+    // is how quickly each part sets again, so it fills back in blotches rather than all at once
+    const vn = Sz => {
+      const gw = Math.ceil(cols / Sz) + 2, Rn = Float32Array.from({ length: gw * (Math.ceil(rows / Sz) + 2) }, () => rand(-1, 1));
       return (i, j) => {
-        const u = i / S, v = j / S, a = Math.floor(u), b = Math.floor(v), f = u - a, h = v - b, fs = f * f * (3 - 2 * f), hs = h * h * (3 - 2 * h), o = b * gw + a;
-        return (Rn[o] * (1 - fs) + Rn[o + 1] * fs) * (1 - hs) + (Rn[o + gw] * (1 - fs) + Rn[o + gw + 1] * fs) * hs;
+        const a = Math.floor(i / Sz), b = Math.floor(j / Sz), f = i / Sz - a, g = j / Sz - b, fx = f * f * (3 - 2 * f), gy = g * g * (3 - 2 * g), o = b * gw + a;
+        return (Rn[o] * (1 - fx) + Rn[o + 1] * fx) * (1 - gy) + (Rn[o + gw] * (1 - fx) + Rn[o + gw + 1] * fx) * gy;
       };
     };
-    const e1 = vn(12), e2 = vn(5), e3 = vn(2), r1 = vn(7), p1 = vn(6);
-    E = new Float32Array(N); RW = new Float32Array(N); pap = new Float32Array(N);
-    for (let j = 0, q = 0; j < ny; j++) for (let i = 0; i < nx; i++, q++) {
-      E[q] = .55 * e1(i, j) + .3 * e2(i, j) + .15 * e3(i, j); RW[q] = R1 * (1 + .9 * r1(i, j)); pap[q] = clamp(.06 * p1(i, j) - .015, 0, .045);
-    }
-    DP = new Float32Array(N); CV = new Float32Array(N); HP = new Float32Array(N); M = new Float32Array(N);
-    TO = GG.slice(); GONE = new Float64Array(N); F = new Float32Array(N * 2);
-    gl.viewport(0, 0, cv.width, cv.height);
-    gl.uniform2f(U('uDev'), cv.width, cv.height); gl.uniform1f(U('uDpr'), cv.width / W); gl.uniform3f(U('uGrid'), c, nx, ny);
-    gl.activeTexture(gl.TEXTURE1); gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, gx);
-    gl.activeTexture(gl.TEXTURE0); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, nx, ny, 0, gl.RG, gl.FLOAT, null);
-    cuts = []; beads = []; last = lp = null; dirty = true;
+    const e1 = vn(9), e2 = vn(4), t1 = vn(7);
+    NE = new Float32Array(n); TAU = new Float32Array(n);
+    for (let j = 0, q = 0; j < rows; j++) for (let i = 0; i < cols; i++, q++) { NE[q] = .7 * e1(i, j) + .3 * e2(i, j); TAU[q] = 420 + 300 * t1(i, j); }
+    lp = null; trav = 0;
     frame(performance.now());
     word.classList.add('live');
   }
-  // the heap of shaved soap in cell q, dd px past a path's edge: solid for about R1, then fading out over R2
-  function heap(dd, q) {
-    const h = clamp(1 - (dd - RW[q]) / R2, 0, 1);
-    return h * h * (3 - 2 * h);
-  }
-  // the blade shaves a band from the last strike to this one, so the strikes join into one even path. About one in four
-  // of the dots it cuts out of a letter comes loose once the opening cut reaches it (f is how far out it sits, as a
-  // share of the cut's ragged reach there) and drops: the dots sit on the grid of c where i + j is even. How much of the
-  // band was letter (mat) is how much soap there is to heap up beside it
-  function hit(x, y, now) {
-    const w = w0 * rand(.85, 1.15), p = last;
-    const s = p && now - p.t < 600 && Math.hypot(x - p.x, y - p.y) < step * 4 ? { x0: p.x, y0: p.y } : { x0: x, y0: y };
-    s.dx = x - s.x0; s.dy = y - s.y0; s.l2 = s.dx * s.dx + s.dy * s.dy; s.w = w; s.born = now; s.t0 = now + HOLD;
-    const l = Math.sqrt(s.l2), [ux, uy] = l ? [s.dx / l, s.dy / l] : dir, reach = w * 1.45;
-    const i0 = Math.max(0, Math.floor((Math.min(s.x0, x) - reach) / c)), i1 = Math.min(nx - 1, Math.ceil((Math.max(s.x0, x) + reach) / c));
-    const j0 = Math.max(0, Math.floor((Math.min(s.y0, y) - reach) / c)), j1 = Math.min(ny - 1, Math.ceil((Math.max(s.y0, y) + reach) / c));
-    let n = 0, ink = 0;
-    for (let j = j0; j <= j1; j++) for (let i = i0 + ((i0 + j) & 1); i <= i1; i += 2) {
-      const q = j * nx + i, px = i * c - s.x0, py = j * c - s.y0, u = s.l2 ? clamp((px * s.dx + py * s.dy) / s.l2, 0, 1) : 0;
-      const f = Math.hypot(px - u * s.dx, py - u * s.dy) / (w * (1 + .45 * E[q]));
+  // the shell gives way around the pointer at once, to its full depth: the square right under it shrinks almost to
+  // nothing, and they shrink less the farther out they sit, out to the patch's ragged edge
+  function press(x, y) {
+    const R = RL * 1.3;
+    const i0 = Math.max(0, Math.floor((x - R - x0) / p)), i1 = Math.min(cols - 1, Math.ceil((x + R - x0) / p));
+    const j0 = Math.max(0, Math.floor((y - R - y0) / p)), j1 = Math.min(rows - 1, Math.ceil((y + R - y0) / p));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const q = j * cols + i, f = Math.hypot(x0 + i * p - x, y0 + j * p - y) / (RL * (1 + .3 * NE[q]));
       if (f >= 1) continue;
-      n++; ink += TO[q];
-      if (now < GONE[q] || TO[q] < .1) continue;
-      const t = Math.min(TO[q], .62), a = c * Math.sqrt(2 * t);
-      GONE[q] = s.t0 + CLOSE * (1 - f);
-      if (Math.random() < .25) beads.push({ x: i * c, y: j * c, a, r: a * clamp(.55 - .9 * t, .08, .5), t0: now + OPEN * (1 - Math.cbrt(1 - f)),
-        an: 0, sp: (Math.random() < .5 ? -1 : 1) * rand(.002, .006), vx: ux * rand(.01, .05) + rand(-.02, .02), vy: uy * rand(.01, .05) - rand(0, .1) });
-    }
-    if (beads.length > 1500) beads.splice(0, beads.length - 1500);
-    s.mat = n ? Math.min(1, ink / n * 2) : 0;
-    last = { x, y, t: now }; cuts.push(s);
-  }
-  // every cell's tone from the letters and the paths open now, then its threshold and how far the dot screen shows
-  // there. A path opens fast, holds, then narrows to nothing, its heap thinning as it goes; its bottom keeps a few dots,
-  // a little more right at its edge, but never more than the letter had
-  function field(now) {
-    const RR = R1 * 1.9 + R2;
-    DP.fill(-1e9); CV.fill(0); HP.fill(0); M.fill(0);
-    for (const s of cuts) {
-      const o = 1 - (1 - clamp((now - s.born) / OPEN, 0, 1)) ** 3, cl = clamp(1 - (now - s.t0) / CLOSE, 0, 1), w = s.w * o * cl, amp = w * .45;
-      if (w < .5) continue;
-      const k = o * Math.sqrt(cl) * s.mat, mk = o * Math.min(1, cl * 4), reach = w + amp + RR, x1 = s.x0 + s.dx, y1 = s.y0 + s.dy;
-      const i0 = Math.max(0, Math.floor((Math.min(s.x0, x1) - reach) / c)), i1 = Math.min(nx - 1, Math.ceil((Math.max(s.x0, x1) + reach) / c));
-      const j0 = Math.max(0, Math.floor((Math.min(s.y0, y1) - reach) / c)), j1 = Math.min(ny - 1, Math.ceil((Math.max(s.y0, y1) + reach) / c));
-      for (let j = j0; j <= j1; j++) for (let i = i0, q = j * nx + i0; i <= i1; i++, q++) {
-        const px = i * c - s.x0, py = j * c - s.y0, u = s.l2 ? clamp((px * s.dx + py * s.dy) / s.l2, 0, 1) : 0;
-        const dd = Math.hypot(px - u * s.dx, py - u * s.dy) - w - E[q] * amp;
-        if (-dd > DP[q]) DP[q] = -dd;
-        const cut = clamp(.5 - dd / c, 0, 1); if (cut > CV[q]) CV[q] = cut;
-        if (k && dd > 0 && dd < RR) { const h = k * heap(dd, q); if (h > HP[q]) HP[q] = h; }
-        const m = mk * clamp((RR - dd) / (c * 2), 0, 1); if (m > M[q]) M[q] = m;
-      }
-    }
-    for (let q = 0; q < N; q++) {
-      const sea = Math.max(GG[q], HP[q] * GN[q]);
-      const t = TO[q] = sea + (Math.min(sea, pap[q] + .12 * Math.exp(-Math.max(DP[q], 0) / (c * .8))) - sea) * CV[q];
-      F[q * 2] = TH[Math.round(clamp(t, 0, 1) * 255)]; F[q * 2 + 1] = M[q];
+      const e = 1 - Math.sqrt(.05 + .95 * f ** 1.6);
+      if (e > E[q]) E[q] = e;
     }
   }
-  // the paths are drawn while any is open and once more after the last closes; the loose dots, square in the letters'
-  // ink, tumble as they hop and fall out of the canvas
+  // a step cracks the chips around it: each one snaps round one way or the other, harder near the middle
+  function crack(x, y) {
+    const R = fs * .13;
+    const i0 = Math.max(0, Math.floor((x - R - x0) / p)), i1 = Math.min(cols - 1, Math.ceil((x + R - x0) / p));
+    const j0 = Math.max(0, Math.floor((y - R - y0) / p)), j1 = Math.min(rows - 1, Math.ceil((y + R - y0) / p));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const q = j * cols + i, d = Math.hypot(x0 + i * p - x, y0 + j * p - y);
+      if (d < R) V[q] += (Math.random() < .5 ? -1 : 1) * rand(.25, .6) * (1 - d / R);
+    }
+  }
+  // every frame while the shell is pressed in, a square is still springing or a chip still wobbles, then the plain
+  // letters once it has all sprung back. A pressed square snaps down, overshooting and bouncing back, and spins its own
+  // way and scatters off its place as it goes; the grid leans hard away from the middle toward the big squares around
+  // it, so they bunch up at the patch's edge, and they tilt with the slope. Only the part of the name that moves is
+  // drawn as squares, over the plain letters
   function frame(now) {
     raf = 0;
-    const dt = lastT ? Math.min(50, now - lastT) : 16;
+    // the springs step at most a frame and a half at once, so a slow frame can't throw them
+    const dt = lastT ? Math.min(50, now - lastT) : 16, k = dt / 16, ks = Math.min(k, 1.5), damp = Math.pow(.82, k), sd = Math.pow(.56, ks);
     lastT = now;
-    cuts = cuts.filter(s => now < s.t0 + CLOSE);
-    if (cuts.length || dirty) {
-      field(now); dirty = cuts.length > 0;
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, nx, ny, gl.RG, gl.FLOAT, F); gl.drawArrays(gl.TRIANGLES, 0, 3);
-    }
-    beads = beads.filter(b => b.y - b.a < H);
-    if (beads.length || drawn) {
-      bx.clearRect(0, 0, W, H); drawn = beads.length > 0;
-      bx.beginPath();
-      for (const b of beads) {
-        if (now < b.t0) continue;
-        b.vy += .0016 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.an += b.sp * dt;
-        // a square with its corners cut back by about its rounding, as an octagon: e runs along a side, n across it
-        const h = b.a / 2, m = h - b.r * .6, ex = Math.cos(b.an), ey = Math.sin(b.an);
-        bx.moveTo(b.x - ex * m + ey * h, b.y - ey * m - ex * h);
-        for (const [p, q] of [[m, -h], [h, -m], [h, m], [m, h], [-m, h], [-h, m], [-h, -m]]) bx.lineTo(b.x + ex * p - ey * q, b.y + ey * p + ex * q);
-        bx.closePath();
+    if (lp) press(lp[0], lp[1]); // the patch holds while the pointer rests on it
+    let busy = false, i0 = cols, i1 = -1, j0 = rows, j1 = -1;
+    for (let j = 0, q = 0; j < rows; j++) for (let i = 0; i < cols; i++, q++) {
+      if (E[q]) { E[q] *= Math.exp(-dt / TAU[q]); if (E[q] < .002) E[q] = 0; }
+      const e = 1 - E[q];
+      F[q] = e * e;
+      if (SV[q] || S[q] !== F[q]) {
+        SV[q] = (SV[q] + (F[q] - S[q]) * .55 * ks) * sd; S[q] += SV[q] * ks;
+        if (Math.abs(SV[q]) < 1e-4 && Math.abs(F[q] - S[q]) < 1e-3) { S[q] = F[q]; SV[q] = 0; }
       }
-      bx.fillStyle = '#0a0a0a'; bx.fill();
+      if (V[q] || A[q]) { V[q] = (V[q] - A[q] * .15 * ks) * damp; A[q] += V[q] * ks; if (Math.abs(A[q]) + Math.abs(V[q]) < 1e-4) A[q] = V[q] = 0; }
+      if (E[q] || A[q] || SV[q] || S[q] !== 1) {
+        busy = true;
+        if (i < i0) i0 = i; if (i > i1) i1 = i; if (j < j0) j0 = j; if (j > j1) j1 = j;
+      }
     }
-    if (cuts.length || beads.length || dirty) raf = requestAnimationFrame(frame);
-    else lastT = 0;
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(lc, 0, 0, W, H);
+    if (!busy) { lastT = 0; return; }
+    // the squares around what moves, four rings past it so the ones that lean or scatter stay inside, cleared and
+    // redrawn in a box snapped to whole pixels so it leaves no seam
+    const a0 = Math.max(1, i0 - 4), a1 = Math.min(cols - 2, i1 + 4), b0 = Math.max(1, j0 - 4), b1 = Math.min(rows - 2, j1 + 4);
+    const bx0 = Math.floor(x0 + (a0 + 2) * p), by0 = Math.floor(y0 + (b0 + 2) * p), bx1 = Math.ceil(x0 + (a1 - 2) * p), by1 = Math.ceil(y0 + (b1 - 2) * p);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(bx0, by0, bx1 - bx0, by1 - by0); ctx.clip(); ctx.clearRect(bx0, by0, bx1 - bx0, by1 - by0);
+    // the slope is read per pixel, so the lean and the tilt scale with the patch rather than the squares
+    const path = new Path2D(), K = 1.2 * p * RL, T = .4 * RL;
+    for (let j = b0; j <= b1; j++) for (let i = a0, q = j * cols + a0; i <= a1; i++, q++) {
+      const gx = (S[q + 1] - S[q - 1]) / (2 * p), gy = (S[q + cols] - S[q - cols]) / (2 * p), v = clamp(S[q], 0, 1.1), w = 1 - Math.min(v, 1);
+      const x = x0 + i * p + gx * K + JX[q] * w, y = y0 + j * p + gy * K + JY[q] * w;
+      const h = p * (.06 + .48 * v), a = w * RT[q] + (gx - gy) * T + A[q], c = Math.cos(a) * h, s = Math.sin(a) * h;
+      path.moveTo(x + c - s, y + s + c); path.lineTo(x - c - s, y - s + c); path.lineTo(x - c + s, y - s - c); path.lineTo(x + c + s, y + s - c); path.closePath();
+    }
+    ctx.fillStyle = '#0a0a0a'; ctx.fill(path);
+    ctx.globalCompositeOperation = 'destination-in'; ctx.drawImage(lc, 0, 0, W, H);
+    ctx.restore();
+    raf = requestAnimationFrame(frame);
   }
   const wake = () => { if (!raf) raf = requestAnimationFrame(frame); };
 
-  // the pointer strikes every step it travels over the letters, hovering or not; leaving them breaks the path
-  function stroke(x, y) {
-    if (x < 0 || x > W || y < 0 || y > base + w0) { lp = null; return; }
-    if (!lp) { lp = [x, y]; return; }
-    const dx = x - lp[0], dy = y - lp[1], d = Math.hypot(dx, dy);
-    if (d < step) return;
-    const n = Math.min(24, Math.floor(d / step)), now = performance.now();
-    dir = [dx / d, dy / d];
-    for (let i = 1; i <= n; i++) hit(lp[0] + dx * i / n, lp[1] + dy * i / n, now);
-    lp = [x, y]; wake();
-  }
+  // the pointer presses wherever it goes over the letters, hovering or not, all along the way it came so a quick flick
+  // leaves no gaps, and every step of travel cracks the chips as well; leaving them, or the page moving under it, lifts it
   addEventListener('pointermove', e => {
-    if (!N || dlg.open) return;
-    const r = cv.getBoundingClientRect(), evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
-    for (const p of evs.length ? evs : [e]) stroke(p.clientX - r.left, p.clientY - r.top);
+    if (!E) return;
+    const b = cv.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
+    if (dlg.open || x < 0 || x > W || y < 0 || y > H) { lp = null; return; }
+    const [px, py] = lp || [x, y], dx = x - px, dy = y - py, d = Math.hypot(dx, dy), n = Math.min(40, Math.ceil(d / (p * 2)));
+    for (let i = 1; i <= n; i++) press(px + dx * i / n, py + dy * i / n);
+    if (!n) press(x, y);
+    trav += d;
+    if (!lp || trav >= step) { crack(x, y); trav = 0; }
+    lp = [x, y]; wake();
   }, { passive: true });
-  // a click or a tap cuts where it lands
+  const lift = () => { lp = null; };
+  addEventListener('scroll', lift, { passive: true });
+  addEventListener('blur', lift);
+  document.documentElement.addEventListener('mouseleave', lift);
+  // a click or a tap presses and cracks where it lands
   word.addEventListener('pointerdown', e => {
-    if (!N) return;
-    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    hit(x, y, performance.now()); lp = [x, y]; wake();
+    if (!E) return;
+    const b = cv.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
+    press(x, y); crack(x, y); wake();
   });
-  cv.addEventListener('webglcontextlost', () => { cancelAnimationFrame(raf); N = 0; word.classList.remove('live'); });
   // drawn once Figtree is in, and again whenever the name changes size
   const ro = new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(layout); });
   document.fonts.load(`800 1em ${getComputedStyle(word).fontFamily}`, 'CLACK').catch(() => {}).then(() => ro.observe(word));
