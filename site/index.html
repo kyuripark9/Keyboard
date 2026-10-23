@@ -85,33 +85,41 @@ section { padding-block: var(--sec); }
 .bar .btn { min-height: 36px; padding: 0 16px; font-size: 14px; }
 .menu { display: none; }
 
-/* ---------- hero: the name across the page, a rule down, and what clack is ---------- */
+/* ---------- hero: a demo agent at work, the name across the page in a material's colours, a rule down, and what
+   clack is. While the agent works the name is the material's to play with; once it's done the name fades to grey and
+   holds still, the way clack lets go of you, until you send it another prompt and the next material takes over ---------- */
 .hero { padding-block: clamp(40px, 7vw, 104px) 0; text-align: center; }
-/* the name in clack's own wordmark: Figtree at its heaviest, set tight */
-.word { margin: 0; font: 800 clamp(80px, 21vw, 272px)/.78 var(--font-brand); letter-spacing: -.04em; }
+/* the agent's line over the name, in the words clack itself uses: who's working and for how long, then done */
+.agent { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 12px; min-height: 34px; margin: 0 0 clamp(28px, 3.4vw, 48px); color: var(--ink-2); }
+.agent .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c1); animation: pulse 1.6s ease-in-out infinite; }
+.agent button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px 7px; border: 1px solid var(--line-2); border-radius: 999px; background: none;
+  color: var(--ink); font: inherit; text-transform: inherit; cursor: pointer; transition: border-color .15s, background-color .15s, color .15s; }
+.agent button:hover { border-color: var(--ink); background: var(--ink); color: #fff; }
+.hero.done .agent .dot { background: none; box-shadow: inset 0 0 0 1.5px var(--ink-3); animation: none; }
+/* the name and, at its top right like the page number by clack's own logo, the material it's in, which opens it */
+.name { position: relative; width: fit-content; margin: 0 auto; }
+.now { position: absolute; left: 100%; top: clamp(2px, .6vw, 8px); display: grid; justify-items: start; gap: 5px; margin-left: 10px; padding: 0; border: 0; background: none;
+  color: var(--ink-3); font: 500 12px/1 var(--font-mono); text-transform: uppercase; text-align: left; white-space: nowrap; cursor: pointer; transition: color .15s; }
+.now b { font-weight: 500; color: var(--ink); }
+.now:hover { color: var(--ink); }
+/* the name in clack's own wordmark: Figtree at its heaviest, set tight, in the material's colour or grey once it's let go */
+.word { margin: 0; font: 800 clamp(80px, 21vw, 272px)/.78 var(--font-brand); letter-spacing: -.04em; color: var(--c1, var(--ink)); }
+.word span { transition: color 1.6s; }
+.hero.done .word span { color: #cbcbcb; }
 /* the L's foot would touch the A's leg at that spacing, so the pair gets a little more room */
 .word span:nth-child(2) { margin-right: .035em; }
 /* the pointer breaks it into dots like the name on the Soren template. The name is drawn again on a canvas laid over
-   the letters, which stay underneath for reading and selecting, see-through once the canvas shows them. A sideways
-   swipe on a phone breaks it too */
+   the letters, which stay underneath for reading and selecting, see-through once the canvas shows them, and grey again
+   as it fades out once the agent is done. A sideways swipe on a phone breaks it too */
 .word { position: relative; touch-action: pan-y; }
-.word canvas { position: absolute; pointer-events: none; }
+.word canvas { position: absolute; pointer-events: none; transition: opacity 1.6s; }
 .word.live span { color: transparent; }
+.hero.done .word canvas { opacity: 0; }
 .rule { width: 1px; height: clamp(40px, 5vw, 72px); margin: clamp(28px, 3vw, 40px) auto; background: var(--ink); }
 .lede { max-width: 25em; margin: 0 auto; font: 500 clamp(21px, 2vw, 27px)/1.28 var(--font-ui); letter-spacing: -.025em; text-wrap: balance; }
 .meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 24px 0 0; color: var(--ink-3); }
 .meta i { font-style: normal; color: var(--line-2); }
 .ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 32px; }
-/* the ten materials edge to edge, each a way into it */
-.band { display: flex; height: clamp(88px, 9vw, 128px); margin: clamp(56px, 6vw, 80px) 0 0; padding: 0; list-style: none; }
-.band li { flex: 1 1 0; min-width: 0; transition: flex-grow .35s cubic-bezier(.2,.8,.2,1); }
-.band li:hover, .band li:focus-within { flex-grow: 1.7; }
-.band button { all: unset; position: relative; display: block; width: 100%; height: 100%; overflow: hidden; cursor: pointer; background: var(--bgc, var(--bg-2)); }
-.band img { width: 100%; height: 100%; object-fit: cover; }
-.band span { position: absolute; left: 8px; bottom: 8px; padding: 5px 8px 4px; border-radius: 999px; background: rgba(255,255,255,.94); font: 500 11px/1 var(--font-mono); text-transform: uppercase; white-space: nowrap; }
-.band span b { font-weight: 500; display: none; margin-left: 6px; }
-.band li:hover span b, .band button:focus-visible span b { display: inline; }
-.band button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* ---------- [01] the ten materials, in their own pictures, each a way into clack ---------- */
 .mats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 40px 20px; margin: 0; padding: 0; list-style: none; }
@@ -300,22 +308,26 @@ footer .mono { color: var(--ink-3); }
   .mats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 14px; }
   .mat h3 { font-size: 17px; margin-top: 14px; }
   .dlg { width: 100%; height: 100%; border-radius: 0; }
-  .band { overflow-x: auto; scrollbar-width: none; }
-  .band li { flex: 0 0 22%; }
-  .band li:hover, .band li:focus-within { flex-grow: 0; }
+  /* beside a name the width of the phone there's only room for the material's number */
+  .now { margin-left: 6px; font-size: 11px; }
+  .now b { display: none; }
   .sh { margin-bottom: 40px; }
   .row { padding: 32px 0; }
   .cmd { flex-direction: column; align-items: stretch; padding: 14px; }
   .cmd button { align-self: flex-start; }
   .cmd.small { flex-direction: row; align-items: center; padding: 2px 2px 2px 8px; }
 }
+/* where the agent's line and its button don't fit side by side, there's room kept for both rows, so nothing moves when
+   the agent is done */
+@media (max-width: 520px) {
+  .agent { min-height: 76px; align-content: center; }
+}
 @media (max-width: 420px) {
   .bar > .wrap > .btn { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .scr, .scr * { animation: none !important; }
-  .band li:hover, .band li:focus-within { flex-grow: 1; }
+  .scr, .scr *, .agent .dot { animation: none !important; }
   .dlg[open], .dlg[open]::backdrop { animation: none; }
   *, *::before, *::after { transition: none !important; }
 }
@@ -337,8 +349,12 @@ footer .mono { color: var(--ink-3); }
 </header>
 
 <main>
-  <div class="wrap hero">
-    <h1 class="word" aria-label="clack"><span aria-hidden="true">C</span><span aria-hidden="true">L</span><span aria-hidden="true">A</span><span aria-hidden="true">C</span><span aria-hidden="true">K</span></h1>
+  <div class="wrap hero" id="hero">
+    <p class="agent mono" id="agent"><i class="dot" aria-hidden="true"></i><span id="agentLine">Demo agent working · 0:00</span><button type="button" id="again" hidden>Send another prompt <span aria-hidden="true">↻</span></button></p>
+    <div class="name">
+      <h1 class="word" aria-label="clack"><span aria-hidden="true">C</span><span aria-hidden="true">L</span><span aria-hidden="true">A</span><span aria-hidden="true">C</span><span aria-hidden="true">K</span></h1>
+      <button class="now" id="heroMat" type="button"><span id="heroNo">[02]</span><b id="heroName">Cyanotype</b></button>
+    </div>
     <div class="rule" aria-hidden="true"></div>
     <p class="lede">Something to clack instead of scrolling. Back to work the moment your agent is done.</p>
     <p class="meta mono"><span>Web version</span><i>·</i><span>Browser extension</span></p>
@@ -347,7 +363,6 @@ footer .mono { color: var(--ink-3); }
       <a class="btn ghost" href="#get">Get clack</a>
     </div>
   </div>
-  <ul class="band" id="band" aria-label="The ten materials"></ul>
 
   <section id="materials">
     <div class="wrap">
@@ -495,24 +510,23 @@ footer .mono { color: var(--ink-3); }
 
 <script>
 // the ten materials in clack's own order (SOUND_IDS in play/), with the colour its picture shows when the image hasn't
-// loaded yet
+// loaded yet, and the two CLACK at the top takes from it: the one its letters are in, strong enough to read on white,
+// and the one a few of their dots turn out to be when the pointer breaks them
 const MATS = [
-  { id: 'slime', name: 'Crunchy Slime', bg: '#e6e6e6' },
-  { id: 'cyano', name: 'Cyanotype', bg: '#3557b0' },
-  { id: 'bubble', name: 'Bubble Wrap', bg: '#72b4ed' },
-  { id: 'wax', name: 'Wax Ball', bg: '#c3c6db' },
-  { id: 'thock', name: 'Thocky Keys', bg: '#d9d8de' },
-  { id: 'gummy', name: 'Chewy Jellies', bg: '#e8ecea' },
-  { id: 'pudding', name: 'Pudding', bg: '#eed9b1' },
-  { id: 'soap', name: 'Soap Cutting', bg: '#ebead6' },
-  { id: 'snow', name: 'Squeaky Snow', bg: '#9ca6e2' },
-  { id: 'sugar', name: 'Sugar Slime', bg: '#acdc98' },
+  { id: 'slime', name: 'Crunchy Slime', bg: '#e6e6e6', c: ['#1a1a1a', '#b5b5b5'] },
+  { id: 'cyano', name: 'Cyanotype', bg: '#3557b0', c: ['#3857ab', '#c6cfe7'] },
+  { id: 'bubble', name: 'Bubble Wrap', bg: '#72b4ed', c: ['#6eb2ed', '#0d1240'] },
+  { id: 'wax', name: 'Wax Ball', bg: '#c3c6db', c: ['#a9a6d8', '#cfeeb6'] },
+  { id: 'thock', name: 'Thocky Keys', bg: '#d9d8de', c: ['#2a5fa8', '#f2803e'] },
+  { id: 'gummy', name: 'Chewy Jellies', bg: '#e8ecea', c: ['#f392b7', '#8c1f4f'] },
+  { id: 'pudding', name: 'Pudding', bg: '#eed9b1', c: ['#29a30c', '#ec2f14'] },
+  { id: 'soap', name: 'Soap Cutting', bg: '#ebead6', c: ['#c0518a', '#e6d8cd'] },
+  { id: 'snow', name: 'Squeaky Snow', bg: '#9ca6e2', c: ['#8a9ae0', '#8c8a5e'] },
+  { id: 'sugar', name: 'Sugar Slime', bg: '#acdc98', c: ['#9ccc58', '#3f86c9'] },
 ];
 const $ = id => document.getElementById(id);
 const nn = i => String(i + 1).padStart(2, '0');
 
-$('band').innerHTML = MATS.map((m, i) => `<li><button type="button" data-id="${m.id}" aria-label="Play ${nn(i)} ${m.name}" style="--bgc:${m.bg}">` +
-  `<img src="img/${m.id}.jpg" alt="" onerror="this.remove()"><span>${nn(i)}<b>${m.name}</b></span></button></li>`).join('');
 $('mats').innerHTML = MATS.map((m, i) => `<li class="mat"><button type="button" data-id="${m.id}" aria-label="Play ${nn(i)} ${m.name}">` +
   `<span class="ph" style="--bgc:${m.bg}"><img src="img/${m.id}.jpg" alt="" loading="lazy" onerror="this.remove()"><em>Play it</em></span>` +
   `<h3>${m.name}<sup>[${nn(i)}]</sup></h3></button></li>`).join('');
@@ -571,7 +585,6 @@ $('snd').addEventListener('click', () => {
 });
 const playIt = e => { const b = e.target.closest('button'); if (b) play(b.dataset.id); };
 $('mats').addEventListener('click', playIt);
-$('band').addEventListener('click', playIt);
 
 // copy buttons: the clipboard where the page may use it, otherwise the line is selected for ⌘C
 document.addEventListener('click', async e => {
@@ -597,6 +610,41 @@ const spy = new IntersectionObserver(entries => {
 }, { rootMargin: '-45% 0px -50% 0px' });
 for (const id of ['materials', 'how', 'get']) spy.observe($(id));
 
+// the cover plays out what clack does: a demo agent is already working when you arrive, for the twelve seconds clack's
+// own demo agent takes, and while it works CLACK is in one material's colours, there to break apart. Once it's done the
+// name fades to grey and the pointer no longer breaks it, the way clack lets go of you, and sending it another prompt
+// starts the next material. The name's number and material at its top right open that material in clack
+const cover = { m: 1, done: false, paint() {} };
+(() => {
+  const hero = $('hero'), line = $('agentLine'), again = $('again'), WORK_MS = 12000;
+  const clock = ms => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  let t0 = 0, tick = 0;
+  function wear(i) {
+    const m = MATS[i];
+    cover.m = i;
+    hero.style.setProperty('--c1', m.c[0]);
+    $('heroNo').textContent = `[${nn(i)}]`; $('heroName').textContent = m.name;
+    $('heroMat').setAttribute('aria-label', `Play ${nn(i)} ${m.name}`);
+    cover.paint();
+  }
+  function work() {
+    cover.done = false; hero.classList.remove('done'); again.hidden = true;
+    t0 = Date.now(); clearInterval(tick);
+    const show = () => {
+      const ms = Date.now() - t0;
+      if (ms >= WORK_MS) done(); else line.textContent = `Demo agent working · ${clock(ms)}`;
+    };
+    show(); tick = setInterval(show, 250);
+  }
+  function done() {
+    clearInterval(tick); cover.done = true; hero.classList.add('done');
+    line.textContent = 'Demo agent done · go back'; again.hidden = false;
+  }
+  again.addEventListener('click', () => { wear((cover.m + 1) % MATS.length); work(); });
+  $('heroMat').addEventListener('click', () => play(MATS[cover.m].id));
+  wear(cover.m); work();
+})();
+
 // CLACK at the top comes apart into dots under the pointer the way the name does on the Soren template (its Particle
 // Text, set as Soren Vale has it: round dots a couple of pixels apart, pushed away from the pointer and eased back home).
 // The letters are sampled on a fine grid, a dot wherever there is ink, each with a home of its own. Every dot within
@@ -606,31 +654,43 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
 // followed a touch behind, so a quick flick sweeps through rather than jumping. Once it moves on, each dot eases back
 // home at its own pace and the letters close up solid again within a second or so. A click or a tap throws the dots
 // around it out at once. Only the dots away from home are drawn, each over a hole where it came from, on a canvas over
-// the real letters; with reduced motion the name stays as it is
+// the real letters, in the colours of the material the cover's agent is on, and only while it works; with reduced
+// motion the name stays as it is, only taking the material's colour
 (() => {
   const word = document.querySelector('.word');
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const cv = document.createElement('canvas'), ctx = cv.getContext('2d'), lc = document.createElement('canvas'), ink = '#0a0a0a';
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d'), lc = document.createElement('canvas');
   // the baseline, read off an empty box sitting on it
   const probe = document.createElement('i');
   probe.style.cssText = 'display:inline-block;width:0;height:0';
   for (const e of [probe, cv]) { e.setAttribute('aria-hidden', 'true'); word.append(e); }
-  let W = 0, H = 0, b = 2, reach = 85, push = 2.4, kick = 3.4, zone = null, dot, hole, raf = 0, lastT = 0, pt = null, sm = null, last = null;
-  let n = 0, X, Y, VX, VY, TX, TY, RCH, OM, MOV, ML;
+  let W = 0, H = 0, b = 2, dpr = 1, reach = 85, push = 2.4, kick = 3.4, zone = null, letters, dots, hole, raf = 0, lastT = 0, pt = null, sm = null, last = null;
+  let n = 0, X, Y, VX, VY, TX, TY, RCH, OM, TONE, MOV, ML;
 
-  // a soft round dot d across, its edge blurred over about soft either side, drawn once and stamped for every dot
-  const sprite = (d, soft, dpr) => {
+  // a soft round dot d across in the colour ink, its edge blurred over about soft either side, drawn once and stamped
+  // for every dot
+  const sprite = (d, soft, ink = '#0a0a0a') => {
     const s = Math.ceil(d + soft * 2 + 2), m = s / 2, c = document.createElement('canvas'), x = c.getContext('2d');
+    const rgb = [1, 3, 5].map(i => parseInt(ink.slice(i, i + 2), 16)).join();
     c.width = c.height = Math.ceil(s * dpr);
     x.setTransform(c.width / s, 0, 0, c.height / s, 0, 0);
     const g = x.createRadialGradient(m, m, Math.max(0, d / 2 - soft), m, m, d / 2 + soft);
-    g.addColorStop(0, ink); g.addColorStop(1, 'rgba(10,10,10,0)');
+    g.addColorStop(0, `rgb(${rgb})`); g.addColorStop(1, `rgba(${rgb},0)`);
     x.fillStyle = g; x.fillRect(0, 0, s, s);
     return { c, s, m };
   };
+  // the letters (lc) and their dots in the material's colours: the first for the letters and most of the dots, the
+  // second for the one dot in four that turns out to be another colour once it breaks off
+  function tint() {
+    const [c1, c2] = MATS[cover.m].c, d = b * 1.2;
+    letters(lc, c1);
+    dots = [c1, c2].map(c => sprite(d, Math.max(.6, d * .24), c));
+    last = [0, 0, W, H];
+  }
+  cover.paint = () => { if (X) { tint(); wake(); } };
 
   // the canvas covers the letters with room past them for the dots to be thrown into; the pointer works over the letters
-  // themselves (zone). The letters are drawn once in their black (lc), and once more a pixel to the pixel to find the
+  // themselves (zone). The letters are drawn once in their colour (lc), and once more a pixel to the pixel to find the
   // ink: a dot goes in every b-by-b cell with ink in it, at its first inked pixel, b two pixels as on Soren unless that
   // makes more than the thirty thousand dots it allows. The reach, the push and the way back are Soren's, scaled from
   // its 249px name to this one: dots up to 85px off, held at most about 25px out, and easing home over about a third of
@@ -639,7 +699,8 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
     cancelAnimationFrame(raf); raf = lastT = 0; pt = sm = null;
     const cs = getComputedStyle(word), spans = [...word.querySelectorAll('span')], rs = spans.map(e => e.getBoundingClientRect());
     const rw = word.getBoundingClientRect(), bl = probe.getBoundingClientRect().bottom, vw = document.documentElement.clientWidth;
-    const fs = parseFloat(cs.fontSize), pad = Math.ceil(fs * .2), dpr = Math.min(2, devicePixelRatio || 1);
+    const fs = parseFloat(cs.fontSize), pad = Math.ceil(fs * .2);
+    dpr = Math.min(2, devicePixelRatio || 1);
     const L = rs[0].left - fs * .08, R = rs[rs.length - 1].right + fs * .08, top = bl - fs * .85, bot = bl + fs * .1;
     const ox = Math.max(0, Math.floor(L - pad)), oy = Math.floor(top - pad);
     W = Math.min(vw, Math.ceil(R + pad)) - ox; H = Math.ceil(bot + pad) - oy;
@@ -647,17 +708,17 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
     Object.assign(cv.style, { left: ox - rw.left + 'px', top: oy - rw.top + 'px', width: W + 'px', height: H + 'px' });
     cv.width = lc.width = Math.round(W * dpr); cv.height = lc.height = Math.round(H * dpr);
     ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
-    const letters = (c, opt) => {
+    letters = (c, ink, opt) => {
       const x = c.getContext('2d', opt);
       x.setTransform(c.width / W, 0, 0, c.height / H, 0, 0);
+      x.clearRect(0, 0, W, H);
       x.fillStyle = ink; x.font = `800 ${fs}px ${cs.fontFamily}`; x.textBaseline = 'alphabetic';
       spans.forEach((e, i) => x.fillText(e.textContent, rs[i].left - ox, bl - oy));
       return x;
     };
-    letters(lc);
     const sc = document.createElement('canvas');
     sc.width = W; sc.height = H;
-    const px = letters(sc, { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+    const px = letters(sc, '#000', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
     const sample = b => {
       const out = [];
       for (let y = 0; y < H; y += b) for (let x = 0; x < W; x += b) {
@@ -674,13 +735,13 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
     X = TX.slice(); Y = TY.slice(); VX = new Float32Array(n); VY = new Float32Array(n);
     MOV = new Uint8Array(n); ML = new Int32Array(n);
     reach = Math.max(44, fs * .34); push = reach * .028; kick = reach * .04;
-    // RCH: how far off the pointer reaches each dot; OM: how quickly it eases home, the farther-reaching ones slower
-    RCH = new Float32Array(n); OM = new Float32Array(n);
-    for (let q = 0, s; q < n; q++) { s = Math.random(); RCH[q] = reach * (.55 + .75 * s); OM[q] = 2 / (23.3 * (.8 + .4 * s)); }
+    // RCH: how far off the pointer reaches each dot; OM: how quickly it eases home, the farther-reaching ones slower;
+    // TONE: which of the material's two colours it is
+    RCH = new Float32Array(n); OM = new Float32Array(n); TONE = new Uint8Array(n);
+    for (let q = 0, s; q < n; q++) { s = Math.random(); RCH[q] = reach * (.55 + .75 * s); OM[q] = 2 / (23.3 * (.8 + .4 * s)); TONE[q] = Math.random() < .25; }
     const d = b * 1.2;
-    dot = sprite(d, Math.max(.6, d * .24), dpr);
-    hole = sprite(Math.max(b * 1.9, d + Math.max(3, d * .6)), Math.max(.75, d * .24), dpr);
-    last = [0, 0, W, H];
+    hole = sprite(Math.max(b * 1.9, d + Math.max(3, d * .6)), Math.max(.75, d * .24));
+    tint();
     frame(performance.now());
     word.classList.add('live');
   }
@@ -693,7 +754,7 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
     let c = lastT ? (now - lastT) / (1000 / 60) : 1;
     lastT = now;
     c = c > 0 && isFinite(c) ? Math.max(.25, Math.min(2.5, c)) : 1;
-    const h = .88 ** c, m = .06, on = !!pt;
+    const h = .88 ** c, m = .06, on = !!pt && !cover.done;
     if (on) {
       if (!sm) sm = pt.slice();
       const k = Math.min(1, .75 * c);
@@ -743,7 +804,7 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
       ctx.globalCompositeOperation = 'destination-out';
       for (let i = 0; i < k; i++) { const q = ML[i]; ctx.drawImage(hole.c, TX[q] - hole.m, TY[q] - hole.m, hole.s, hole.s); }
       ctx.globalCompositeOperation = 'source-over';
-      for (let i = 0; i < k; i++) { const q = ML[i]; ctx.drawImage(dot.c, X[q] - dot.m, Y[q] - dot.m, dot.s, dot.s); }
+      for (let i = 0; i < k; i++) { const q = ML[i], s = dots[TONE[q]]; ctx.drawImage(s.c, X[q] - s.m, Y[q] - s.m, s.s, s.s); }
       ctx.restore();
     }
     if (C || (on && Math.abs(pt[0] - sm[0]) + Math.abs(pt[1] - sm[1]) > .5)) raf = requestAnimationFrame(frame);
@@ -758,7 +819,7 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
   addEventListener('pointermove', e => {
     if (!X) return;
     const was = pt, p = spot(e);
-    pt = !dlg.open && over(p) ? p : null;
+    pt = !dlg.open && !cover.done && over(p) ? p : null;
     if (pt || was) wake();
   }, { passive: true });
   const lift = () => { pt = null; };
@@ -769,7 +830,7 @@ for (const id of ['materials', 'how', 'get']) spy.observe($(id));
   document.documentElement.addEventListener('mouseleave', lift);
   // a click or a tap throws the dots around it out at once, and a finger pushes them for as long as it stays down
   word.addEventListener('pointerdown', e => {
-    if (!X) return;
+    if (!X || cover.done) return;
     const p = spot(e), [x, y] = p;
     if (e.pointerType !== 'mouse' && over(p)) pt = p;
     for (let q = 0; q < n; q++) {
