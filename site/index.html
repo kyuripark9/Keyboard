@@ -17,8 +17,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500&family=Figtree:wght@800&display=swap">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap">
 <style>
-/* The clack website: one page that opens on the ten materials turning round clack itself, there to play without a
-   click, then how it lets go of you and the two ways to have it (the web version and a browser extension). The design
+/* The clack website: one page that opens on what clack is, in a line over the ten materials turning round clack
+   itself, there to play without a click, then how it lets go of you and the two ways to have it (the web version and a browser extension). The design
    system is quiet so the materials carry the colour: white paper, black type, grey for everything secondary, one
    cobalt accent, hairlines between rows, mono capitals for labels and clack's own heavy wordmark for its name */
 :root {
@@ -89,8 +89,14 @@ section { padding-block: var(--sec); }
    smaller and grey, and blurred further out. The one in the middle is clack itself, there to play the moment the
    pointer is on it, no click needed. Under it, a demo agent's line: playing starts it, and when it's done the
    middle fades to grey like the rest, the way clack lets go of you ---------- */
-/* the middle is 2:3 like the pictures, as tall as the first screen leaves room for, never wider than most of a phone */
-.cover { --wc: min(calc(clamp(360px, 100svh - var(--bar-h) - 108px, 690px) * 2 / 3), 72vw); --hc: calc(var(--wc) * 3 / 2); padding-block: 20px 0; }
+/* the middle is 2:3 like the pictures, as tall as the first screen leaves room for under the line over it (--lh, which
+   the script keeps to that line's height), never wider than most of a phone */
+.cover { --wc: min(calc(clamp(320px, 100svh - var(--bar-h) - 108px - var(--lh, 0px), 690px) * 2 / 3), 72vw); --hc: calc(var(--wc) * 3 / 2); padding-block: 20px 0; }
+/* over the ring, what clack is: the page's line on the left and what it does on the right, smaller than a section's so
+   the ring still has most of the first screen */
+.intro.lede { margin-bottom: 28px; }
+.lede h1 { font-size: clamp(30px, 3.2vw, 46px); }
+.lede p { font-size: 17px; }
 /* the ring runs the width of the window, as tall as the middle. Dragging it or swiping sideways turns it; up and down
    still scroll the page */
 .deck { position: relative; isolation: isolate; height: var(--hc); overflow: hidden; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
@@ -376,6 +382,10 @@ footer .mono { color: var(--ink-3); }
 
 <main>
   <section class="cover" id="play" aria-label="Play" style="--c1:#3857ab">
+    <div class="wrap"><div class="intro lede" id="lede">
+      <h1>Something to clack instead of scrolling.</h1>
+      <p>Ten materials to press, pop and shave while Claude, ChatGPT or another AI agent works for you. When it's done, clack fades to grey and goes quiet: your cue to go back.</p>
+    </div></div>
     <div class="deck" id="deck" role="region" aria-roledescription="carousel" aria-label="Ten materials">
       <ul class="cards" id="cards"></ul>
       <div class="live" id="live"></div>
@@ -395,8 +405,8 @@ footer .mono { color: var(--ink-3); }
     <div class="wrap">
       <div class="sh"><span>How it works</span><span class="idx">[01]</span></div>
       <div class="intro">
-        <h1>Something to clack instead of scrolling.</h1>
-        <p>Back to work the moment your agent is done: something for your hands while you wait, then a clear sign to go back. Here it is in the browser extension's side panel, waiting with claude.ai.</p>
+        <h2>It lets go the moment your agent is done.</h2>
+        <p>A wait in three moments, with clack in the browser extension's side panel beside claude.ai.</p>
       </div>
       <ol class="rows">
         <li class="row work">
@@ -937,6 +947,9 @@ for (const id of ['play', 'how', 'get']) spy.observe($(id));
   again.addEventListener('click', () => { if (!live.ag) return; live.started = true; live.ag.start(); speak(); });
   setInterval(speak, 250);
 
+  // the line over the ring takes some of the first screen, and the ring gives that room up
+  const lede = $('lede');
+  new ResizeObserver(() => cover.style.setProperty('--lh', lede.offsetHeight + parseFloat(getComputedStyle(lede).marginBottom) + 'px')).observe(lede);
   new ResizeObserver(measure).observe(box);
   measure(); rest(); speak();
 })();
