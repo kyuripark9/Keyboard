@@ -146,10 +146,11 @@ section { padding-block: var(--sec); }
 /* the demo agent's window, what clack waits on shown rather than told. Until clack is played, a prompt sits typed in
    its box, ready to send; playing sends it, and the answer is written out line by line over the twelve seconds the
    demo agent takes, with the stop button in the box. When it's done, the window is ringed in cobalt and a pointer
-   heads back to it from clack, which fades to grey; once you've gone back, it waits with the next prompt typed. It
-   hangs off the middle's left edge, low over the ring, and the pointer goes through it to clack */
-.aw { position: absolute; z-index: 1; top: calc(20px + var(--hc) - 48px); right: calc(50% + var(--wc) / 2 - 40px); translate: 0 -100%;
-  width: min(300px, 50% - var(--wc) / 2 + 40px - var(--gut)); margin: 0; overflow: hidden; border-radius: 12px; background: #fff; pointer-events: none;
+   heads back to it from clack, which fades to grey; once you've gone back, it waits with the next prompt typed. The
+   prompts are ones you might send about clack itself. It stands a gap to the left of the middle, level with its foot,
+   over the next cards in the ring but clear of clack, and narrows to the room there */
+.aw { position: absolute; z-index: 1; top: calc(20px + var(--hc)); right: calc(50% + var(--wc) / 2 + 24px); translate: 0 -100%;
+  width: clamp(180px, 50% - var(--wc) / 2 - 24px - var(--gut), 300px); margin: 0; overflow: hidden; border-radius: 12px; background: #fff;
   box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 14px 36px rgba(0,0,0,.16); transition: box-shadow .4s; }
 .cover.call .aw { box-shadow: 0 0 0 2px var(--accent), 0 14px 36px rgba(0,0,0,.16); }
 /* its title bar, with a dot that pulses while the agent works, as on the line under the middle */
@@ -427,7 +428,7 @@ footer .mono { color: var(--ink-3); }
     <figure class="aw" id="aw" aria-hidden="true">
       <div class="tp"><i></i><i></i><i></i><span><b></b>Demo agent</span></div>
       <div class="ct"><p class="me" id="awMe"></p><div class="ans"><i style="--w:96%"></i><i style="--w:88%"></i><i style="--w:70%"></i><i class="p" style="--w:92%"></i><i style="--w:84%"></i><i style="--w:46%"></i></div></div>
-      <div class="box"><span id="awBox">Find why the build fails on CI</span><i class="go"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></i></div>
+      <div class="box"><span id="awBox">Add a new material to clack</span><i class="go"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></i></div>
       <svg class="ptr" viewBox="0 0 16 24"><path d="M1 1v18l4.5-4.2 3.1 7 3-1.3-3-6.9h6.1z"/></svg>
     </figure>
     <div class="deck" id="deck" role="region" aria-roledescription="carousel" aria-label="Ten materials">
@@ -975,7 +976,7 @@ for (const id of ['play', 'how', 'get']) spy.observe($(id));
   // shows the same: each prompt sent in turn, its answer written over the twelve seconds the demo agent takes
   // (DEMO_MS in play/), and the next prompt typed, ready for the next wait
   const line = $('agentLine'), again = $('again'), awMe = $('awMe'), awBox = $('awBox'), awLines = [...$('aw').querySelectorAll('.ans i')];
-  const ASKS = ['Find why the build fails on CI', 'Now fix it and run the tests', 'Write up what changed'];
+  const ASKS = ['Add a new material to clack', 'Make Bubble Wrap pop louder', "Write clack's release notes"];
   let asked = 0;
   function ask() {
     awMe.textContent = ASKS[asked++ % ASKS.length];
