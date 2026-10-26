@@ -2,23 +2,13 @@
 
 A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, and each sound draws its own picture to play with.
 
-**Website: https://kyuripark9.github.io/Keyboard/**: play clack right on the page, where a demo agent stands in for yours, or add it to your browser, where it follows claude.ai and ChatGPT. For Claude Code and Codex, get it on your Mac (below). Full screen it is at https://kyuripark9.github.io/Keyboard/play/.
-
-## Get it on your Mac
-
-clack can sit beside your coding agent: it wakes when you hand Claude Code or Codex a task (on the Mac, the ChatGPT app runs its conversations in Codex too) and lets go of you the moment it's done. Download [clack.dmg](https://kyuripark9.github.io/Keyboard/clack.dmg) from the website, open it and drag clack into Applications. The first time you open it, macOS stops it, as it isn't from the App Store: click Done, then in System Settings › Privacy & Security, scroll down and click Open Anyway. clack opens under its ring in your menu bar, where one click opens clack from any app and the ring itself shows whether your agent is working or done, and asks once whether to connect it to Claude Code and Codex. It's one app for Apple silicon and Intel Macs, with clack's bridge inside, so it needs nothing else; right-click its ring and choose Remove clack to take it all away again.
-
-Or paste this into Terminal, which builds clack on your Mac with Apple's Command Line Tools:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/install.sh | bash
-```
-
-It runs clack's bridge in the background, puts its ring in your menu bar and offers to connect it to Claude Code and Codex. Codex runs no hook until you trust it, so trust clack's once in the ChatGPT app's Settings › Hooks (or with `/hooks` in the Codex CLI). Either way clack is also at http://localhost:4545, where Chrome or Safari can keep it as an app in your Dock. Everything stays on your Mac. See [bridge/README.md](bridge/README.md) for what it does, updating and removing it.
+**Website: https://kyuripark9.github.io/Keyboard/**: play clack right on the page, where a demo agent stands in for yours, or add it to your browser, where it follows claude.ai and ChatGPT. Full screen it is at https://kyuripark9.github.io/Keyboard/play/.
 
 ## Add it to your browser
 
-The extension in [extension/](extension/) opens clack in the side panel of Chrome, Edge or Brave, on any system, next to claude.ai, ChatGPT or whatever you're waiting on. Download `clack-extension.zip` from the website, unzip it, open `chrome://extensions`, turn on Developer mode, click Load unpacked and pick the `clack-extension` folder; then pin clack and click its ring. It follows claude.ai and ChatGPT: while one of their tabs is writing an answer (its stop button is up by the box you type in), clack holds you, and when the answer is done it lets go, the first of several to finish first; the extension reads nothing else on those pages and sends nothing anywhere. If clack is running on the same computer (http://localhost:4545), the panel opens that one instead, which follows Claude Code and Codex.
+The extension in [extension/](extension/) opens clack in the side panel of Chrome, Edge or Brave, on any system, next to claude.ai, ChatGPT or whatever you're waiting on. Download `clack-extension.zip` from the website, unzip it, open `chrome://extensions`, turn on Developer mode, click Load unpacked and pick the `clack-extension` folder; then pin clack and click its ring. It follows claude.ai and ChatGPT: while one of their tabs is writing an answer (its stop button is up by the box you type in), clack holds you, and when the answer is done it lets go, the first of several to finish first; the extension reads nothing else on those pages and sends nothing anywhere. clack itself is inside the extension, so the panel needs nothing from the website: `bash extension/build.sh` puts the extension together in `extension/_build` (the folder to pick with Load unpacked while working on it) with clack from this repo's `index.html`, its script moved out to `clack.js` since an extension page may only run scripts from its own files.
+
+What its Chrome Web Store listing needs is in [store/](store/): `bash store/pack.sh` zips the built extension for upload, `python3 store/shots.py` renders the screenshots and the promo tile with the real clack in the side panel, and [store/listing.md](store/listing.md) has the text for each field of the dashboard. The privacy policy it links to is `site/privacy.html`.
 
 ## The 10 sounds
 
@@ -55,10 +45,18 @@ python3 -m http.server 8000   # http://localhost:8000
 
 ## The website
 
-The website is the landing page in [site/](site/) with clack itself at `play/` and the extension's zip and `clack.dmg` next to it. `site/build.sh` puts them together, taking clack from this repo's `index.html`, so there is only one copy of it:
+The website is the landing page in [site/](site/) with clack itself at `play/`, the extension's zip and the privacy policy next to it. `site/build.sh` puts them together, taking clack from this repo's `index.html`, so there is only one copy of it:
 
 ```sh
-bash site/build.sh && python3 -m http.server -d site/_site 8000   # http://clack.localhost:8000
+bash site/build.sh && python3 -m http.server -d site/_site 8000   # http://localhost:8000
 ```
 
-(On plain `localhost` with a port, clack looks for its bridge there; `clack.localhost` shows it as the public site does, with the demo agent.) Every push to `main` builds and publishes it with GitHub Actions ([.github/workflows/pages.yml](.github/workflows/pages.yml)), where a Mac runner builds `clack.dmg` from [menubar/](menubar/) with `CLACK_ARCHS="arm64 x86_64" bash menubar/build.sh`, once the repo's Settings → Pages → Source is set to GitHub Actions. The pictures of the ten materials in `site/img/` are renders of each scene, so redo them when a scene's look changes.
+Every push to `main` builds and publishes it with GitHub Actions ([.github/workflows/pages.yml](.github/workflows/pages.yml)), once the repo's Settings → Pages → Source is set to GitHub Actions. The pictures of the ten materials in `site/img/` are renders of each scene, so redo them when a scene's look changes.
+
+## The old Mac version
+
+clack used to have a Mac app that followed Claude Code and Codex. It's gone now, and only the web version and the extension are kept. If you installed the app, right-click its ring in the menu bar and choose Remove clack; if you installed it from Terminal, this takes it all away again (its hooks in Claude Code's and Codex's settings, the bridge and the menu bar ring):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash
+```

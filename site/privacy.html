@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>clack — privacy</title>
+<meta name="description" content="What clack and its browser extension keep and send: your count and settings in your own browser, and nothing anywhere else.">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap">
+<style>
+/* clack's privacy policy, which the Chrome Web Store listing links to: the website's paper, type and rows, one section
+   long, with the short answer first and then what each part of clack keeps and sends */
+:root {
+  --bg: #ffffff; --bg-2: #f2f2f2;
+  --ink: #0a0a0a; --ink-2: #525252; --ink-3: #8a8a8a;
+  --line: #e3e3e3;
+  --accent: #2c62fb;
+  --font-ui: "Switzer", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Chivo Mono", ui-monospace, "SF Mono", monospace;
+  --wrap: 1248px; --gut: max(24px, env(safe-area-inset-left, 0px)); --bar-h: 68px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--font-ui); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wrap { max-width: calc(var(--wrap) + 2 * var(--gut)); margin: 0 auto; padding-inline: var(--gut); }
+.bar .wrap { display: flex; align-items: center; gap: 24px; height: var(--bar-h); }
+.logo { display: inline-flex; align-items: center; gap: 9px; font: 500 15px/1 var(--font-mono); text-transform: uppercase; text-decoration: none; }
+.logo svg { width: 18px; height: 18px; color: var(--accent); }
+.bar a.back { margin-left: auto; font: 500 13px/1 var(--font-mono); text-transform: uppercase; text-decoration: none; color: var(--ink-3); }
+.bar a.back:hover { color: var(--ink); }
+section { padding-block: 72px 112px; }
+.sh { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 16px; margin: 0 0 56px; border-bottom: 1px solid var(--line);
+  font: 500 13px/1.2 var(--font-mono); text-transform: uppercase; }
+.sh span:first-child { display: inline-flex; align-items: center; gap: 12px; }
+.sh span:first-child::before { content: ""; width: 8px; height: 8px; background: var(--accent); }
+.sh .idx { color: var(--ink-3); font-weight: 400; }
+.intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 64px; align-items: end; margin-bottom: 72px; }
+.intro h1 { margin: 0; font: 500 clamp(36px, 4.4vw, 60px)/1.02 var(--font-ui); letter-spacing: -.045em; text-wrap: balance; }
+.intro p { margin: 0; max-width: 31em; font-size: 18px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+.rows { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 16px 64px; padding: 40px 0; border-bottom: 1px solid var(--line); }
+.row h2 { margin: 0; font: 500 clamp(26px, 2.8vw, 36px)/1.05 var(--font-ui); letter-spacing: -.04em; }
+.row p, .row li { max-width: 36em; font-size: 17px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+.row p { margin: 0 0 14px; }
+.row p:last-child { margin-bottom: 0; }
+.row ul { margin: 0 0 14px; padding-left: 1.2em; }
+.row li { margin-bottom: 8px; }
+.row b { color: var(--ink); font-weight: 500; }
+code { padding: 1px 6px; background: var(--bg-2); border: 1px solid var(--line); font: 400 14px/1.4 var(--font-mono); }
+.fine { margin: 32px 0 0; font-size: 14px; color: var(--ink-3); }
+@media (max-width: 900px) {
+  .intro, .row { grid-template-columns: minmax(0, 1fr); }
+  .intro { margin-bottom: 48px; }
+}
+@media (max-width: 760px) {
+  :root { --bar-h: 60px; --gut: max(16px, env(safe-area-inset-left, 0px)); }
+  section { padding-block: 48px 80px; }
+  .sh { margin-bottom: 40px; }
+  .row { padding: 32px 0; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a class="logo" href="./" aria-label="clack home"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>clack</a>
+    <a class="back" href="./">← Back to clack</a>
+  </div>
+</header>
+<main>
+  <section>
+    <div class="wrap">
+      <div class="sh"><span>Privacy</span><span class="idx">October 26, 2026</span></div>
+      <div class="intro">
+        <h1>clack keeps nothing about you.</h1>
+        <p>No account, no analytics, no ads and no tracking. Your count and settings stay in your own browser, and nothing about your chats leaves your computer.</p>
+      </div>
+      <ul class="rows">
+        <li class="row">
+          <h2>The browser extension</h2>
+          <div>
+            <p>On <b>claude.ai</b> and <b>chatgpt.com</b>, the extension checks one thing: whether the chat is writing an answer, which it tells by the stop button by the box you type in (and on claude.ai, the message it marks as being written). It doesn't read your messages, the answers or anything else on those pages, and it runs nowhere else.</p>
+            <p>All it does with that is tell clack's side panel, in your browser, that one of the two sites started or stopped writing. It sends nothing to us or to anyone else.</p>
+            <p>clack itself is inside the extension, so the side panel plays it from the extension's own files. The only thing it loads from the internet is its fonts, from Google Fonts, which like any font request sees an ordinary request from your browser; nothing about your chats goes with it.</p>
+            <p>Its permissions are for exactly this: <b>sidePanel</b> to open clack in the side panel, <b>scripting</b> to start watching the claude.ai and ChatGPT tabs that were already open when you added it, and access to claude.ai and chatgpt.com for the check above.</p>
+          </div>
+        </li>
+        <li class="row">
+          <h2>What clack keeps</h2>
+          <div>
+            <p>In your browser's own storage, on your device: your clack count, your settings, and how long you took to go back after your last 50 waits, so clack can show your typical return. It's never sent anywhere.</p>
+            <p>Removing the extension, or clearing the site's data in your browser, deletes it.</p>
+          </div>
+        </li>
+        <li class="row">
+          <h2>This website</h2>
+          <div>
+            <p>The website sets no cookies and runs no analytics. It's hosted on GitHub Pages and loads its fonts from Google Fonts and Fontshare, which see your visit like any other request for a page or a font.</p>
+          </div>
+        </li>
+        <li class="row">
+          <h2>Questions</h2>
+          <div>
+            <p>Open an issue on <a href="https://github.com/kyuripark9/Keyboard/issues" target="_blank" rel="noopener">clack's GitHub ↗</a>. If this page ever changes, the date at the top changes with it.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+</main>
+</body>
+</html>

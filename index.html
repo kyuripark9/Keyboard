@@ -2925,23 +2925,19 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
 
 /* ---------- the agent: clack wakes when your agent starts working and lets go of you when it's done ----------
    Where the signal comes from:
-   - served by clack-bridge on localhost (or opened with ?bridge=http://localhost:4545): Claude Code's or Codex's hooks
-     tell the bridge when you hand off a prompt (start) and when the agent stops or needs you (done), and it streams that here
    - in the browser extension's side panel (?agent=panel): the extension watches claude.ai and ChatGPT, and its panel
-     passes on, in the bridge's own words, when one of them starts writing an answer and when it's done
-   - anywhere else, such as the hosted portfolio copy: a demo agent you start yourself, so a visitor can feel the release
-   With several sessions at once, the first to finish lets go of you, as it's waiting for you whatever the others do; once
+     passes on when one of them starts writing an answer and when it's done
+   - anywhere else, such as the website: a demo agent you start yourself, so a visitor can feel the release
+   With several chats at once, the first to finish lets go of you, as it's waiting for you whatever the others do; once
    you've gone back, clack holds you again while any of them is still working, and the next to finish lets go again.
    Return time is measured from "done" (or from coming back to clack, if it let go while you were away) to the moment you
    leave this tab or window (or send the agent a new prompt); a release you never saw isn't timed.
    It's kept in this browser only, and only ever shown as your last return and your typical (median) one */
 (() => {
-  const RELEASE_MS = 5000, DEMO_MS = 12000, BACK_SHOW_MS = 10000, LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/;
+  const RELEASE_MS = 5000, DEMO_MS = 12000, BACK_SHOW_MS = 10000;
   const el = $('agent');
-  const q = new URLSearchParams(location.search);
-  const bridge = q.get('bridge') || (LOCAL.test(location.hostname) && location.port ? location.origin : null);
-  const chat = !bridge && q.get('agent') === 'panel' && window.parent !== window;
-  Object.assign(AG, { mode: bridge ? 'bridge' : chat ? 'chat' : 'demo', site: '', state: 'idle', offline: false, startAt: 0, doneAt: 0, reason: '',
+  const chat = new URLSearchParams(location.search).get('agent') === 'panel' && window.parent !== window;
+  Object.assign(AG, { mode: chat ? 'chat' : 'demo', site: '', state: 'idle', startAt: 0, doneAt: 0,
     backMs: null, backAt: 0, demoT: 0, busy: 0, since: 0, prompted: 0, here: !document.hidden && document.hasFocus(), hereAt: 0, seen: false });
 
   let returns = [];
@@ -2959,21 +2955,17 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   }
   function hold() { setGrip(1); document.body.classList.remove('letting-go'); }
 
-  function start(auto) {
-    if (AG.state === 'done') {
-      // Claude waking itself up in one session doesn't take back the release another one finishing began
-      if (auto) return;
-      back('prompt'); // a new prompt means you went back, even if this tab never lost focus
-    }
+  function start() {
+    if (AG.state === 'done') back('prompt'); // a new prompt means you went back, even if this tab never lost focus
     clearTimeout(AG.demoT);
-    // a second session starting joins the wait already running rather than restarting its clock
+    // a second chat starting joins the wait already running rather than restarting its clock
     if (AG.state !== 'wait') Object.assign(AG, { state: 'wait', startAt: AG.since || Date.now() });
     hold(); render();
-    if (AG.mode === 'demo') AG.demoT = setTimeout(() => done('Stop'), DEMO_MS);
+    if (AG.mode === 'demo') AG.demoT = setTimeout(done, DEMO_MS);
   }
-  function done(reason) {
-    if (AG.state !== 'wait') return; // a "done" with no wait behind it (an idle reminder, say) changes nothing
-    Object.assign(AG, { state: 'done', doneAt: Date.now(), reason: reason || 'Stop', seen: AG.here });
+  function done() {
+    if (AG.state !== 'wait') return; // a "done" with no wait behind it changes nothing
+    Object.assign(AG, { state: 'done', doneAt: Date.now(), seen: AG.here });
     document.body.classList.add('letting-go');
     render();
   }
@@ -3004,8 +2996,8 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
   // played in without ever taking the focus (a window behind your terminal, say), clack is left when the pointer goes
   document.addEventListener('mouseout', e => { if (!e.relatedTarget && !document.hasFocus()) leave('pointer'); });
 
-  // the demo says it's one, and offers the real clack, which follows your own agent
-  const OWN = '<a href="https://github.com/kyuripark9/Keyboard#get-it-on-your-mac" target="_blank" rel="noopener">your own agent ↗</a>';
+  // the demo says it's one, and offers the real clack, the browser extension, which follows your own chats
+  const OWN = '<a href="https://kyuripark9.github.io/Keyboard/#extension" target="_blank" rel="noopener">your own chats ↗</a>';
   let lastHtml = null;
   function render() {
     const now = Date.now(), s = AG.state;
@@ -3015,14 +3007,13 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
     // coming back while others still work, your return shows first and then their wait
     if (s === 'wait' && !backNew) {
       // the pulsing dot says it's working, so the line only names who and how long since you last handed them
-      // something: how long you've been waiting, which one long-running session elsewhere doesn't stretch
-      const who = AG.mode === 'demo' ? 'demo agent' : AG.mode === 'chat' ? (AG.busy > 1 ? AG.busy + ' chats' : AG.site || 'chat') + ' writing'
-        : AG.busy > 1 ? AG.busy + ' agents' : 'agent';
+      // something: how long you've been waiting, which one long-running chat elsewhere doesn't stretch
+      const who = AG.mode === 'demo' ? 'demo agent' : (AG.busy > 1 ? AG.busy + ' chats' : AG.site || 'chat') + ' writing';
       html = `<i class="dot"></i><span>${who} · ${clock(now - (AG.prompted || AG.startAt))}</span>`;
     } else if (s === 'done') {
       // a chat that's done has an answer for you rather than an agent waiting
       const ready = AG.mode === 'chat';
-      const gone = AG.grip <= 0.02, word = ready ? 'answer ready' : { Notification: 'agent needs you', PermissionRequest: 'agent needs you', StopFailure: 'agent stopped' }[AG.reason] || 'agent done';
+      const gone = AG.grip <= 0.02, word = ready ? 'answer ready' : 'agent done';
       const waiting = ready ? 'your answer is waiting' : 'your agent is waiting';
       if (!gone) html = `<i class="dot"></i><span>${word} · go back</span>`;
       else if (now - AG.doneAt < RELEASE_MS + 9000) html = `<span>clack let go · ${AG.mode === 'demo' ? 'tab away to go back' : waiting}</span>`;
@@ -3036,10 +3027,6 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
     } else if (AG.mode === 'chat') {
       // nothing to wait for yet: the line says what it waits for
       html = `<span>waits with claude.ai and chatgpt</span>`;
-      el.classList.add('dim');
-    } else if (AG.offline) {
-      // with the bridge up and nothing to wait for, the line says nothing and the count stands alone
-      html = `<span>bridge offline</span>`;
       el.classList.add('dim');
     }
     if (lastHtml !== html) el.innerHTML = lastHtml = html;
@@ -3059,27 +3046,21 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
     render();
   }, 100);
 
-  // an event from the bridge, or from the extension's panel in the same words
+  // an event from the extension's panel
   function heard(e) {
     if (!e || typeof e !== 'object') return;
-    AG.offline = false;
-    // how many sessions are still working, since when the longest of them has been, and when you last handed one of
-    // them something (older bridges don't say)
+    // how many chats are still writing, since when the longest of them has been, and when you last handed one of them
+    // something
     if (typeof e.working === 'number') Object.assign(AG, { busy: e.working, since: e.since || 0, prompted: e.prompted || 0 });
     if (typeof e.site === 'string') AG.site = e.site;
     if (e.type === 'hello') { if (e.phase === 'wait' && AG.state === 'idle') { start(); AG.startAt = AG.since || e.at || AG.startAt; } }
-    else if (e.type === 'start') start(e.auto);
-    else if (e.type === 'done') done(e.reason);
-    // the last working session closed or was stopped with Esc: you're at it already, so the wait just ends
+    else if (e.type === 'start') start();
+    else if (e.type === 'done') done();
+    // the last chat writing was closed: there's nothing to go back to, so the wait just ends
     else if (e.type === 'tally' && AG.state === 'wait' && !AG.busy) AG.state = 'idle';
     render();
   }
-  if (AG.mode === 'bridge') {
-    const es = new EventSource(bridge.replace(/\/$/, '') + '/events');
-    es.onopen = () => { AG.offline = false; render(); };
-    es.onerror = () => { AG.offline = true; render(); };
-    es.onmessage = m => { try { heard(JSON.parse(m.data)); } catch (err) {} };
-  } else if (AG.mode === 'chat') {
+  if (AG.mode === 'chat') {
     // only the page this one is open in speaks for the chats; a page that embeds clack anywhere else only moves its own
     addEventListener('message', m => { if (m.source === window.parent && m.data) heard(m.data.clack); });
     window.parent.postMessage({ clack: 'ready' }, '*');

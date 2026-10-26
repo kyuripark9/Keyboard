@@ -1,40 +1,19 @@
-// Which clack the side panel opens: the one installed on this computer when its bridge answers, since that one follows
-// your agent through Claude Code's hooks; otherwise the web version, which follows claude.ai and ChatGPT here: their
-// tabs tell the panel when an answer starts and ends (watch.js), and the panel passes that on to clack
-const LOCAL = 'http://localhost:4545/', WEB = 'https://kyuripark9.github.io/Keyboard/play/';
+// The side panel plays clack (clack.html, from the extension's own files) and follows claude.ai and ChatGPT for it:
+// their tabs tell the panel when an answer starts and ends (watch.js), and the panel passes that on to clack
 const CHATS = ['https://claude.ai/*', 'https://chatgpt.com/*'];
-const frame = document.getElementById('clack'), off = document.getElementById('off');
-
-async function local() {
-  try {
-    const r = await fetch(LOCAL + 'status', { cache: 'no-store', signal: AbortSignal.timeout(800) });
-    return r.ok;
-  } catch (e) {
-    return false;
-  }
-}
-
-async function open() {
-  off.hidden = true;
-  if (await local()) frame.src = LOCAL;
-  else if (navigator.onLine) frame.src = WEB + '?agent=panel';
-  else off.hidden = false;
-}
-
-document.getElementById('retry').addEventListener('click', open);
-open();
+const frame = document.getElementById('clack');
 
 // the chats writing an answer, by tab, since when; an answer that pauses for a moment (between a search and the
 // writing, say) isn't done, so a stop counts once it has lasted a little while
 const writing = new Map(), ending = new Map(), sites = new Map();
 const PAUSE_MS = 1500;
 
-// told the way clack's bridge tells it: how many are at work, since when the longest of them, and when the last began
+// told in clack's words: how many are at work, since when the longest of them, and when the last began
 function tell(type, tab, extra) {
   const at = Date.now(), times = [...writing.values()];
   const e = { type, at, session: 'tab-' + tab, working: writing.size, since: times.length ? Math.min(...times) : null,
     prompted: times.length ? Math.max(...times) : null, site: sites.get(tab) || '', ...extra };
-  frame.contentWindow?.postMessage({ clack: e }, new URL(WEB).origin);
+  frame.contentWindow?.postMessage({ clack: e }, location.origin);
 }
 
 function heard(tab, now, site) {
@@ -75,7 +54,7 @@ addEventListener('message', async m => {
   if (m.source !== frame.contentWindow || !m.data || m.data.clack !== 'ready') return;
   const times = [...writing.values()];
   frame.contentWindow.postMessage({ clack: { type: 'hello', at: Date.now(), phase: times.length ? 'wait' : 'idle',
-    working: times.length, since: times.length ? Math.min(...times) : null, prompted: times.length ? Math.max(...times) : null } }, new URL(WEB).origin);
+    working: times.length, since: times.length ? Math.min(...times) : null, prompted: times.length ? Math.max(...times) : null } }, location.origin);
   for (const t of await chrome.tabs.query({ url: CHATS })) {
     chrome.tabs.sendMessage(t.id, { clack: 'ask' }).then(r => r && heard(t.id, !!r.writing, r.site)).catch(() => {});
   }

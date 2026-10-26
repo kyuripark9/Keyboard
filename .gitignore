@@ -1,3 +1,5 @@
 g-*.png
 menubar/build/
 site/_site/
+extension/_build/
+store/*.zip
