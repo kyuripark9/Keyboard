@@ -982,6 +982,8 @@ const SCENES = {
       nc.putImageData(id, 0, 0); this.grain = sc.createPattern(n, 'repeat');
       paper(dc, '#3557b0', .16);
       this.sp = [];
+      // the patches drift on a clock of their own from here, so the print starts the same whenever it starts the same
+      this.t0 = performance.now();
     },
     vn(x, y) { // smooth value noise on a wrapping 64x64 lattice
       const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, G = this.G;
@@ -1010,7 +1012,7 @@ const SCENES = {
     hit(x, y, k, now) { this.expose(x + rand(-20, 20), y + rand(-20, 20), rand(80, 120), .45 * V()); for (let i = 0, n = Math.round(4 * V()); i < n; i++) this.sparkle(x + rand(-70, 70), y + rand(-70, 70), now); },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const p = this.p, h = p / 2, t = now * .000012, L = this.L, fade = Math.exp(-dt / 1300);
+      const p = this.p, h = p / 2, t = (now - this.t0) * .000012, L = this.L, fade = Math.exp(-dt / 1300);
       for (let j = 0; j < this.rows; j++) {
         const y = j * h - h;
         for (let i = 0; i < this.cols; i++) {
@@ -1083,6 +1085,8 @@ const SCENES = {
       // phases), so the lines run on between the hills and across the edges instead of stopping where the bubbles do
       this.ph = Float32Array.from({ length: 4 }, () => rand(0, Math.PI * 2));
       this.rip = []; this.cur = { x: -999, y: -999, a: 0, t: 0 };
+      // the sheet sways on a clock of its own from here, so it starts the same whenever it starts the same
+      this.t0 = performance.now();
       if (this.gl === undefined) this.gl = this.glInit();
       if (this.gl) {
         const { cv, gl, u } = this.gl;
@@ -1144,7 +1148,7 @@ void main() {
     },
     hit(x, y, k, now) {
       // the step pops the nearest of the four bubbles around it on the sheet
-      const t = now / 1000, u = (this.xs(x) + this.ox(y, t) - this.x0) / this.s, v = (y + this.oy(x, t) - this.y0) / this.s;
+      const t = (now - this.t0) / 1000, u = (this.xs(x) + this.ox(y, t) - this.x0) / this.s, v = (y + this.oy(x, t) - this.y0) / this.s;
       let q = -1, best = 2.5;
       for (let r = v | 0; r <= (v | 0) + 1; r++) for (let p = r * this.cols + ((u - this.ro[r]) | 0), e = p + 2; p < e; p++) {
         const d = this.d2(p, u, v); if (d < best && this.base[p]) { best = d; q = p; }
@@ -1163,7 +1167,7 @@ void main() {
         amp[q] += (target - amp[q]) * Math.min(1, dt * (this.back[q] ? .02 : .0025));
       }
       // the hills are worked out on a grid twice as coarse (K) and filled in between, as they are smooth at that scale
-      const W2 = this.w2, H2 = this.h2, K = this.K, G2 = G * 2, t = now / 1000;
+      const W2 = this.w2, H2 = this.h2, K = this.K, G2 = G * 2, t = (now - this.t0) / 1000;
       const ox = new Float32Array(H2), oy = new Float32Array(W2), xs = new Float32Array(W2);
       for (let j = 0; j < H2; j++) ox[j] = this.ox(j * G2, t);
       for (let i = 0; i < W2; i++) { oy[i] = this.oy(i * G2, t); xs[i] = this.xs(i * G2); }
@@ -1279,6 +1283,8 @@ void main() {
         ctx.fillStyle = grain; ctx.fillRect(0, 0, SW, SH);
       }
       this.skin = sc.createPattern(skin, 'no-repeat'); this.skin.setTransform(px);
+      // the print drifts on a clock of its own from here, so it starts the same whenever it starts the same
+      this.t0 = performance.now();
     },
     // a tile of the felt's grain, after the reference: white noise softened into specks a few pixels across, with a
     // scatter of pale fibres pressed into it, laid over both colours as faint white and black
@@ -1333,7 +1339,7 @@ void main() {
     },
     draw(now, dt) {
       sc.drawImage(deco, 0, 0, SW, SH);
-      const { p, cols, rows, E, A, V, F } = this, t = now * .00003, fade = Math.exp(-dt / 3000), k = dt / 16, damp = Math.pow(.9, k);
+      const { p, cols, rows, E, A, V, F } = this, t = (now - this.t0) * .00003, fade = Math.exp(-dt / 3000), k = dt / 16, damp = Math.pow(.9, k);
       const a1 = 1 / (p * 6.5), a2 = 1 / (p * 3);
       // the print: two layers of slow value noise, eased so every square stays big, from nearly touching its
       // neighbours to a little smaller; the cursor's trail shrinks it down toward a dot
