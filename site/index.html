@@ -7,7 +7,13 @@
 <meta name="description" content="Ten satisfying materials under your cursor. Play clack in your browser, or add it to your browser's side panel, where it follows claude.ai and ChatGPT.">
 <meta property="og:title" content="clack">
 <meta property="og:description" content="Something to clack instead of scrolling. Back to work the moment your agent is done.">
-<meta property="og:image" content="https://kyuripark9.github.io/Keyboard/img/soap.jpg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kyuripark9.github.io/Keyboard/">
+<meta property="og:image" content="https://kyuripark9.github.io/Keyboard/img/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="clack, its ring and name on cobalt, beside three of its materials">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -177,7 +183,7 @@ html:has(.dlg[open]) { overflow: hidden; }
 .row { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px 64px; padding: 40px 0; border-bottom: 1px solid var(--line); scroll-margin-top: calc(var(--bar-h) + 8px); }
 .row .k { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .row .no { font: 400 13px/1 var(--font-mono); color: var(--ink-3); }
-.row h3 { margin: 0; font: 500 clamp(30px, 3.4vw, 46px)/1.02 var(--font-ui); letter-spacing: -.045em; }
+.row h2, .row h3 { margin: 0; font: 500 clamp(30px, 3.4vw, 46px)/1.02 var(--font-ui); letter-spacing: -.045em; }
 .row .v > p { margin: 0 0 18px; max-width: 34em; font-size: 17px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
 .row .v > p b { color: var(--ink); font-weight: 500; }
 .row .v > p.fine { margin: 16px 0 0; font-size: 14px; color: var(--ink-3); }
@@ -256,6 +262,11 @@ html:has(.dlg[open]) { overflow: hidden; }
 
 /* [03] get it, the last section: one row per way, the web version and the extension that opens it in a side panel */
 .way .ico { width: 28px; height: 28px; color: var(--ink); }
+/* the last way ends on its steps' own hairline, so the footer's isn't doubled over it */
+.ways .row:last-child { border-bottom: 0; }
+/* on a phone or tablet, which has no extensions, the extension says where to add it instead */
+.only-touch { display: none; }
+@media (pointer: coarse) { .only-touch { display: block; } }
 /* over the ways, a note that the web version is a demo, and that the extension follows your own chats */
 .demo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; margin: -24px 0 48px;
   padding: 20px 24px; background: var(--bg-2); border: 1px solid var(--line); }
@@ -399,7 +410,7 @@ footer .mono { color: var(--ink-3); }
       </div>
       <ol class="rows">
         <li class="row work">
-          <div class="k"><span class="no">01</span><h3>Start a wait</h3></div>
+          <div class="k"><span class="no">01</span><h2>Start a wait</h2></div>
           <div class="v">
             <p>Click clack's ring in your browser's toolbar and it opens in the side panel, beside claude.ai or ChatGPT. Send a prompt, and clack wakes up as the answer starts.</p>
           </div>
@@ -421,7 +432,7 @@ footer .mono { color: var(--ink-3); }
           </figure>
         </li>
         <li class="row play">
-          <div class="k"><span class="no">02</span><h3>Play</h3></div>
+          <div class="k"><span class="no">02</span><h2>Play</h2></div>
           <div class="v">
             <p>Crumple, pop, shave. No score and no streak, so nothing keeps you here.</p>
           </div>
@@ -443,7 +454,7 @@ footer .mono { color: var(--ink-3); }
           </figure>
         </li>
         <li class="row done">
-          <div class="k"><span class="no">03</span><h3>Go back</h3></div>
+          <div class="k"><span class="no">03</span><h2>Go back</h2></div>
           <div class="v">
             <p>When the answer is done, the picture fades to grey and the sound stops, even if you keep playing. <b>That's your cue.</b> Click back into the chat to read it, and when you come back, clack shows how quickly you went.</p>
           </div>
@@ -513,6 +524,7 @@ footer .mono { color: var(--ink-3); }
           <div class="v">
             <p>Opens clack in your browser's side panel and follows claude.ai and ChatGPT: when one starts writing an answer, clack wakes up, and when the answer is done, the picture fades to grey and the sound stops, so you go back and read it. It isn't in the Chrome Web Store, so you add it by hand.</p>
             <div class="go"><a class="btn" href="clack-extension.zip" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>Download extension</a></div>
+            <p class="fine only-touch">On a phone or tablet? The extension needs Chrome, Edge or Brave on a computer, so open this page there to add it. Until then, the <a href="play/">web version</a> plays right here.</p>
             <ol class="steps">
               <li><span>Unzip the download. You'll get a <b>clack-extension</b> folder.</span></li>
               <li><span>Open <span class="cmd small"><code id="extUrl">chrome://extensions</code><button type="button" data-copy="extUrl" aria-label="Copy chrome://extensions">Copy</button></span> and turn on <b>Developer mode</b>.</span></li>

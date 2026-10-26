@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Renders the pictures for clack's Chrome Web Store listing from store/frame.html, with nothing but Python and Chrome:
 
-    python3 store/shots.py          ->  store/screenshot-1.png to -3.png (1280x800) and store/promo-tile.png (440x280)
+    python3 store/shots.py          ->  store/screenshot-1.png to -3.png (1280x800), store/promo-tile.png (440x280)
+                                        and the website's link preview, site/img/og.jpg (1200x630)
+    python3 store/shots.py og tile  ->  only those (1, 2, 3, tile, og)
 
 It serves the repo on clack.localhost (so clack doesn't look for its bridge), opens the frame in headless Chrome and
 drives it over the DevTools protocol, so the pointer that plays clack in the side panel is a real one. Redo the
@@ -11,10 +13,9 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, 'store')
 CHROME = os.environ.get('CHROME', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
-SHOTS = [('1', 'screenshot-1.png', 1280, 800), ('2', 'screenshot-2.png', 1280, 800), ('3', 'screenshot-3.png', 1280, 800),
-         ('tile', 'promo-tile.png', 440, 280)]
+SHOTS = [('1', 'store/screenshot-1.png', 1280, 800), ('2', 'store/screenshot-2.png', 1280, 800), ('3', 'store/screenshot-3.png', 1280, 800),
+         ('tile', 'store/promo-tile.png', 440, 280), ('og', 'site/img/og.jpg', 1200, 630)]
 
 
 class Quiet(SimpleHTTPRequestHandler):
@@ -127,7 +128,7 @@ def main():
             sys.exit('shots: Chrome did not start')
         dt = DevTools(page['webSocketDebuggerUrl'])
         dt.call('Page.enable')
-        for shot, name, w, h in SHOTS:
+        for shot, name, w, h in [s for s in SHOTS if not sys.argv[1:] or s[0] in sys.argv[1:]]:
             dt.call('Emulation.setDeviceMetricsOverride', width=w, height=h, deviceScaleFactor=1, mobile=False)
             dt.call('Page.navigate', url=f'http://clack.localhost:{port}/store/frame.html?shot={shot}')
             time.sleep(0.5)
@@ -145,10 +146,11 @@ def main():
                     time.sleep(2)
                 play(dt, p)
                 time.sleep(0.15)
-            png = base64.b64decode(dt.call('Page.captureScreenshot', format='png')['data'])
-            with open(os.path.join(OUT, name), 'wb') as f:
-                f.write(png)
-            print('wrote', os.path.relpath(os.path.join(OUT, name), ROOT))
+            jpg = name.endswith('.jpg')
+            shot = dt.call('Page.captureScreenshot', **({'format': 'jpeg', 'quality': 88} if jpg else {'format': 'png'}))
+            with open(os.path.join(ROOT, name), 'wb') as f:
+                f.write(base64.b64decode(shot['data']))
+            print('wrote', name)
     finally:
         chrome.terminate()
         chrome.wait()

@@ -51,7 +51,7 @@ The website is the landing page in [site/](site/) with clack itself at `play/`, 
 bash site/build.sh && python3 -m http.server -d site/_site 8000   # http://localhost:8000
 ```
 
-Every push to `main` builds and publishes it with GitHub Actions ([.github/workflows/pages.yml](.github/workflows/pages.yml)), once the repo's Settings → Pages → Source is set to GitHub Actions. The pictures of the ten materials in `site/img/` are renders of each scene, so redo them when a scene's look changes.
+Every push to `main` builds and publishes it with GitHub Actions ([.github/workflows/pages.yml](.github/workflows/pages.yml)), once the repo's Settings → Pages → Source is set to GitHub Actions. The pictures of the ten materials in `site/img/` are renders of each scene, so redo them when a scene's look changes. The link preview, `site/img/og.jpg` (1200×630), comes from `python3 store/shots.py og`, with the Web Store pictures.
 
 ## The old Mac version
 
