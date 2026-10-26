@@ -125,26 +125,27 @@ section { padding-block: var(--sec); }
 .over .ctl { pointer-events: auto; }
 .cover.moving .over { opacity: 0; visibility: hidden; transition: opacity .1s, visibility 0s .1s; }
 /* under the middle, on the left its name, gone while the ring turns; on the right the agent's line in the words clack
-   uses, who's working and for how long, then done, with the way to send it another prompt under it. The button keeps
+   uses, who's working and for how long, then done, with the way to send it another prompt at its end. The button keeps
    its room so nothing moves when the agent is done */
 .cap { container-type: inline-size; width: var(--wc); margin: 0 auto; padding-top: 16px; }
-.cap > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nm st" ". act"; align-items: baseline; gap: 8px 16px; }
+.cap > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nm st"; align-items: center; gap: 8px 16px; }
 .cap .nm { grid-area: nm; margin: 0; font: 500 20px/1.15 var(--font-ui); letter-spacing: -.03em; transition: opacity .25s; }
 .cover.moving .cap .nm { opacity: 0; transition-duration: .1s; }
-.agent { grid-area: st; justify-self: end; margin: 0; color: var(--ink-2); white-space: nowrap; }
+.st { grid-area: st; justify-self: end; display: flex; align-items: center; gap: 10px; }
+.agent { margin: 0; color: var(--ink-2); white-space: nowrap; }
 .agent .dot { display: inline-block; width: 8px; height: 8px; margin-right: 9px; border-radius: 50%; background: var(--c1); vertical-align: 0; }
 .cover.working .agent { color: var(--ink); }
 .cover.working .agent .dot { animation: pulse 1.6s ease-in-out infinite; }
 .cover.done .agent .dot { background: none; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
-.again { grid-area: act; justify-self: end; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px 6px; border: 0; border-radius: 999px;
-  background: var(--ink); color: #fff; white-space: nowrap; cursor: pointer; transition: background-color .15s; }
+.again { display: grid; place-items: center; flex: none; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--ink); color: #fff; cursor: pointer; transition: background-color .15s; }
+.again svg { width: 14px; height: 14px; }
 .cover:not(.done) .again { visibility: hidden; }
 .again:hover { background: var(--accent); }
 /* under a middle too narrow for both sides (on a phone, or a short window), the agent's line goes under the name */
 @container (max-width: 379px) {
-  .cap > div { grid-template-columns: minmax(0, 1fr); grid-template-areas: "nm" "st" "act"; }
-  .agent, .again { justify-self: start; }
-  .agent { margin-top: 8px; }
+  .cap > div { grid-template-columns: minmax(0, 1fr); grid-template-areas: "nm" "st"; align-items: baseline; }
+  .st { justify-self: start; margin-top: 8px; }
 }
 /* ---------- white chips that read over every picture: the sound, which shows whether clack is heard and mutes or
    unmutes it, and the way to a bigger clack or out of it ---------- */
@@ -396,8 +397,10 @@ footer .mono { color: var(--ink-3); }
     </div>
     <div class="cap"><div>
       <p class="nm" id="capName" aria-live="polite">Cyanotype</p>
-      <p class="agent mono"><i class="dot" aria-hidden="true"></i><span id="agentLine">Play to start a demo agent</span></p>
-      <button class="again mono" type="button" id="again">Send another prompt <span aria-hidden="true">↻</span></button>
+      <div class="st">
+        <p class="agent mono"><i class="dot" aria-hidden="true"></i><span id="agentLine">Play to start a demo agent</span></p>
+        <button class="again" type="button" id="again" aria-label="Send another prompt" title="Send another prompt"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.46-3.54M13 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
     </div></div>
   </section>
 
