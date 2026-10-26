@@ -3008,7 +3008,7 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
     if (s === 'wait' && !backNew) {
       // the pulsing dot says it's working, so the line only names who and how long since you last handed them
       // something: how long you've been waiting, which one long-running chat elsewhere doesn't stretch
-      const who = AG.mode === 'demo' ? 'demo agent' : (AG.busy > 1 ? AG.busy + ' chats' : AG.site || 'chat') + ' writing';
+      const who = AG.mode === 'demo' ? 'sample agent' :(AG.busy > 1 ? AG.busy + ' chats' : AG.site || 'chat') + ' writing';
       html = `<i class="dot"></i><span>${who} · ${clock(now - (AG.prompted || AG.startAt))}</span>`;
     } else if (s === 'done') {
       // a chat that's done has an answer for you rather than an agent waiting

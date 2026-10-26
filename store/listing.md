@@ -91,10 +91,12 @@ Free, Public, all regions.
 
 ## Test instructions
 
+The Additional instructions field takes up to 500 characters; leave Username and Password empty.
+
 ```
-No login is needed for clack itself.
-1. Pin clack and click its icon: clack opens in the side panel. Move the pointer over it to play; the arrows at the bottom change the material. Its line reads "waits with claude.ai and chatgpt".
-2. Open chatgpt.com (it works signed out) or claude.ai in the same window and send a prompt. While the answer is being written, the line reads "ChatGPT writing · 0:05" with a pulsing dot.
-3. When the answer is done, the line reads "answer ready · go back" and over five seconds the picture fades to grey and the sound stops.
-Sound starts after the first click or key press in the panel, as browsers require.
+No login needed.
+1. Pin clack and click its icon: it opens in the side panel. Move the pointer over it to play. The line at the bottom reads "waits with claude.ai and chatgpt".
+2. In the same window, open chatgpt.com (works signed out) or claude.ai and send a prompt. While it answers, the line reads "ChatGPT writing · 0:05".
+3. When the answer is done, it reads "answer ready · go back" and the picture fades to grey.
+Click the panel once to turn the sound on.
 ```

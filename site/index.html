@@ -93,7 +93,7 @@ section { padding-block: var(--sec); }
 
 /* ---------- the cover: the ten materials in a ring you turn, the one in the middle big and in its colours, the rest
    smaller and grey, and blurred further out. The one in the middle is clack itself with its count, there to play the
-   moment the pointer is on it, no click needed. Under it, a demo agent's line: playing starts it, and when it's done
+   moment the pointer is on it, no click needed. Under it, a sample agent's line: playing starts it, and when it's done
    the middle fades to grey like the rest, the way clack lets go of you ---------- */
 /* the middle is 2:3 like the pictures, as tall as the first screen leaves room for, never wider than most of a phone */
 .cover { --wc: min(calc(clamp(360px, 100svh - var(--bar-h) - 108px, 690px) * 2 / 3), 72vw); --hc: calc(var(--wc) * 3 / 2); padding-block: 20px 0; }
@@ -268,14 +268,6 @@ html:has(.dlg[open]) { overflow: hidden; }
 /* on a phone or tablet, which has no extensions, the extension says where to add it instead */
 .only-touch { display: none; }
 @media (pointer: coarse) { .only-touch { display: block; } }
-/* over the ways, a note that the web version is a demo, and that the extension follows your own chats */
-.demo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; margin: -24px 0 48px;
-  padding: 20px 24px; background: var(--bg-2); border: 1px solid var(--line); }
-.demo b { padding: 6px 10px 5px; border-radius: 999px; background: var(--accent); color: #fff; font: 500 11.5px/1 var(--font-mono); text-transform: uppercase; }
-.demo p { margin: 0; max-width: 44em; font-size: 15px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
-.demo a { font: 500 13px/1.2 var(--font-mono); text-transform: uppercase; text-decoration: none; white-space: nowrap; }
-.demo a:hover { color: var(--accent); }
-@media (max-width: 760px) { .demo { grid-template-columns: minmax(0, 1fr); justify-items: start; } }
 /* under each way's name, the same two lines (where it runs, what it takes) so the ways compare at a glance */
 .spec { align-self: stretch; max-width: 420px; margin: 4px 0 0; border-top: 1px solid var(--line); }
 .spec div { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
@@ -398,7 +390,7 @@ footer .mono { color: var(--ink-3); }
     <div class="cap"><div>
       <p class="nm" id="capName" aria-live="polite">Cyanotype</p>
       <div class="st">
-        <p class="agent mono"><i class="dot" aria-hidden="true"></i><span id="agentLine">Play to start a demo agent</span></p>
+        <p class="agent mono"><i class="dot" aria-hidden="true"></i><span id="agentLine">Play to start a sample agent</span></p>
         <button class="again" type="button" id="again" aria-label="Send another prompt" title="Send another prompt"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.46-3.54M13 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div></div>
@@ -479,7 +471,7 @@ footer .mono { color: var(--ink-3); }
           </figure>
         </li>
       </ol>
-      <p class="aside">Try it now: the material at the <a href="#play">top of the page</a> is clack itself, and playing it starts a demo agent.</p>
+      <p class="aside">Try it now: the material at the <a href="#play">top of the page</a> is clack itself, and playing it starts a sample agent that's done in a few seconds, so you can feel clack let go.</p>
     </div>
   </section>
 
@@ -488,13 +480,8 @@ footer .mono { color: var(--ink-3); }
       <div class="sh"><span>Get clack</span><span class="idx">[02]</span></div>
       <div class="intro">
         <h2>Pick where it lives.</h2>
-        <p>Try it right here with nothing to install, or add it to your browser, where it sits in the side panel beside claude.ai or ChatGPT and follows them for real.</p>
+        <p>Try it right here with nothing to install. To use it with your own chats, <a href="#extension">add it to your browser</a>: it sits in the side panel beside claude.ai or ChatGPT and waits with them.</p>
       </div>
-      <aside class="demo" aria-label="About the demo">
-        <b>Demo</b>
-        <p>The web version is a demo: a pretend agent starts and finishes on its own, so you can feel clack let go. For the real thing, add the extension, which follows your own chats on claude.ai and ChatGPT.</p>
-        <a href="#extension">Get the extension ↓</a>
-      </aside>
       <div class="rows ways">
 
         <article class="row way" id="web">
@@ -502,13 +489,13 @@ footer .mono { color: var(--ink-3); }
             <svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="14" cy="14" r="11"/><path d="M3 14h22M14 3c3 3.2 4.5 6.8 4.5 11S17 21.8 14 25M14 3c-3 3.2-4.5 6.8-4.5 11S11 21.8 14 25"/></svg>
             <h3>Web version</h3>
             <dl class="spec">
-              <div><dt>Agent</dt><dd>A demo</dd></div>
+              <div><dt>Agent</dt><dd>A sample, to try it</dd></div>
               <div><dt>Runs on</dt><dd>Any browser, phones too</dd></div>
               <div><dt>Setup</dt><dd>None</dd></div>
             </dl>
           </div>
           <div class="v">
-            <p>All ten materials, full screen, on a laptop or a phone.</p>
+            <p>All ten materials, full screen, on a laptop or a phone. Playing starts a sample agent that's done in a few seconds, so you can feel clack let go. A web page can't see your other tabs, so to wait with your own chats, <a href="#extension">add the extension</a>.</p>
             <div class="go"><a class="btn" href="play/">Open clack →</a></div>
             <p class="fine">To keep it as an app with its own window: in Chrome or Edge, click the install icon in the address bar; in Safari, choose File › Add to Dock; on a phone, choose Add to Home Screen.</p>
           </div>
@@ -577,7 +564,7 @@ const MATS = [
 const $ = id => document.getElementById(id);
 const nn = i => String(i + 1).padStart(2, '0');
 // clack in the middle of the cover once it has loaded: clack itself (c), its agent (ag) and the material it's on (at),
-// whether its demo agent has been started, whether anyone has played it yet, and whether it has been played since it
+// whether its sample agent has been started, whether anyone has played it yet, and whether it has been played since it
 // came to the middle
 const live = { c: null, ag: null, at: -1, started: false, touched: false, dirty: false };
 
@@ -819,7 +806,7 @@ for (const id of ['play', 'how', 'get']) spy.observe($(id));
     scn = doc.getElementById('scene');
     Object.assign(live, { c, ag: win.__clackAgent || null, at: -1 });
     c.set({ muted });
-    // the first time it's played, with the pointer or a finger, its demo agent starts
+    // the first time it's played, with the pointer or a finger, its sample agent starts
     const begin = e => {
       if (!e.isTrusted) return;
       live.touched = live.dirty = true;
@@ -932,7 +919,7 @@ for (const id of ['play', 'how', 'get']) spy.observe($(id));
     }, 20);
   }
 
-  // the line under the middle speaks for clack's demo agent there, in the words clack uses: ready to start, working
+  // the line under the middle speaks for clack's sample agent there, in the words clack uses: ready to start, working
   // and for how long, done, and once you've gone back (left the middle after it let go) just done
   const line = $('agentLine'), again = $('again');
   function ask() { live.started = true; live.ag.start(); speak(); }
@@ -940,10 +927,10 @@ for (const id of ['play', 'how', 'get']) spy.observe($(id));
   function speak() {
     const AG = live.ag && live.ag.AG, s = AG ? AG.state : 'idle';
     const mode = s === 'wait' ? 'working' : s === 'done' || live.started ? 'done' : 'ready';
-    const text = mode === 'working' ? `Demo agent working · ${clock(Date.now() - AG.startAt)}`
-      : s === 'done' ? 'Demo agent done · go back'
-      : mode === 'done' ? 'Demo agent done'
-      : 'Play to start a demo agent';
+    const text = mode === 'working' ? `Sample agent working · ${clock(Date.now() - AG.startAt)}`
+      : s === 'done' ? 'Sample agent done · go back'
+      : mode === 'done' ? 'Sample agent done'
+      : 'Play to start a sample agent';
     cover.classList.toggle('working', mode === 'working');
     cover.classList.toggle('done', mode === 'done');
     if (line.textContent !== text) line.textContent = text;

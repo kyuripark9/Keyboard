@@ -2,7 +2,7 @@
 
 A stress-relief sound toy. Move your cursor across the screen and every step clicks, pops or squishes, and each sound draws its own picture to play with.
 
-**Website: https://kyuripark9.github.io/Keyboard/**: play clack right on the page, where a demo agent stands in for yours, or add it to your browser, where it follows claude.ai and ChatGPT. Full screen it is at https://kyuripark9.github.io/Keyboard/play/.
+**Website: https://kyuripark9.github.io/Keyboard/**: play clack right on the page, where a sample agent stands in for yours, or add it to your browser, where it follows claude.ai and ChatGPT. Full screen it is at https://kyuripark9.github.io/Keyboard/play/.
 
 ## Add it to your browser
 
