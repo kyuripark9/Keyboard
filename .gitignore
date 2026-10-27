@@ -1,5 +1,4 @@
-g-*.png
-menubar/build/
+.DS_Store
 site/_site/
 extension/_build/
 store/*.zip
