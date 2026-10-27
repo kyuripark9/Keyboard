@@ -41,12 +41,19 @@ chrome.runtime.onMessage.addListener((m, sender) => {
   if (m && m.clack === 'chat' && sender.tab) heard(sender.tab.id, !!m.writing, m.site);
 });
 // a tab closed mid-answer: there's nothing to go back to, so the wait just ends
-chrome.tabs.onRemoved.addListener(tab => {
+function gone(tab) {
   if (!writing.has(tab)) return;
   clearTimeout(ending.get(tab));
   ending.delete(tab);
   writing.delete(tab);
   tell('tally', tab, { reason: 'SessionEnd' });
+}
+chrome.tabs.onRemoved.addListener(tab => gone(tab));
+chrome.tabs.onReplaced.addListener((added, removed) => gone(removed));
+// and so does one that went off claude.ai and ChatGPT mid-answer (the extension only sees a tab's address on those), or
+// that Chrome put to sleep to save memory: no watcher is left in it to say when the answer is done
+chrome.tabs.onUpdated.addListener((tab, change, t) => {
+  if (writing.has(tab) && !ending.has(tab) && (change.discarded || !t.url)) gone(tab);
 });
 
 // clack says when it's ready to listen; then it hears how things stand, asking each chat that's open

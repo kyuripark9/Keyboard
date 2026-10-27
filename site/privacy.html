@@ -89,7 +89,7 @@ code { padding: 1px 6px; background: var(--bg-2); border: 1px solid var(--line);
           <div>
             <p>On <b>claude.ai</b> and <b>chatgpt.com</b>, the extension checks one thing: whether the chat is writing an answer, which it tells by the stop button by the box you type in (and on claude.ai, the message it marks as being written). It doesn't read your messages, the answers or anything else on those pages, and it runs nowhere else.</p>
             <p>All it does with that is tell clack's side panel, in your browser, that one of the two sites started or stopped writing. It sends nothing to us or to anyone else.</p>
-            <p>clack itself is inside the extension, so the side panel plays it from the extension's own files. The only thing it loads from the internet is its fonts, from Google Fonts, which like any font request sees an ordinary request from your browser; nothing about your chats goes with it.</p>
+            <p>clack itself is inside the extension, its fonts too, so the side panel plays it from the extension's own files and loads nothing from the internet.</p>
             <p>Its permissions are for exactly this: <b>sidePanel</b> to open clack in the side panel, <b>scripting</b> to start watching the claude.ai and ChatGPT tabs that were already open when you added it, and access to claude.ai and chatgpt.com for the check above.</p>
           </div>
         </li>

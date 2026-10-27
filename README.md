@@ -55,7 +55,7 @@ Every push to `main` builds and publishes it with GitHub Actions ([.github/workf
 
 ## The old Mac version
 
-clack used to have a Mac app that followed Claude Code and Codex. It's gone now, and only the web version and the extension are kept. If you installed the app, right-click its ring in the menu bar and choose Remove clack; if you installed it from Terminal, this takes it all away again (its hooks in Claude Code's and Codex's settings, the bridge and the menu bar ring):
+clack used to have a Mac app that followed Claude Code and Codex. It's gone now, and only the web version and the extension are kept. If you installed the app, right-click its ring in the menu bar and choose Remove clack; if you installed it from Terminal, or the app is already in the Trash, this takes it all away again (its hooks in Claude Code's and Codex's settings, the bridge and the menu bar ring):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/kyuripark9/Keyboard/main/bridge/uninstall.sh | bash

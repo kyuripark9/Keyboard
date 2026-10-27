@@ -2927,7 +2927,7 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
    Where the signal comes from:
    - in the browser extension's side panel (?agent=panel): the extension watches claude.ai and ChatGPT, and its panel
      passes on when one of them starts writing an answer and when it's done
-   - anywhere else, such as the website: a demo agent you start yourself, so a visitor can feel the release
+   - anywhere else, such as the website: a sample agent you start yourself, so a visitor can feel the release
    With several chats at once, the first to finish lets go of you, as it's waiting for you whatever the others do; once
    you've gone back, clack holds you again while any of them is still working, and the next to finish lets go again.
    Return time is measured from "done" (or from coming back to clack, if it let go while you were away) to the moment you
@@ -3013,8 +3013,8 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
     } else if (s === 'done') {
       // a chat that's done has an answer for you rather than an agent waiting
       const ready = AG.mode === 'chat';
-      const gone = AG.grip <= 0.02, word = ready ? 'answer ready' : 'agent done';
-      const waiting = ready ? 'your answer is waiting' : 'your agent is waiting';
+      const gone = AG.grip <= 0.02, word = ready ? 'answer ready' : 'sample agent done';
+      const waiting = 'your answer is waiting'; // only a chat's: the sample agent says to tab away
       if (!gone) html = `<i class="dot"></i><span>${word} · go back</span>`;
       else if (now - AG.doneAt < RELEASE_MS + 9000) html = `<span>clack let go · ${AG.mode === 'demo' ? 'tab away to go back' : waiting}</span>`;
       else if (AG.mode === 'demo') html = `<span>still here?</span><button type="button" data-a="again">try again</button>${OWN}`;
@@ -3023,7 +3023,7 @@ storyEl.querySelectorAll('.st-nav a').forEach(a => a.addEventListener('click', e
       const typ = returns.length >= 3 ? ` · typical ${secs(median(returns))}` : '';
       html = `<span>back in ${secs(AG.backMs)}${typ}</span>`;
     } else if (AG.mode === 'demo') {
-      html = `<button type="button" data-a="try">try an agent wait</button>${OWN}`;
+      html = `<button type="button" data-a="try">try a sample agent</button>${OWN}`;
     } else if (AG.mode === 'chat') {
       // nothing to wait for yet: the line says what it waits for
       html = `<span>waits with claude.ai and chatgpt</span>`;

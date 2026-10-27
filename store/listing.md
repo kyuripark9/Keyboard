@@ -77,7 +77,7 @@ https://claude.ai/* and https://chatgpt.com/*: watch.js runs there to tell wheth
 **Remote code:** No, I am not using remote code. If asked to explain:
 
 ```
-All of the extension's JavaScript is in the package, clack included (clack.html and clack.js, shown in the side panel). The only thing it loads from the internet is clack's fonts, a stylesheet from Google Fonts.
+All of the extension's JavaScript is in the package, clack included (clack.html and clack.js, shown in the side panel), with its fonts. It loads nothing from the internet.
 ```
 
 **Data usage:** tick none of the data types (clack collects nothing and nothing leaves the device), then tick all three
